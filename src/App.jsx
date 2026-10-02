@@ -53,8 +53,19 @@ function Login({ onLogin }) {
           setError('Cuenta creada. Revisa tu correo institucional para confirmarla y después inicia sesión.')
           setAuthMode('login'); setBusy(false); return
         }
-        const role = data.user?.user_metadata?.role || mode
-        const session = { email: data.user.email, role, name: data.user.user_metadata?.full_name || 'Usuario' }
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name, role, group_id, groups(code, semester)')
+          .eq('id', data.user.id)
+          .single()
+        if (profileError) throw profileError
+        const session = {
+          email: data.user.email,
+          role: profile.role,
+          name: profile.full_name || data.user.user_metadata?.full_name || 'Usuario',
+          group: profile.groups?.code || 'Sin asignar',
+          semester: profile.groups?.semester || null,
+        }
         localStorage.setItem('aula-session', JSON.stringify(session)); onLogin(session)
       } else {
         const session = mode === 'teacher'
@@ -104,7 +115,8 @@ function Login({ onLogin }) {
 }
 
 function Dashboard({ session, onLogout }) {
-  const isTeacher = session.role === 'teacher'
+  const isTeacher = ['teacher', 'admin'].includes(session.role)
+  const profileLabel = session.role === 'admin' ? 'Administrador' : isTeacher ? 'Docente' : `Grupo ${session.group}`
   const [view, setView] = useState('inicio')
   const [mobileMenu, setMobileMenu] = useState(false)
   const [modal, setModal] = useState(null)
@@ -123,7 +135,7 @@ function Dashboard({ session, onLogout }) {
       )}</nav>
       <div className="side-bottom">
         <button><Settings size={19} />Configuración</button>
-        <div className="profile-mini"><div className="avatar">{session.name.slice(0, 2).toUpperCase()}</div><div><strong>{session.name}</strong><small>{isTeacher ? 'Docente' : `Grupo ${session.group}`}</small></div><button className="logout" onClick={onLogout} title="Cerrar sesión"><LogOut size={18} /></button></div>
+        <div className="profile-mini"><div className="avatar">{session.name.slice(0, 2).toUpperCase()}</div><div><strong>{session.name}</strong><small>{profileLabel}</small></div><button className="logout" onClick={onLogout} title="Cerrar sesión"><LogOut size={18} /></button></div>
       </div>
     </aside>
     <div className="main-area">
