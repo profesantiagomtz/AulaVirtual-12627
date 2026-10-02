@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
-  Bell, BookOpen, CheckCircle2, ChevronRight, ClipboardCheck, FileText, GraduationCap,
+  BookOpen, CheckCircle2, ChevronRight, ClipboardCheck, FileText, GraduationCap,
   LayoutDashboard, LogOut, Menu, Plus, Search, Settings, TrendingUp, Upload, Users, X
 } from 'lucide-react'
+import { courses } from './data/academic'
 import { isSupabaseReady, supabase } from './lib/supabase'
 
 const navItems = [
   { id: 'inicio', label: 'Resumen', icon: LayoutDashboard },
+  { id: 'modulos', label: 'Mis módulos', icon: GraduationCap },
   { id: 'materiales', label: 'Materiales', icon: BookOpen },
   { id: 'evaluaciones', label: 'Evaluaciones', icon: ClipboardCheck },
   { id: 'alumnos', label: 'Alumnos', icon: Users },
@@ -124,6 +126,7 @@ function Login({ onLogin }) {
 function Dashboard({ session, onLogout }) {
   const isTeacher = ['teacher', 'admin'].includes(session.role)
   const profileLabel = session.role === 'admin' ? 'Administrador' : isTeacher ? 'Docente' : `Grupo ${session.group}`
+  const assignedCourses = isTeacher ? courses : courses.filter(course => course.group === session.group)
   const [view, setView] = useState('inicio')
   const [mobileMenu, setMobileMenu] = useState(false)
   const [modal, setModal] = useState(null)
@@ -167,11 +170,11 @@ function Dashboard({ session, onLogout }) {
   return <div className="app-shell">
     <aside className={`sidebar ${mobileMenu ? 'open' : ''}`}>
       <div className="side-brand"><GraduationCap size={26} /><span>Aula <b>Virtual</b></span><button className="icon-btn close-menu" onClick={() => setMobileMenu(false)}><X /></button></div>
-      <nav>{navItems.filter(i => isTeacher || i.id !== 'alumnos').map(({ id, label, icon: Icon }) =>
+      <nav>{navItems.filter(item => isTeacher ? item.id !== 'modulos' : item.id !== 'alumnos').map(({ id, label, icon: Icon }) =>
         <button key={id} className={view === id ? 'active' : ''} onClick={() => { setView(id); setMobileMenu(false) }}><Icon size={19} />{label}</button>
       )}</nav>
       <div className="side-bottom">
-        <button><Settings size={19} />Configuración</button>
+        {isTeacher && <button><Settings size={19} />Configuración</button>}
         <div className="profile-mini"><div className="avatar">{session.name.slice(0, 2).toUpperCase()}</div><div><strong>{session.name}</strong><small>{profileLabel}</small></div><button className="logout" onClick={onLogout} title="Cerrar sesión"><LogOut size={18} /></button></div>
       </div>
     </aside>
@@ -179,14 +182,15 @@ function Dashboard({ session, onLogout }) {
       <header className="topbar">
         <button className="icon-btn menu-btn" onClick={() => setMobileMenu(true)}><Menu /></button>
         <div><span className="breadcrumb">Aula digital</span><h2>{pageTitle}</h2></div>
-        <div className="top-actions"><button className="icon-btn"><Bell size={20} /><span className="notification-dot" /></button>{isTeacher && <button className="primary" onClick={() => setModal(view === 'evaluaciones' ? 'assessment' : 'material')}><Plus size={18} /> {view === 'evaluaciones' ? 'Nueva evaluación' : 'Publicar material'}</button>}</div>
+        <div className="top-actions">{isTeacher && <button className="primary" onClick={() => setModal(view === 'evaluaciones' ? 'assessment' : 'material')}><Plus size={18} /> {view === 'evaluaciones' ? 'Nueva evaluación' : 'Publicar material'}</button>}</div>
       </header>
       <main className="content">
         {dataError && <div className="form-error data-error">{dataError} <button className="text-btn" onClick={loadData}>Reintentar</button></div>}
         {loading ? <div className="loading-state">Cargando información real…</div> : <>
-        {view === 'inicio' && (isTeacher ? <TeacherHome setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} /> : <StudentHome session={session} materials={materialList} assessments={assessmentList} />)}
-        {view === 'materiales' && <Materials items={materialList} groups={groupList} isTeacher={isTeacher} onAdd={() => setModal('material')} />}
-        {view === 'evaluaciones' && <Assessments items={assessmentList} isTeacher={isTeacher} onAdd={() => setModal('assessment')} />}
+        {view === 'inicio' && (isTeacher ? <TeacherHome setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} setView={setView} />)}
+        {view === 'modulos' && !isTeacher && <Modules courses={assignedCourses} session={session} setView={setView} />}
+        {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} onAdd={() => setModal('material')} />}
+        {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} onAdd={() => setModal('assessment')} />}
         {view === 'alumnos' && isTeacher && <Students students={studentList} groups={groupList} />}
         </>}
       </main>
@@ -237,17 +241,22 @@ function TeacherHome({ setView, groups, students, materials, assessments }) {
   </>
 }
 
-function StudentHome({ session, materials, assessments }) {
+function StudentHome({ session, courses, materials, assessments, setView }) {
   const nextAssessment = assessments.find(item => item.status === 'Activa')
   const latestMaterial = materials[0]
   return <>
     <section className="welcome-row"><div><span className="eyebrow">GRUPO {session.group} · {session.semester}º SEMESTRE</span><h1>Hola, {session.name}.</h1><p>Continúa con tus actividades y revisa lo nuevo de tu clase.</p></div><div className="student-score"><span>Tu promedio</span><strong>—</strong><small>Sin calificaciones todavía</small></div></section>
-    <section className="stat-grid student-stats"><Stat icon={BookOpen} value={materials.length} label="Materiales disponibles" note="Información real" color="blue" /><Stat icon={ClipboardCheck} value={assessments.filter(item => item.status === 'Activa').length} label="Evaluaciones activas" note="Revisa las fechas" color="gold" /><Stat icon={TrendingUp} value="—" label="Promedio" note="Sin calificaciones" color="green" /></section>
+    <section className="stat-grid student-stats"><Stat icon={GraduationCap} value={courses.length} label={courses.length === 1 ? 'Módulo asignado' : 'Módulos asignados'} note={`Grupo ${session.group}`} color="purple" /><Stat icon={BookOpen} value={materials.length} label="Materiales disponibles" note="Información real" color="blue" /><Stat icon={ClipboardCheck} value={assessments.filter(item => item.status === 'Activa').length} label="Evaluaciones activas" note="Revisa las fechas" color="gold" /></section>
+    <section className="panel student-modules-preview"><PanelTitle title="Tus módulos" action="Ver todos" onClick={() => setView('modulos')} /><div className="module-mini-list">{courses.map(course => <div className="module-mini" key={course.code}><div className="module-code">{course.code}</div><div><strong>{course.name}</strong><span>{course.hoursPerWeek} horas por semana</span></div></div>)}</div></section>
     <section className="two-cols"><div className="panel"><PanelTitle title="Próxima entrega" />{nextAssessment ? <div className="next-task"><div><span className="tag active">ACTIVA</span><h3>{nextAssessment.title}</h3><p>Entrega: {nextAssessment.due}</p></div></div> : <EmptyState text="No tienes evaluaciones activas." />}</div><div className="panel"><PanelTitle title="Material nuevo" />{latestMaterial ? <div className="featured-material"><div className="file-icon"><FileText /></div><div><h3>{latestMaterial.title}</h3><p>{latestMaterial.type} · {latestMaterial.unit}</p></div></div> : <EmptyState text="Todavía no hay materiales publicados." />}</div></section>
   </>
 }
 
-function Materials({ items, groups, isTeacher, onAdd }) {
+function Modules({ courses, session, setView }) {
+  return <section className="panel page-panel"><div className="list-toolbar"><div><span className="eyebrow">GRUPO {session.group} · {session.semester}º SEMESTRE</span><h1>Mis módulos</h1><p>Materias que cursas durante el periodo actual.</p></div></div><div className="module-grid">{courses.map(course => <article className="module-card" key={course.code}><div className="module-card-head"><div className="module-code large">{course.code}</div><span>{course.hoursPerWeek} h/semana</span></div><h3>{course.name}</h3><p>Grupo {course.group} · {course.semester}º semestre</p>{course.outcomes?.length ? <small>{course.outcomes.length} resultados de aprendizaje</small> : <small>Programa académico asignado</small>}<div className="module-actions"><button className="secondary" onClick={() => setView('materiales')}>Ver materiales</button><button className="text-btn" onClick={() => setView('evaluaciones')}>Evaluaciones <ChevronRight size={15} /></button></div></article>)}</div></section>
+}
+
+function Materials({ items, groups, courses, session, isTeacher, onAdd }) {
   const [query, setQuery] = useState('')
   const filtered = items.filter(m => m.title.toLowerCase().includes(query.toLowerCase()))
   async function openMaterial(material) {
@@ -255,10 +264,10 @@ function Materials({ items, groups, isTeacher, onAdd }) {
     const { data, error } = await supabase.storage.from('materials').createSignedUrl(material.url, 300)
     if (!error) window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
   }
-  return <section className="panel page-panel"><div className="list-toolbar"><div><h1>Material didáctico</h1><p>Recursos organizados por grupo y unidad.</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar material…" /></div><select><option>Todos los grupos</option>{groups.map(group => <option key={group.id}>Grupo {group.code}</option>)}</select></div>{filtered.length ? <div className="card-grid">{filtered.map(m => <article className="material-card" key={m.id}><div className="material-icon"><FileText /></div><span className="tag">{m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group}</p><footer><span>Publicado {m.date}</span><button className="text-btn" onClick={() => openMaterial(m)}>Abrir <ChevronRight size={15} /></button></footer></article>)}</div> : <EmptyState text="Todavía no hay materiales publicados." />}</section>
+  return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Material didáctico' : 'Mis materiales'}</h1><p>{isTeacher ? 'Recursos organizados por grupo y unidad.' : `Recursos de ${courses.map(course => course.name).join(' y ')}.`}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar material…" /></div>{isTeacher ? <select><option>Todos los grupos</option>{groups.map(group => <option key={group.id}>Grupo {group.code}</option>)}</select> : <div className="group-chip">Grupo {session.group}</div>}</div>{filtered.length ? <div className="card-grid">{filtered.map(m => <article className="material-card" key={m.id}><div className="material-icon"><FileText /></div><span className="tag">{m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group}</p><footer><span>Publicado {m.date}</span><button className="text-btn" onClick={() => openMaterial(m)}>Abrir <ChevronRight size={15} /></button></footer></article>)}</div> : <EmptyState text="Tu docente todavía no ha publicado materiales para este grupo." />}</section>
 }
 
-function Assessments({ items, isTeacher, onAdd }) { return <section className="panel page-panel"><div className="list-toolbar"><div><h1>Evaluaciones</h1><p>Actividades y resultados de tus grupos.</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={items} student={!isTeacher} /></section> }
+function Assessments({ items, session, isTeacher, onAdd }) { return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={items} student={!isTeacher} /></section> }
 
 function AssessmentTable({ items, student }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className="table-wrap"><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Entregas</th>}<th>{student ? 'Estado' : 'Promedio'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id}><td><div className="title-cell"><div className="mini-icon"><ClipboardCheck size={17} /></div><strong>{a.title}</strong></div></td><td>{a.group}</td><td>{a.due}</td>{!student && <td>{a.submissions} / {a.total}</td>}<td>{student ? <span className={`tag ${a.status === 'Activa' ? 'active' : ''}`}>{a.status}</span> : (a.average !== null ? `${a.average}%` : '—')}</td><td><button className="text-btn">{student ? 'Abrir' : 'Resultados'} <ChevronRight size={15} /></button></td></tr>)}</tbody></table></div> }
 
