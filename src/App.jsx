@@ -13,6 +13,14 @@ const navItems = [
   { id: 'alumnos', label: 'Alumnos', icon: Users },
 ]
 
+const lowercaseNameWords = new Set(['de', 'del', 'la', 'las', 'los', 'y'])
+function formatPersonName(name = '') {
+  return name.trim().toLocaleLowerCase('es-MX').split(/\s+/).map((word, index) => {
+    if (index > 0 && lowercaseNameWords.has(word.replace(/[,.;:]$/u, ''))) return word
+    return word.replace(/(^|[-'’])(\p{L})/gu, (_, separator, letter) => `${separator}${letter.toLocaleUpperCase('es-MX')}`)
+  }).join(' ')
+}
+
 function App() {
   const [session, setSession] = useState(() => JSON.parse(localStorage.getItem('aula-session') || 'null'))
   return <Routes>
@@ -140,7 +148,7 @@ function Dashboard({ session, onLogout }) {
       if (firstError) throw firstError
       const directory = studentResult.data || []
       setGroupList((groupResult.data || []).map(group => ({ ...group, students: directory.filter(student => student.group_code === group.code).length })))
-      setStudentList(directory.map(student => ({ id: student.id, name: student.full_name, email: student.email || 'Cuenta pendiente', enrollment: student.enrollment_number, group: student.group_code })))
+      setStudentList(directory.map(student => ({ id: student.id, name: formatPersonName(student.full_name), email: student.email || 'Cuenta pendiente', enrollment: student.enrollment_number, group: student.group_code })))
       setMaterialList((materialResult.data || []).map(material => ({ id: material.id, title: material.title, description: material.description, unit: material.unit || 'Sin unidad', type: material.resource_type === 'file' ? 'Archivo' : material.resource_type, url: material.resource_url, group: material.groups?.code || 'Todos', date: new Date(material.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) })))
       setAssessmentList((assessmentResult.data || []).map(assessment => {
         const submissions = assessment.submissions || []
