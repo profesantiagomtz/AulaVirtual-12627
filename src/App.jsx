@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, BookOpen, CheckCircle2, ChevronRight, ClipboardCheck, Download, FileText, GraduationCap,
-  LayoutDashboard, LogOut, Menu, Plus, Search, Settings, ShieldCheck, TrendingUp, Upload, Users, X
+  LayoutDashboard, LogOut, Menu, Plus, Search, Settings, TrendingUp, Upload, Users, X
 } from 'lucide-react'
 import { courses } from './data/academic'
 import { buildMsiiDocument, downloadBlob, readAssignmentId } from './lib/msii-docx'
@@ -314,8 +314,8 @@ function MsiiActivity({ assessment, session, onBack }) {
     try {
       setStatus('working'); setMessage('')
       const token = await readAssignmentId(file)
-      if (!token) throw new Error('Este documento no contiene la identificación de Aula Virtual. Descarga nuevamente tu actividad.')
-      if (token !== assignment.id) throw new Error('Este archivo no corresponde a tu cuenta. Debes entregar tu propia actividad.')
+      if (!token) throw new Error('No fue posible reconocer este archivo. Descarga nuevamente la actividad y trabaja en ese documento.')
+      if (token !== assignment.id) throw new Error('No es posible entregar este archivo. Descarga nuevamente tu actividad.')
       const { data: authData } = await supabase.auth.getUser()
       const path = `${authData.user.id}/${assessment.id}/${assignment.id}.docx`
       const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true, contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
@@ -328,14 +328,14 @@ function MsiiActivity({ assessment, session, onBack }) {
         p_document_token: token,
       })
       if (error) throw error
-      setMessage('Actividad entregada correctamente. Tu archivo quedó vinculado a tu cuenta.')
+      setMessage('Actividad entregada correctamente.')
       setStatus('submitted')
     } catch (error) { setMessage(error.message || 'No fue posible entregar la actividad'); setStatus('error') }
   }
 
   return <section className="panel page-panel activity-workspace">
     <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button>
-    <div className="activity-hero"><div><span className="eyebrow">MSII · R.A. 1.1</span><h1>{assessment.title}</h1><p>{assessment.instructions || 'Descarga tu formato, complétalo y entrega el mismo archivo DOCX.'}</p></div><div className="security-badge"><ShieldCheck /><span>Actividad protegida</span><small>Asignación individual</small></div></div>
+    <div className="activity-hero"><div><span className="eyebrow">MSII · R.A. 1.1</span><h1>{assessment.title}</h1><p>{assessment.instructions || 'Descarga tu formato, complétalo y entrega el mismo archivo DOCX.'}</p></div></div>
     {status === 'loading' ? <div className="loading-state">Preparando tus datos individuales…</div> : assignment && <>
       <div className="assigned-grid">
         <AssignedValue label="Equipo" value={assignment.variant.equipment} />
@@ -345,7 +345,7 @@ function MsiiActivity({ assessment, session, onBack }) {
         <AssignedValue label="Capacidad" value={assignment.variant.capacity} />
       </div>
       <div className="activity-steps">
-        <article><span>1</span><div><h3>Descarga tu archivo</h3><p>El documento contiene tus datos asignados y una identificación interna vinculada a tu cuenta.</p><button className="primary" onClick={downloadActivity} disabled={status === 'working'}><Download size={17} /> Descargar actividad DOCX</button></div></article>
+        <article><span>1</span><div><h3>Descarga tu archivo</h3><p>Descarga el formato preparado para esta actividad.</p><button className="primary" onClick={downloadActivity} disabled={status === 'working'}><Download size={17} /> Descargar actividad DOCX</button></div></article>
         <article><span>2</span><div><h3>Completa la actividad</h3><p>Trabaja en el mismo documento. No cambies los datos asignados ni lo conviertas a otro formato.</p></div></article>
         <article><span>3</span><div><h3>Entrega el mismo archivo</h3><form onSubmit={submitActivity}><input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={e => setFile(e.target.files[0] || null)} required /><button className="primary" disabled={status === 'working' || status === 'submitted'}><Upload size={17} /> {status === 'submitted' ? 'Entregado' : 'Subir actividad'}</button></form></div></article>
       </div>

@@ -35,7 +35,7 @@ export async function buildMsiiDocument(assignment, student) {
   }
   for (const path of ['word/document.xml', 'docProps/custom.xml']) {
     const file = zip.file(path)
-    if (!file) throw new Error('La plantilla no contiene la identificación requerida')
+    if (!file) throw new Error('La plantilla no está disponible. Intenta nuevamente.')
     zip.file(path, replaceTokens(await file.async('string'), values))
   }
   return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
