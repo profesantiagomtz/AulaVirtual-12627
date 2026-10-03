@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
-  BookOpen, CheckCircle2, ChevronRight, ClipboardCheck, FileText, GraduationCap,
-  LayoutDashboard, LogOut, Menu, Plus, Search, Settings, TrendingUp, Upload, Users, X
+  ArrowLeft, BookOpen, CheckCircle2, ChevronRight, ClipboardCheck, Download, FileText, GraduationCap,
+  LayoutDashboard, LogOut, Menu, Plus, Search, Settings, ShieldCheck, TrendingUp, Upload, Users, X
 } from 'lucide-react'
 import { courses } from './data/academic'
+import { buildMsiiDocument, downloadBlob, readAssignmentId } from './lib/msii-docx'
 import { isSupabaseReady, supabase } from './lib/supabase'
 
 const navItems = [
@@ -69,6 +70,7 @@ function Login({ onLogin }) {
           .single()
         if (profileError) throw profileError
         const session = {
+          id: data.user.id,
           email: data.user.email,
           role: profile.role,
           name: profile.full_name || data.user.user_metadata?.full_name || 'Usuario',
@@ -145,7 +147,7 @@ function Dashboard({ session, onLogout }) {
         supabase.from('groups').select('id, code, semester, career').eq('active', true).order('code'),
         isTeacher ? supabase.from('student_directory').select('id, full_name, email, enrollment_number, group_code, active').eq('active', true).order('full_name') : Promise.resolve({ data: [] }),
         supabase.from('materials').select('id, title, description, unit, resource_type, resource_url, created_at, groups(code)').eq('published', true).order('created_at', { ascending: false }),
-        supabase.from('assessments').select('id, title, instructions, status, due_at, group_id, groups(code), submissions(score, submitted_at)').order('created_at', { ascending: false }),
+        supabase.from('assessments').select('id, title, instructions, activity_code, status, due_at, group_id, groups(code), submissions(score, submitted_at)').order('created_at', { ascending: false }),
       ])
       const firstError = [groupResult, studentResult, materialResult, assessmentResult].find(result => result.error)?.error
       if (firstError) throw firstError
@@ -156,7 +158,7 @@ function Dashboard({ session, onLogout }) {
       setAssessmentList((assessmentResult.data || []).map(assessment => {
         const submissions = assessment.submissions || []
         const scored = submissions.filter(item => item.score !== null)
-        return { id: assessment.id, title: assessment.title, group: assessment.groups?.code || '—', groupId: assessment.group_id, due: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha', submissions: submissions.filter(item => item.submitted_at).length, total: directory.filter(student => student.group_code === assessment.groups?.code).length, average: scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.score), 0) / scored.length) : null, status: assessment.status === 'published' ? 'Activa' : assessment.status === 'closed' ? 'Cerrada' : 'Borrador' }
+        return { id: assessment.id, title: assessment.title, instructions: assessment.instructions, activityCode: assessment.activity_code, group: assessment.groups?.code || '—', groupId: assessment.group_id, due: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha', submissions: submissions.filter(item => item.submitted_at).length, total: directory.filter(student => student.group_code === assessment.groups?.code).length, average: scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.score), 0) / scored.length) : null, status: assessment.status === 'published' ? 'Activa' : assessment.status === 'closed' ? 'Cerrada' : 'Borrador' }
       }))
     } catch (err) { setDataError(err.message || 'No fue posible cargar la información') }
     finally { setLoading(false) }
@@ -267,9 +269,92 @@ function Materials({ items, groups, courses, session, isTeacher, onAdd }) {
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Material didáctico' : 'Mis materiales'}</h1><p>{isTeacher ? 'Recursos organizados por grupo y unidad.' : `Recursos de ${courses.map(course => course.name).join(' y ')}.`}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar material…" /></div>{isTeacher ? <select><option>Todos los grupos</option>{groups.map(group => <option key={group.id}>Grupo {group.code}</option>)}</select> : <div className="group-chip">Grupo {session.group}</div>}</div>{filtered.length ? <div className="card-grid">{filtered.map(m => <article className="material-card" key={m.id}><div className="material-icon"><FileText /></div><span className="tag">{m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group}</p><footer><span>Publicado {m.date}</span><button className="text-btn" onClick={() => openMaterial(m)}>Abrir <ChevronRight size={15} /></button></footer></article>)}</div> : <EmptyState text="Tu docente todavía no ha publicado materiales para este grupo." />}</section>
 }
 
-function Assessments({ items, session, isTeacher, onAdd }) { return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={items} student={!isTeacher} /></section> }
+function Assessments({ items, session, isTeacher, onAdd }) {
+  const [selected, setSelected] = useState(null)
+  if (selected && !isTeacher) return <MsiiActivity assessment={selected} session={session} onBack={() => setSelected(null)} />
+  return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={items} student={!isTeacher} onOpen={setSelected} /></section>
+}
 
-function AssessmentTable({ items, student }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className="table-wrap"><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Entregas</th>}<th>{student ? 'Estado' : 'Promedio'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id}><td><div className="title-cell"><div className="mini-icon"><ClipboardCheck size={17} /></div><strong>{a.title}</strong></div></td><td>{a.group}</td><td>{a.due}</td>{!student && <td>{a.submissions} / {a.total}</td>}<td>{student ? <span className={`tag ${a.status === 'Activa' ? 'active' : ''}`}>{a.status}</span> : (a.average !== null ? `${a.average}%` : '—')}</td><td><button className="text-btn">{student ? 'Abrir' : 'Resultados'} <ChevronRight size={15} /></button></td></tr>)}</tbody></table></div> }
+function AssessmentTable({ items, student, onOpen }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className="table-wrap"><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Entregas</th>}<th>{student ? 'Estado' : 'Promedio'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id}><td><div className="title-cell"><div className="mini-icon"><ClipboardCheck size={17} /></div><strong>{a.title}</strong></div></td><td>{a.group}</td><td>{a.due}</td>{!student && <td>{a.submissions} / {a.total}</td>}<td>{student ? <span className={`tag ${a.status === 'Activa' ? 'active' : ''}`}>{a.status}</span> : (a.average !== null ? `${a.average}%` : '—')}</td><td><button className="text-btn" onClick={() => student && onOpen?.(a)}>{student ? 'Abrir' : 'Resultados'} <ChevronRight size={15} /></button></td></tr>)}</tbody></table></div> }
+
+function MsiiActivity({ assessment, session, onBack }) {
+  const [assignment, setAssignment] = useState(null)
+  const [status, setStatus] = useState('loading')
+  const [message, setMessage] = useState('')
+  const [file, setFile] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    async function loadAssignment() {
+      try {
+        const { data, error } = await supabase.rpc('get_or_create_msii_assignment', { p_assessment_id: assessment.id })
+        if (error) throw error
+        if (active) { setAssignment(Array.isArray(data) ? data[0] : data); setStatus('ready') }
+      } catch (error) {
+        if (active) { setMessage(error.message || 'No fue posible preparar tu actividad'); setStatus('error') }
+      }
+    }
+    loadAssignment()
+    return () => { active = false }
+  }, [assessment.id])
+
+  async function downloadActivity() {
+    try {
+      setStatus('working'); setMessage('')
+      const blob = await buildMsiiDocument(assignment, session)
+      const surname = session.name.trim().split(/\s+/).at(-1) || 'Alumno'
+      downloadBlob(blob, `MSII_310_${surname}_RA_1.1.docx`)
+      setStatus('ready')
+    } catch (error) { setMessage(error.message); setStatus('error') }
+  }
+
+  async function submitActivity(event) {
+    event.preventDefault()
+    if (!file) return
+    try {
+      setStatus('working'); setMessage('')
+      const token = await readAssignmentId(file)
+      if (!token) throw new Error('Este documento no contiene la identificación de Aula Virtual. Descarga nuevamente tu actividad.')
+      if (token !== assignment.id) throw new Error('Este archivo no corresponde a tu cuenta. Debes entregar tu propia actividad.')
+      const { data: authData } = await supabase.auth.getUser()
+      const path = `${authData.user.id}/${assessment.id}/${assignment.id}.docx`
+      const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true, contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+      if (uploadError) throw uploadError
+      const { error } = await supabase.rpc('submit_msii_document', {
+        p_assessment_id: assessment.id,
+        p_assignment_id: assignment.id,
+        p_file_path: path,
+        p_original_filename: file.name,
+        p_document_token: token,
+      })
+      if (error) throw error
+      setMessage('Actividad entregada correctamente. Tu archivo quedó vinculado a tu cuenta.')
+      setStatus('submitted')
+    } catch (error) { setMessage(error.message || 'No fue posible entregar la actividad'); setStatus('error') }
+  }
+
+  return <section className="panel page-panel activity-workspace">
+    <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button>
+    <div className="activity-hero"><div><span className="eyebrow">MSII · R.A. 1.1</span><h1>{assessment.title}</h1><p>{assessment.instructions || 'Descarga tu formato, complétalo y entrega el mismo archivo DOCX.'}</p></div><div className="security-badge"><ShieldCheck /><span>Actividad protegida</span><small>Asignación individual</small></div></div>
+    {status === 'loading' ? <div className="loading-state">Preparando tus datos individuales…</div> : assignment && <>
+      <div className="assigned-grid">
+        <AssignedValue label="Equipo" value={assignment.variant.equipment} />
+        <AssignedValue label="Sistema para comparar" value={assignment.variant.compare_os} />
+        <AssignedValue label="Número decimal" value={assignment.variant.decimal_number} />
+        <AssignedValue label="Carácter ASCII" value={assignment.variant.ascii_character} />
+        <AssignedValue label="Capacidad" value={assignment.variant.capacity} />
+      </div>
+      <div className="activity-steps">
+        <article><span>1</span><div><h3>Descarga tu archivo</h3><p>El documento contiene tus datos asignados y una identificación interna vinculada a tu cuenta.</p><button className="primary" onClick={downloadActivity} disabled={status === 'working'}><Download size={17} /> Descargar actividad DOCX</button></div></article>
+        <article><span>2</span><div><h3>Completa la actividad</h3><p>Trabaja en el mismo documento. No cambies los datos asignados ni lo conviertas a otro formato.</p></div></article>
+        <article><span>3</span><div><h3>Entrega el mismo archivo</h3><form onSubmit={submitActivity}><input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={e => setFile(e.target.files[0] || null)} required /><button className="primary" disabled={status === 'working' || status === 'submitted'}><Upload size={17} /> {status === 'submitted' ? 'Entregado' : 'Subir actividad'}</button></form></div></article>
+      </div>
+    </>}
+    {message && <div className={status === 'submitted' ? 'submission-success' : 'form-error'}>{message}</div>}
+  </section>
+}
+
+function AssignedValue({ label, value }) { return <div className="assigned-value"><span>{label}</span><strong>{value}</strong></div> }
 
 function Students({ students, groups }) {
   const [query, setQuery] = useState('')
