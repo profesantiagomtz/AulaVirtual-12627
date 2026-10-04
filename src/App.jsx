@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, BookOpen, CheckCircle2, ChevronRight, ClipboardCheck, Download, FileText, GraduationCap,
+  ArrowLeft, BookOpen, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, FileText, GraduationCap,
   LayoutDashboard, LogOut, Menu, Plus, Search, Settings, TrendingUp, Upload, Users, X
 } from 'lucide-react'
 import { courses } from './data/academic'
@@ -148,7 +148,7 @@ function Dashboard({ session, onLogout }) {
         supabase.from('groups').select('id, code, semester, career').eq('active', true).order('code'),
         isTeacher ? supabase.from('student_directory').select('id, full_name, email, enrollment_number, group_code, active').eq('active', true).order('full_name') : Promise.resolve({ data: [] }),
         supabase.from('materials').select('id, title, description, unit, resource_type, resource_url, created_at, groups(code)').eq('published', true).order('created_at', { ascending: false }),
-        supabase.from('assessments').select('id, title, instructions, activity_code, status, due_at, group_id, groups(code), submissions(score, submitted_at)').order('created_at', { ascending: false }),
+        supabase.from('assessments').select('id, title, instructions, activity_code, status, due_at, group_id, groups(code), submissions(id, student_id, score, started_at, submitted_at, answers, file_path, original_filename, profiles!submissions_student_id_fkey(full_name, email, enrollment_number))').order('created_at', { ascending: false }),
       ])
       const firstError = [groupResult, studentResult, materialResult, assessmentResult].find(result => result.error)?.error
       if (firstError) throw firstError
@@ -159,7 +159,7 @@ function Dashboard({ session, onLogout }) {
       setAssessmentList((assessmentResult.data || []).map(assessment => {
         const submissions = assessment.submissions || []
         const scored = submissions.filter(item => item.score !== null)
-        return { id: assessment.id, title: assessment.title, instructions: assessment.instructions, activityCode: assessment.activity_code, group: assessment.groups?.code || '—', groupId: assessment.group_id, due: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha', submissions: submissions.filter(item => item.submitted_at).length, total: directory.filter(student => student.group_code === assessment.groups?.code).length, average: scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.score), 0) / scored.length) : null, status: assessment.status === 'published' ? 'Activa' : assessment.status === 'closed' ? 'Cerrada' : 'Borrador' }
+        return { id: assessment.id, title: assessment.title, instructions: assessment.instructions, activityCode: assessment.activity_code, group: assessment.groups?.code || '—', groupId: assessment.group_id, due: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha', submissions: submissions.filter(item => item.submitted_at).length, drafts: submissions.filter(item => !item.submitted_at).length, submissionDetails: submissions.map(item => ({ ...item, student: item.profiles ? { name: formatPersonName(item.profiles.full_name), email: item.profiles.email, enrollment: item.profiles.enrollment_number } : null })), total: directory.filter(student => student.group_code === assessment.groups?.code).length, average: scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.score), 0) / scored.length) : null, status: assessment.status === 'published' ? 'Activa' : assessment.status === 'closed' ? 'Cerrada' : 'Borrador' }
       }))
     } catch (err) { setDataError(err.message || 'No fue posible cargar la información') }
     finally { setLoading(false) }
@@ -168,7 +168,7 @@ function Dashboard({ session, onLogout }) {
   useEffect(() => { if (isSupabaseReady) loadData() }, [])
 
   function saved(message) { setModal(null); setToast(message); setTimeout(() => setToast(''), 2600) }
-  const pageTitle = navItems.find(i => i.id === view)?.label || 'Resumen'
+  const pageTitle = view === 'configuracion' ? 'Configuración' : navItems.find(i => i.id === view)?.label || 'Resumen'
 
   return <div className="app-shell">
     <aside className={`sidebar ${mobileMenu ? 'open' : ''}`}>
@@ -177,7 +177,7 @@ function Dashboard({ session, onLogout }) {
         <button key={id} className={view === id ? 'active' : ''} onClick={() => { setView(id); setMobileMenu(false) }}><Icon size={19} />{label}</button>
       )}</nav>
       <div className="side-bottom">
-        {isTeacher && <button><Settings size={19} />Configuración</button>}
+        {isTeacher && <button className={view === 'configuracion' ? 'active' : ''} onClick={() => { setView('configuracion'); setMobileMenu(false) }}><Settings size={19} />Configuración</button>}
         <div className="profile-mini"><div className="avatar">{session.name.slice(0, 2).toUpperCase()}</div><div><strong>{session.name}</strong><small>{profileLabel}</small></div><button className="logout" onClick={onLogout} title="Cerrar sesión"><LogOut size={18} /></button></div>
       </div>
     </aside>
@@ -185,7 +185,7 @@ function Dashboard({ session, onLogout }) {
       <header className="topbar">
         <button className="icon-btn menu-btn" onClick={() => setMobileMenu(true)}><Menu /></button>
         <div><span className="breadcrumb">Aula digital</span><h2>{pageTitle}</h2></div>
-        <div className="top-actions">{isTeacher && <button className="primary" onClick={() => setModal(view === 'evaluaciones' ? 'assessment' : 'material')}><Plus size={18} /> {view === 'evaluaciones' ? 'Nueva evaluación' : 'Publicar material'}</button>}</div>
+        <div className="top-actions">{isTeacher && view === 'inicio' && <button className="primary" aria-label="Publicar material" title="Publicar material" onClick={() => setModal('material')}><Plus size={18} /><span>Publicar material</span></button>}</div>
       </header>
       <main className="content">
         {dataError && <div className="form-error data-error">{dataError} <button className="text-btn" onClick={loadData}>Reintentar</button></div>}
@@ -193,8 +193,9 @@ function Dashboard({ session, onLogout }) {
         {view === 'inicio' && (isTeacher ? <TeacherHome setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} setView={setView} />)}
         {view === 'modulos' && !isTeacher && <Modules courses={assignedCourses} session={session} setView={setView} />}
         {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} onAdd={() => setModal('material')} />}
-        {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} onAdd={() => setModal('assessment')} />}
-        {view === 'alumnos' && isTeacher && <Students students={studentList} groups={groupList} />}
+        {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} onAdd={() => setModal('assessment')} onRefresh={loadData} />}
+        {view === 'alumnos' && isTeacher && <Students students={studentList} groups={groupList} assessments={assessmentList} />}
+        {view === 'configuracion' && isTeacher && <SettingsPage session={session} groups={groupList} />}
         </>}
       </main>
     </div>
@@ -211,7 +212,7 @@ function Dashboard({ session, onLogout }) {
     }} />}
     {modal === 'assessment' && <AssessmentModal groups={groupList} onClose={() => setModal(null)} onSave={async (item) => {
       const { data: authData } = await supabase.auth.getUser()
-      const { error } = await supabase.from('assessments').insert({ teacher_id: authData.user.id, group_id: item.groupId, title: item.title, instructions: item.instructions, status: 'published', due_at: item.dueAt })
+      const { error } = await supabase.from('assessments').insert({ teacher_id: authData.user.id, group_id: item.groupId, title: item.title, instructions: item.instructions, activity_code: item.activityCode, status: 'published', due_at: item.dueAt })
       if (error) throw error
       await loadData(); saved('Evaluación creada correctamente')
     }} />}
@@ -222,22 +223,25 @@ function Dashboard({ session, onLogout }) {
 function TeacherHome({ setView, groups, students, materials, assessments }) {
   const activeAssessments = assessments.filter(item => item.status === 'Activa')
   const submitted = assessments.reduce((sum, item) => sum + item.submissions, 0)
+  const drafts = assessments.reduce((sum, item) => sum + item.drafts, 0)
   const scores = assessments.filter(item => item.average !== null).map(item => item.average)
   const overallAverage = scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : null
+  const today = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()).toLocaleUpperCase('es-MX')
+  const recent = assessments.flatMap(assessment => assessment.submissionDetails.map(submission => ({ ...submission, assessment: assessment.title, group: assessment.group, date: submission.submitted_at || submission.started_at }))).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5)
   return <>
-    <section className="welcome-row"><div><span className="eyebrow">JUEVES, 1 DE OCTUBRE</span><h1>Buenos días, profesor.</h1><p>Esto es lo que sucede hoy con tus grupos.</p></div><div className="term-card"><span>Periodo actual</span><strong>Agosto 2026 – Enero 2027</strong></div></section>
+    <section className="welcome-row"><div><span className="eyebrow">{today}</span><h1>Buenos días, profesor.</h1><p>Esto es lo que sucede hoy con tus grupos.</p></div><div className="term-card"><span>Periodo actual</span><strong>Agosto 2026 – Enero 2027</strong></div></section>
     <section className="stat-grid">
       <Stat icon={Users} value={students.length} label="Alumnos en padrón" note={`${groups.length} grupos`} color="blue" />
       <Stat icon={BookOpen} value={materials.length} label="Materiales publicados" note="Información real" color="gold" />
-      <Stat icon={ClipboardCheck} value={activeAssessments.length} label="Evaluaciones activas" note={`${submitted} entregas registradas`} color="purple" />
-      <Stat icon={TrendingUp} value={overallAverage === null ? '—' : `${overallAverage}%`} label="Promedio general" note={overallAverage === null ? 'Sin calificaciones' : 'Calculado con entregas'} color="green" />
+      <Stat icon={ClipboardCheck} value={activeAssessments.length} label="Evaluaciones activas" note={`${submitted} entregas · ${drafts} avances`} color="purple" />
+      <Stat icon={TrendingUp} value={overallAverage === null ? '—' : `${overallAverage} / 60`} label="Promedio general" note={overallAverage === null ? 'Sin calificaciones' : 'Calculado con entregas'} color="green" />
     </section>
     <section className="two-cols">
       <div className="panel"><PanelTitle title="Actividad reciente" action="Ver alumnos" onClick={() => setView('alumnos')} />
-        <EmptyState text="Todavía no hay actividad de alumnos registrada." />
+        {recent.length ? <div className="recent-list">{recent.map(item => <Activity key={item.id} initials={(item.student?.name || 'Alumno').split(' ').slice(0, 2).map(part => part[0]).join('')} title={item.student?.name || 'Alumno'} meta={`${item.submitted_at ? 'Entregó' : 'Guardó avance'} · ${item.assessment} · Grupo ${item.group}`} color={item.submitted_at ? 'green' : 'blue'} />)}</div> : <EmptyState text="Todavía no hay actividad de alumnos registrada." />}
       </div>
       <div className="panel"><PanelTitle title="Avance por grupo" />
-        <div className="group-progress">{groups.map(group => <div className="progress-row" key={group.id}><div><strong>Grupo {group.code}</strong><span>{group.students} alumnos · {group.semester}º semestre</span></div><div className="progress-meta"><b>Sin actividad</b><div className="bar"><i style={{ width: '0%' }} /></div></div></div>)}</div>
+        <div className="group-progress">{groups.map(group => { const activeStudents = new Set(assessments.filter(item => item.group === group.code).flatMap(item => item.submissionDetails.map(submission => submission.student_id))).size; const progress = group.students ? Math.round(activeStudents / group.students * 100) : 0; return <div className="progress-row" key={group.id}><div><strong>Grupo {group.code}</strong><span>{group.students} alumnos · {group.semester}º semestre</span></div><div className="progress-meta"><b>{activeStudents ? `${activeStudents} con actividad` : 'Sin actividad'}</b><div className="bar"><i style={{ width: `${progress}%` }} /></div></div></div> })}</div>
       </div>
     </section>
     <section className="panel"><PanelTitle title="Evaluaciones activas" action="Ver todas" onClick={() => setView('evaluaciones')} /><AssessmentTable items={activeAssessments} /></section>
@@ -261,24 +265,76 @@ function Modules({ courses, session, setView }) {
 
 function Materials({ items, groups, courses, session, isTeacher, onAdd }) {
   const [query, setQuery] = useState('')
-  const filtered = items.filter(m => m.title.toLowerCase().includes(query.toLowerCase()))
+  const [group, setGroup] = useState('Todos')
+  const filtered = items.filter(m => (group === 'Todos' || m.group === group) && m.title.toLowerCase().includes(query.toLowerCase()))
   async function openMaterial(material) {
     if (material.type !== 'Archivo') return window.open(material.url, '_blank', 'noopener,noreferrer')
     const { data, error } = await supabase.storage.from('materials').createSignedUrl(material.url, 300)
     if (!error) window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
   }
-  return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Material didáctico' : 'Mis materiales'}</h1><p>{isTeacher ? 'Recursos organizados por grupo y unidad.' : `Recursos de ${courses.map(course => course.name).join(' y ')}.`}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar material…" /></div>{isTeacher ? <select><option>Todos los grupos</option>{groups.map(group => <option key={group.id}>Grupo {group.code}</option>)}</select> : <div className="group-chip">Grupo {session.group}</div>}</div>{filtered.length ? <div className="card-grid">{filtered.map(m => <article className="material-card" key={m.id}><div className="material-icon"><FileText /></div><span className="tag">{m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group}</p><footer><span>Publicado {m.date}</span><button className="text-btn" onClick={() => openMaterial(m)}>Abrir <ChevronRight size={15} /></button></footer></article>)}</div> : <EmptyState text="Tu docente todavía no ha publicado materiales para este grupo." />}</section>
+  return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Material didáctico' : 'Mis materiales'}</h1><p>{isTeacher ? 'Recursos organizados por grupo y unidad.' : `Recursos de ${courses.map(course => course.name).join(' y ')}.`}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar material…" /></div>{isTeacher ? <select value={group} onChange={e => setGroup(e.target.value)}><option value="Todos">Todos los grupos</option>{groups.map(item => <option key={item.id} value={item.code}>Grupo {item.code}</option>)}</select> : <div className="group-chip">Grupo {session.group}</div>}</div>{filtered.length ? <div className="card-grid">{filtered.map(m => <article className="material-card" key={m.id}><div className="material-icon"><FileText /></div><span className="tag">{m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group}</p><footer><span>Publicado {m.date}</span><button className="text-btn" onClick={() => openMaterial(m)}>Abrir <ChevronRight size={15} /></button></footer></article>)}</div> : <EmptyState text={isTeacher ? 'No hay materiales publicados con estos filtros.' : 'Todavía no hay materiales publicados para tu grupo.'} />}</section>
 }
 
-function Assessments({ items, session, isTeacher, onAdd }) {
+function Assessments({ items, session, isTeacher, onAdd, onRefresh }) {
   const [selected, setSelected] = useState(null)
-  if (selected && !isTeacher) return selected.activityCode === 'ASIN-RA-1.1'
-    ? <AsinActivity assessment={selected} onBack={() => setSelected(null)} />
-    : <MsiiActivity assessment={selected} session={session} onBack={() => setSelected(null)} />
+  if (selected && isTeacher) return <AssessmentResults assessment={selected} onBack={() => setSelected(null)} onRefresh={onRefresh} />
+  if (selected) {
+    if (selected.activityCode === 'ASIN-RA-1.1') return <AsinActivity assessment={selected} onBack={() => setSelected(null)} />
+    if (selected.activityCode === 'MSII-RA-1.1') return <MsiiActivity assessment={selected} session={session} onBack={() => setSelected(null)} />
+    return <GenericActivity assessment={selected} onBack={() => setSelected(null)} />
+  }
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={items} student={!isTeacher} onOpen={setSelected} /></section>
 }
 
-function AssessmentTable({ items, student, onOpen }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className="table-wrap"><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Entregas</th>}<th>{student ? 'Estado' : 'Promedio'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id}><td><div className="title-cell"><div className="mini-icon"><ClipboardCheck size={17} /></div><strong>{a.title}</strong></div></td><td>{a.group}</td><td>{a.due}</td>{!student && <td>{a.submissions} / {a.total}</td>}<td>{student ? <span className={`tag ${a.status === 'Activa' ? 'active' : ''}`}>{a.status}</span> : (a.average !== null ? `${a.average}%` : '—')}</td><td><button className="text-btn" onClick={() => student && onOpen?.(a)}>{student ? 'Abrir' : 'Resultados'} <ChevronRight size={15} /></button></td></tr>)}</tbody></table></div> }
+function AssessmentTable({ items, student, onOpen }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className="table-wrap"><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Actividad</th>}<th>{student ? 'Estado' : 'Promedio'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id}><td><div className="title-cell"><div className="mini-icon"><ClipboardCheck size={17} /></div><strong>{a.title}</strong></div></td><td>{a.group}</td><td>{a.due}</td>{!student && <td><strong>{a.submissions}</strong> entregas · {a.drafts} avances</td>}<td>{student ? <span className={`tag ${a.status === 'Activa' ? 'active' : ''}`}>{a.status}</span> : (a.average !== null ? `${a.average} / 60` : '—')}</td><td><button className="text-btn" onClick={() => onOpen?.(a)}>{student ? 'Abrir' : 'Resultados'} <ChevronRight size={15} /></button></td></tr>)}</tbody></table></div> }
+
+function GenericActivity({ assessment, onBack }) {
+  return <section className="panel page-panel activity-workspace"><button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button><div className="activity-hero"><div><span className="eyebrow">ACTIVIDAD</span><h1>{assessment.title}</h1><p>{assessment.instructions || 'Consulta con tu docente las indicaciones de esta actividad.'}</p></div></div><div className="info-note">Esta actividad es informativa y no solicita una entrega dentro de la plataforma.</div></section>
+}
+
+function AssessmentResults({ assessment, onBack, onRefresh }) {
+  const [rows, setRows] = useState(assessment.submissionDetails)
+  const [scores, setScores] = useState(() => Object.fromEntries(assessment.submissionDetails.map(item => [item.id, item.score ?? ''])))
+  const [busy, setBusy] = useState('')
+  const [message, setMessage] = useState('')
+
+  async function saveScore(submission) {
+    const score = Number(scores[submission.id])
+    if (!Number.isFinite(score) || score < 0 || score > 60) { setMessage('La calificación debe estar entre 0 y 60 puntos.'); return }
+    setBusy(submission.id); setMessage('')
+    const { error } = await supabase.from('submissions').update({ score }).eq('id', submission.id)
+    if (error) setMessage(error.message || 'No fue posible guardar la calificación.')
+    else {
+      setRows(current => current.map(item => item.id === submission.id ? { ...item, score } : item))
+      setMessage('Calificación guardada correctamente.')
+      await onRefresh?.()
+    }
+    setBusy('')
+  }
+
+  async function downloadSubmission(submission) {
+    if (!submission.file_path) return
+    const { data, error } = await supabase.storage.from('submissions').createSignedUrl(submission.file_path, 300)
+    if (error) setMessage(error.message || 'No fue posible abrir el archivo.')
+    else window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
+  }
+
+  return <section className="panel page-panel results-page">
+    <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button>
+    <div className="results-head"><div><span className="eyebrow">GRUPO {assessment.group}</span><h1>{assessment.title}</h1><p>{assessment.submissions} entregas y {assessment.drafts} avances guardados.</p></div><div className="result-total"><strong>{rows.length}</strong><span>alumnos con actividad</span></div></div>
+    {message && <div className={message.includes('correctamente') ? 'submission-success' : 'form-error'}>{message}</div>}
+    {rows.length ? <div className="submission-list">{rows.map(submission => <article className="submission-card" key={submission.id}>
+      <header><div className="student-cell"><div className="avatar small">{(submission.student?.name || 'A').split(' ').slice(0, 2).map(part => part[0]).join('')}</div><div><strong>{submission.student?.name || 'Alumno'}</strong><span>{submission.student?.enrollment || submission.student?.email || 'Sin matrícula'}</span></div></div><span className={`tag ${submission.submitted_at ? 'active' : ''}`}>{submission.submitted_at ? 'ENTREGADA' : 'EN PROCESO'}</span></header>
+      <div className="submission-meta"><span>Inicio: {formatDateTime(submission.started_at)}</span>{submission.submitted_at && <span>Entrega: {formatDateTime(submission.submitted_at)}</span>}</div>
+      <div className="submission-actions">{submission.file_path && <button className="secondary" onClick={() => downloadSubmission(submission)}><Download size={16} /> {submission.original_filename || 'Descargar archivo'}</button>}{submission.answers && Object.keys(submission.answers).length > 0 && <details><summary><Eye size={16} /> Ver respuestas capturadas</summary><pre>{JSON.stringify(submission.answers, null, 2)}</pre></details>}</div>
+      {submission.submitted_at && <div className="score-box"><label>Calificación de la actividad (máximo 60 puntos)<input type="number" min="0" max="60" step="1" value={scores[submission.id]} onChange={e => setScores(current => ({ ...current, [submission.id]: e.target.value }))} /></label><button className="primary" disabled={busy === submission.id} onClick={() => saveScore(submission)}>{busy === submission.id ? 'Guardando…' : 'Guardar calificación'}</button></div>}
+    </article>)}</div> : <EmptyState text="Ningún alumno ha iniciado esta actividad todavía." />}
+  </section>
+}
+
+function formatDateTime(value) {
+  return value ? new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value)) : '—'
+}
 
 function MsiiActivity({ assessment, session, onBack }) {
   const [assignment, setAssignment] = useState(null)
@@ -371,11 +427,21 @@ function MsiiActivity({ assessment, session, onBack }) {
 
 function AssignedValue({ label, value }) { return <div className="assigned-value"><span>{label}</span><strong>{value}</strong></div> }
 
-function Students({ students, groups }) {
+function Students({ students, groups, assessments }) {
   const [query, setQuery] = useState('')
   const [group, setGroup] = useState('Todos')
   const rows = useMemo(() => students.filter(s => (group === 'Todos' || s.group === group) && `${s.name} ${s.email}`.toLowerCase().includes(query.toLowerCase())), [query, group])
-  return <section className="panel page-panel"><div className="list-toolbar"><div><h1>Directorio de alumnos</h1><p>Padrón real importado por grupo. El avance aparecerá cuando existan entregas.</p></div></div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar alumno…" /></div><select value={group} onChange={e => setGroup(e.target.value)}><option>Todos</option>{groups.map(item => <option key={item.id}>{item.code}</option>)}</select></div><div className="table-wrap"><table><thead><tr><th>Alumno</th><th>Grupo</th><th>Matrícula</th><th>Cuenta</th><th>Progreso</th><th>Promedio</th></tr></thead><tbody>{rows.map(student => <tr key={student.id}><td><div className="student-cell"><div className="avatar small">{student.name.split(' ').slice(0,2).map(part => part[0]).join('')}</div><div><strong>{student.name}</strong><span>{student.email}</span></div></div></td><td>{student.group}</td><td>{student.enrollment || 'Pendiente'}</td><td>{student.email === 'Cuenta pendiente' ? <span className="pending">Pendiente</span> : 'Registrada'}</td><td>—</td><td>—</td></tr>)}</tbody></table></div></section>
+  function progressFor(student) {
+    const submissions = assessments.filter(item => item.group === student.group).flatMap(item => item.submissionDetails).filter(item => item.student?.email === student.email)
+    const delivered = submissions.filter(item => item.submitted_at)
+    const scores = delivered.filter(item => item.score !== null).map(item => Number(item.score))
+    return { label: delivered.length ? `${delivered.length} entregada${delivered.length === 1 ? '' : 's'}` : submissions.length ? 'En proceso' : '—', average: scores.length ? `${Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length)} / 60` : '—' }
+  }
+  return <section className="panel page-panel"><div className="list-toolbar"><div><h1>Directorio de alumnos</h1><p>Padrón real importado por grupo, con avances y entregas registrados.</p></div></div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar alumno…" /></div><select value={group} onChange={e => setGroup(e.target.value)}><option>Todos</option>{groups.map(item => <option key={item.id}>{item.code}</option>)}</select></div><div className="table-wrap"><table><thead><tr><th>Alumno</th><th>Grupo</th><th>Matrícula</th><th>Cuenta</th><th>Progreso</th><th>Promedio</th></tr></thead><tbody>{rows.map(student => { const progress = progressFor(student); return <tr key={student.id}><td><div className="student-cell"><div className="avatar small">{student.name.split(' ').slice(0,2).map(part => part[0]).join('')}</div><div><strong>{student.name}</strong><span>{student.email}</span></div></div></td><td>{student.group}</td><td>{student.enrollment || 'Pendiente'}</td><td>{student.email === 'Cuenta pendiente' ? <span className="pending">Pendiente</span> : 'Registrada'}</td><td>{progress.label}</td><td>{progress.average}</td></tr> })}</tbody></table></div></section>
+}
+
+function SettingsPage({ session, groups }) {
+  return <section className="panel page-panel settings-page"><div className="list-toolbar"><div><h1>Configuración</h1><p>Información general de la cuenta y del periodo activo.</p></div></div><div className="settings-grid"><article><span>Cuenta administradora</span><strong>{session.name}</strong><small>{session.email}</small></article><article><span>Periodo escolar</span><strong>Agosto 2026 – Enero 2027</strong><small>Periodo activo</small></article><article><span>Grupos habilitados</span><strong>{groups.map(group => group.code).join(', ')}</strong><small>{groups.length} grupos activos</small></article><article><span>Acceso</span><strong>Administrador</strong><small>Permisos de seguimiento y publicación</small></article></div><div className="info-note">Los cambios de cuenta, grupos y seguridad se administran de forma protegida para evitar modificaciones accidentales.</div></section>
 }
 
 function MaterialModal({ groups, onClose, onSave }) {
@@ -386,10 +452,10 @@ function MaterialModal({ groups, onClose, onSave }) {
 }
 
 function AssessmentModal({ groups, onClose, onSave }) {
-  const [data, setData] = useState({ title: '', groupId: groups[0]?.id || '', dueAt: '', instructions: '' })
+  const [data, setData] = useState({ title: '', groupId: groups[0]?.id || '', dueAt: '', instructions: '', activityCode: 'ASIN-RA-1.1' })
   const [error, setError] = useState(''); const [busy, setBusy] = useState(false)
   async function submit(event) { event.preventDefault(); setBusy(true); setError(''); try { await onSave(data) } catch (err) { setError(err.message || 'No fue posible crear la evaluación') } finally { setBusy(false) } }
-  return <Modal title="Nueva evaluación" onClose={onClose}><form onSubmit={submit}><label>Título<input required value={data.title} onChange={e => setData({...data,title:e.target.value})} placeholder="Nombre de la evaluación" /></label><div className="form-row"><label>Grupo<select required value={data.groupId} onChange={e => setData({...data,groupId:e.target.value})}>{groups.map(group=><option key={group.id} value={group.id}>{group.code}</option>)}</select></label><label>Fecha límite<input type="datetime-local" required value={data.dueAt} onChange={e => setData({...data,dueAt:e.target.value})} /></label></div><label>Instrucciones<textarea value={data.instructions} onChange={e => setData({...data,instructions:e.target.value})} placeholder="Indicaciones para los alumnos" rows="4" /></label>{error && <div className="form-error">{error}</div>}<ModalActions onClose={onClose} label={busy ? 'Creando…' : 'Crear evaluación'} disabled={busy} /></form></Modal>
+  return <Modal title="Nueva evaluación" onClose={onClose}><form onSubmit={submit}><label>Tipo de actividad<select required value={data.activityCode} onChange={e => setData({...data,activityCode:e.target.value})}><option value="ASIN-RA-1.1">ASIN · Actividad en plataforma</option><option value="MSII-RA-1.1">MSII · Documento DOCX</option></select></label><label>Título<input required value={data.title} onChange={e => setData({...data,title:e.target.value})} placeholder="Nombre de la evaluación" /></label><div className="form-row"><label>Grupo<select required value={data.groupId} onChange={e => setData({...data,groupId:e.target.value})}>{groups.map(group=><option key={group.id} value={group.id}>{group.code}</option>)}</select></label><label>Fecha límite<input type="datetime-local" required value={data.dueAt} onChange={e => setData({...data,dueAt:e.target.value})} /></label></div><label>Instrucciones<textarea value={data.instructions} onChange={e => setData({...data,instructions:e.target.value})} placeholder="Indicaciones para los alumnos" rows="4" /></label><div className="info-note compact">Solo se muestran tipos de actividad que ya cuentan con un espacio de trabajo funcional para el alumno.</div>{error && <div className="form-error">{error}</div>}<ModalActions onClose={onClose} label={busy ? 'Creando…' : 'Crear evaluación'} disabled={busy} /></form></Modal>
 }
 
 function Modal({ title, onClose, children }) { return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><div className="modal"><header><div><span className="eyebrow">AULA DIGITAL</span><h2>{title}</h2></div><button className="icon-btn" onClick={onClose}><X /></button></header>{children}</div></div> }
