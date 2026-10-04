@@ -5,6 +5,7 @@ import {
   LayoutDashboard, LogOut, Menu, Plus, Search, Settings, TrendingUp, Upload, Users, X
 } from 'lucide-react'
 import { courses } from './data/academic'
+import AsinActivity from './components/AsinActivity'
 import { buildMsiiDocument, downloadBlob, readAssignmentId } from './lib/msii-docx'
 import { isSupabaseReady, supabase } from './lib/supabase'
 
@@ -271,7 +272,9 @@ function Materials({ items, groups, courses, session, isTeacher, onAdd }) {
 
 function Assessments({ items, session, isTeacher, onAdd }) {
   const [selected, setSelected] = useState(null)
-  if (selected && !isTeacher) return <MsiiActivity assessment={selected} session={session} onBack={() => setSelected(null)} />
+  if (selected && !isTeacher) return selected.activityCode === 'ASIN-RA-1.1'
+    ? <AsinActivity assessment={selected} onBack={() => setSelected(null)} />
+    : <MsiiActivity assessment={selected} session={session} onBack={() => setSelected(null)} />
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={items} student={!isTeacher} onOpen={setSelected} /></section>
 }
 
