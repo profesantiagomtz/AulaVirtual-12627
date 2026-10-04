@@ -17,7 +17,7 @@ const blankRisk = () => ({ risk: '', description: '', probability: null, impact:
 const blankQuestion = () => ({ text: '', type: 'Sí / No' })
 const initialAnswers = {
   risks: [blankRisk(), blankRisk(), blankRisk()],
-  equipment: { brandModel: '', operatingSystem: '', processor: '', ram: '', storage: '', antivirus: '', network: '', observations: '' },
+  equipment: { stationNumber: '', brandModel: '', operatingSystem: '', processor: '', ram: '', storage: '', antivirus: '', network: '', observations: '' },
   questionnaires: {
     users: Array.from({ length: 5 }, blankQuestion),
     administrators: Array.from({ length: 5 }, blankQuestion),
@@ -131,7 +131,7 @@ export default function AsinActivity({ assessment, onBack }) {
 
   return <section className="panel page-panel activity-workspace asin-workspace">
     <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button>
-    <div className="activity-hero"><div><span className="eyebrow">ASIN · R.A. 1.1</span><h1>{assessment.title}</h1><p>Completa las tres etapas directamente en la plataforma. Puedes guardar y continuar después.</p></div>{assignment && <div className="equipment-chip"><span>Equipo asignado</span><strong>{assignment.variant.equipment}</strong></div>}</div>
+    <div className="activity-hero"><div><span className="eyebrow">ASIN · R.A. 1.1</span><h1>{assessment.title}</h1><p>Completa las tres etapas directamente en la plataforma. Puedes guardar y continuar después.</p></div></div>
 
     <nav className="stage-nav" aria-label="Etapas de la actividad">
       {[['1', 'Matrices de riesgo'], ['2', 'Ficha técnica'], ['3', 'Cuestionarios']].map(([number, label]) => <button key={number} className={`${stage === Number(number) ? 'active' : ''} ${completed[Number(number) - 1] ? 'complete' : ''}`} onClick={() => setStage(Number(number))}><span>{completed[Number(number) - 1] ? <CheckCircle2 size={17} /> : number}</span><b>{label}</b></button>)}
@@ -139,7 +139,7 @@ export default function AsinActivity({ assessment, onBack }) {
 
     <fieldset disabled={submitted || status === 'saving'} className="asin-form">
       {stage === 1 && <RiskStage risks={answers.risks} updateRisk={updateRisk} />}
-      {stage === 2 && <EquipmentStage equipment={answers.equipment} updateEquipment={updateEquipment} assignedEquipment={assignment?.variant?.equipment} />}
+      {stage === 2 && <EquipmentStage equipment={answers.equipment} updateEquipment={updateEquipment} />}
       {stage === 3 && <QuestionnaireStage questionnaires={answers.questionnaires} updateQuestion={updateQuestion} />}
     </fieldset>
 
@@ -163,8 +163,9 @@ function RiskCard({ index, risk, update }) {
   return <article className="risk-card"><header><div><span>Riesgo {index + 1}</span><h3>{risk.risk || 'Pendiente'}</h3></div>{level && <div className={`risk-result ${level.tone}`}><small>Nivel {level.label}</small><strong>{level.score}</strong></div>}</header><label className="risk-name-field">Nombre del riesgo detectado<input value={risk.risk} onChange={event => update({ risk: event.target.value })} required /></label><label>Descripción del riesgo<textarea rows="3" value={risk.description} onChange={event => update({ description: event.target.value })} required /></label><table className="risk-matrix-table" aria-label={`Matriz del riesgo ${index + 1}`}><colgroup><col className="probability-name-column" /><col className="probability-value-column" /><col className="impact-column" /><col className="impact-column" /><col className="impact-column" /></colgroup><thead><tr><th className="matrix-blank" colSpan="2" /><th className="consequence-head" colSpan="3">Consecuencia (Impacto)</th></tr><tr><th className="matrix-blank" colSpan="2" />{impactColumns.map(impact => <th className="impact-label" key={impact.value}>{impact.label}</th>)}</tr><tr><th className="probability-head" colSpan="2">Probabilidad</th>{impactColumns.map(impact => <th className="axis-score" key={impact.value}>{impact.value}</th>)}</tr></thead><tbody>{probabilityRows.map(probability => <tr key={probability.value}><th className="probability-label">{probability.label}</th><th className="axis-score">{probability.value}</th>{impactColumns.map(impact => { const selected = risk.probability === probability.value && risk.impact === impact.value; return <td key={impact.value}><button type="button" className={selected ? 'selected' : ''} onClick={() => update({ probability: probability.value, impact: impact.value })} aria-pressed={selected} aria-label={`${probability.label}, impacto ${impact.label}`}>{selected ? '✓' : ''}</button></td> })}</tr>)}</tbody></table><div className="form-row"><label>¿Se deben tomar medidas para prevenirlo?<select value={risk.actionNeeded} onChange={event => update({ actionNeeded: event.target.value })} required><option value="">Selecciona una respuesta</option><option>Sí</option><option>No</option></select></label><label>Medidas preventivas<textarea rows="3" value={risk.measures} onChange={event => update({ measures: event.target.value })} required /></label></div></article>
 }
 
-function EquipmentStage({ equipment, updateEquipment, assignedEquipment }) {
+function EquipmentStage({ equipment, updateEquipment }) {
   const fields = [
+    ['stationNumber', 'Número de PC'],
     ['brandModel', 'Marca y modelo'],
     ['operatingSystem', 'Sistema operativo y versión'],
     ['processor', 'Procesador'],
@@ -173,7 +174,7 @@ function EquipmentStage({ equipment, updateEquipment, assignedEquipment }) {
     ['antivirus', 'Antivirus y estado'],
     ['network', 'Conectividad'],
   ]
-  return <div className="asin-stage"><div className="stage-heading"><span>Etapa 2 de 3</span><h2>Ficha técnica del equipo</h2><p>Completa la ficha técnica del {assignedEquipment || 'equipo asignado'}.</p></div><div className="equipment-form">{fields.map(([field, label]) => <label key={field}>{label}<input value={equipment[field]} onChange={event => updateEquipment(field, event.target.value)} required /></label>)}<label className="full-field">Observaciones<textarea rows="4" value={equipment.observations} onChange={event => updateEquipment('observations', event.target.value)} required /></label></div></div>
+  return <div className="asin-stage"><div className="stage-heading"><span>Etapa 2 de 3</span><h2>Ficha técnica del equipo</h2><p>Captura el número de la PC que estás utilizando y completa su ficha técnica.</p></div><div className="equipment-form">{fields.map(([field, label]) => <label key={field}>{label}<input type={field === 'stationNumber' ? 'number' : 'text'} min={field === 'stationNumber' ? '1' : undefined} inputMode={field === 'stationNumber' ? 'numeric' : undefined} value={equipment[field]} onChange={event => updateEquipment(field, event.target.value)} required /></label>)}<label className="full-field">Observaciones<textarea rows="4" value={equipment.observations} onChange={event => updateEquipment('observations', event.target.value)} required /></label></div></div>
 }
 
 function QuestionnaireStage({ questionnaires, updateQuestion }) {

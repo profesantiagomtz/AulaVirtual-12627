@@ -282,6 +282,7 @@ function AssessmentTable({ items, student, onOpen }) { if (!items.length) return
 
 function MsiiActivity({ assessment, session, onBack }) {
   const [assignment, setAssignment] = useState(null)
+  const [equipmentNumber, setEquipmentNumber] = useState('')
   const [status, setStatus] = useState('loading')
   const [message, setMessage] = useState('')
   const [file, setFile] = useState(null)
@@ -292,7 +293,12 @@ function MsiiActivity({ assessment, session, onBack }) {
       try {
         const { data, error } = await supabase.rpc('get_or_create_msii_assignment', { p_assessment_id: assessment.id })
         if (error) throw error
-        if (active) { setAssignment(Array.isArray(data) ? data[0] : data); setStatus('ready') }
+        if (active) {
+          const current = Array.isArray(data) ? data[0] : data
+          setAssignment(current)
+          setEquipmentNumber(String(current?.variant?.equipment || '').replace(/\D/g, ''))
+          setStatus('ready')
+        }
       } catch (error) {
         if (active) { setMessage(error.message || 'No fue posible preparar tu actividad'); setStatus('error') }
       }
@@ -304,7 +310,13 @@ function MsiiActivity({ assessment, session, onBack }) {
   async function downloadActivity() {
     try {
       setStatus('working'); setMessage('')
-      const blob = await buildMsiiDocument(assignment, session)
+      if (!equipmentNumber || Number(equipmentNumber) < 1) throw new Error('Escribe el número de la PC que estás utilizando.')
+      const equipment = `Equipo ${String(Number(equipmentNumber)).padStart(2, '0')}`
+      const { data, error } = await supabase.rpc('set_current_equipment', { p_assessment_id: assessment.id, p_equipment: equipment })
+      if (error) throw error
+      const updatedAssignment = Array.isArray(data) ? data[0] : data
+      setAssignment(updatedAssignment)
+      const blob = await buildMsiiDocument(updatedAssignment, session)
       const surname = session.name.trim().split(/\s+/).at(-1) || 'Alumno'
       downloadBlob(blob, `MSII_310_${surname}_RA_1.1.docx`)
       setStatus('ready')
@@ -341,7 +353,7 @@ function MsiiActivity({ assessment, session, onBack }) {
     <div className="activity-hero"><div><span className="eyebrow">MSII · R.A. 1.1</span><h1>{assessment.title}</h1><p>{assessment.instructions || 'Descarga tu formato, complétalo y entrega el mismo archivo DOCX.'}</p></div></div>
     {status === 'loading' ? <div className="loading-state">Preparando tus datos individuales…</div> : assignment && <>
       <div className="assigned-grid">
-        <AssignedValue label="Equipo" value={assignment.variant.equipment} />
+        <label className="assigned-value equipment-input"><span>Número de PC que estás utilizando</span><input type="number" min="1" inputMode="numeric" value={equipmentNumber} onChange={event => setEquipmentNumber(event.target.value)} required /></label>
         <AssignedValue label="Sistema para comparar" value={assignment.variant.compare_os} />
         <AssignedValue label="Número decimal" value={assignment.variant.decimal_number} />
         <AssignedValue label="Carácter ASCII" value={assignment.variant.ascii_character} />
