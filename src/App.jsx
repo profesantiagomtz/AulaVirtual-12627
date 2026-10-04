@@ -138,6 +138,7 @@ function Dashboard({ session, onLogout }) {
   const [studentList, setStudentList] = useState([])
   const [materialList, setMaterialList] = useState([])
   const [assessmentList, setAssessmentList] = useState([])
+  const [selectedAssessment, setSelectedAssessment] = useState(null)
   const [loading, setLoading] = useState(true)
   const [dataError, setDataError] = useState('')
 
@@ -190,10 +191,10 @@ function Dashboard({ session, onLogout }) {
       <main className="content">
         {dataError && <div className="form-error data-error">{dataError} <button className="text-btn" onClick={loadData}>Reintentar</button></div>}
         {loading ? <div className="loading-state">Cargando información real…</div> : <>
-        {view === 'inicio' && (isTeacher ? <TeacherHome setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} setView={setView} />)}
+        {view === 'inicio' && (isTeacher ? <TeacherHome setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} setView={setView} />)}
         {view === 'modulos' && !isTeacher && <Modules courses={assignedCourses} session={session} setView={setView} />}
         {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} onAdd={() => setModal('material')} />}
-        {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} onAdd={() => setModal('assessment')} onRefresh={loadData} />}
+        {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} onAdd={() => setModal('assessment')} onRefresh={loadData} initialSelected={selectedAssessment} onClearSelected={() => setSelectedAssessment(null)} />}
         {view === 'alumnos' && isTeacher && <Students students={studentList} groups={groupList} assessments={assessmentList} />}
         {view === 'configuracion' && isTeacher && <SettingsPage session={session} groups={groupList} />}
         </>}
@@ -220,7 +221,7 @@ function Dashboard({ session, onLogout }) {
   </div>
 }
 
-function TeacherHome({ setView, groups, students, materials, assessments }) {
+function TeacherHome({ setView, groups, students, materials, assessments, onOpenAssessment }) {
   const activeAssessments = assessments.filter(item => item.status === 'Activa')
   const submitted = assessments.reduce((sum, item) => sum + item.submissions, 0)
   const drafts = assessments.reduce((sum, item) => sum + item.drafts, 0)
@@ -244,7 +245,7 @@ function TeacherHome({ setView, groups, students, materials, assessments }) {
         <div className="group-progress">{groups.map(group => { const activeStudents = new Set(assessments.filter(item => item.group === group.code).flatMap(item => item.submissionDetails.map(submission => submission.student_id))).size; const progress = group.students ? Math.round(activeStudents / group.students * 100) : 0; return <div className="progress-row" key={group.id}><div><strong>Grupo {group.code}</strong><span>{group.students} alumnos · {group.semester}º semestre</span></div><div className="progress-meta"><b>{activeStudents ? `${activeStudents} con actividad` : 'Sin actividad'}</b><div className="bar"><i style={{ width: `${progress}%` }} /></div></div></div> })}</div>
       </div>
     </section>
-    <section className="panel"><PanelTitle title="Evaluaciones activas" action="Ver todas" onClick={() => setView('evaluaciones')} /><AssessmentTable items={activeAssessments} /></section>
+    <section className="panel"><PanelTitle title="Evaluaciones activas" action="Ver todas" onClick={() => setView('evaluaciones')} /><AssessmentTable items={activeAssessments} onOpen={onOpenAssessment} /></section>
   </>
 }
 
@@ -275,13 +276,14 @@ function Materials({ items, groups, courses, session, isTeacher, onAdd }) {
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Material didáctico' : 'Mis materiales'}</h1><p>{isTeacher ? 'Recursos organizados por grupo y unidad.' : `Recursos de ${courses.map(course => course.name).join(' y ')}.`}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar material…" /></div>{isTeacher ? <select value={group} onChange={e => setGroup(e.target.value)}><option value="Todos">Todos los grupos</option>{groups.map(item => <option key={item.id} value={item.code}>Grupo {item.code}</option>)}</select> : <div className="group-chip">Grupo {session.group}</div>}</div>{filtered.length ? <div className="card-grid">{filtered.map(m => <article className="material-card" key={m.id}><div className="material-icon"><FileText /></div><span className="tag">{m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group}</p><footer><span>Publicado {m.date}</span><button className="text-btn" onClick={() => openMaterial(m)}>Abrir <ChevronRight size={15} /></button></footer></article>)}</div> : <EmptyState text={isTeacher ? 'No hay materiales publicados con estos filtros.' : 'Todavía no hay materiales publicados para tu grupo.'} />}</section>
 }
 
-function Assessments({ items, session, isTeacher, onAdd, onRefresh }) {
-  const [selected, setSelected] = useState(null)
-  if (selected && isTeacher) return <AssessmentResults assessment={selected} onBack={() => setSelected(null)} onRefresh={onRefresh} />
+function Assessments({ items, session, isTeacher, onAdd, onRefresh, initialSelected, onClearSelected }) {
+  const [selected, setSelected] = useState(initialSelected || null)
+  function clearSelected() { setSelected(null); onClearSelected?.() }
+  if (selected && isTeacher) return <AssessmentResults assessment={selected} onBack={clearSelected} onRefresh={onRefresh} />
   if (selected) {
-    if (selected.activityCode === 'ASIN-RA-1.1') return <AsinActivity assessment={selected} onBack={() => setSelected(null)} />
-    if (selected.activityCode === 'MSII-RA-1.1') return <MsiiActivity assessment={selected} session={session} onBack={() => setSelected(null)} />
-    return <GenericActivity assessment={selected} onBack={() => setSelected(null)} />
+    if (selected.activityCode === 'ASIN-RA-1.1') return <AsinActivity assessment={selected} onBack={clearSelected} />
+    if (selected.activityCode === 'MSII-RA-1.1') return <MsiiActivity assessment={selected} session={session} onBack={clearSelected} />
+    return <GenericActivity assessment={selected} onBack={clearSelected} />
   }
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={items} student={!isTeacher} onOpen={setSelected} /></section>
 }
