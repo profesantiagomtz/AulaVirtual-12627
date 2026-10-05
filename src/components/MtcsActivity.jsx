@@ -181,12 +181,53 @@ export function MtcsMaterialView({ code, session, onBack, onProgressUpdate }) {
   const definition = mtcsContent[code]
   if (!definition) return null
   if (code === 'MTCS-RA-1.1') return <Ra11LearningPath definition={definition} session={session} onBack={onBack} onProgressUpdate={onProgressUpdate} />
+  return <GuidedMaterial definition={definition} code={code} onBack={onBack} />
+}
+
+const guidedExamples = {
+  'MTCS-RA-1.2': [
+    'Una laptop entrega una trama al switch para comunicarse dentro del salón. El switch utiliza las direcciones físicas para enviarla por el puerto correcto; todavía no necesita salir a otra red.',
+    'En 192.168.10.25/24, los primeros 24 bits identifican la red. Por eso la red es 192.168.10.0 y el 25 identifica al equipo dentro de ella.',
+    'Una impresión enviada a una sola impresora es unicast. Un aviso dirigido a todos los equipos de la red local es broadcast. Una transmisión para un grupo suscrito es multicast.',
+    'Si una sola red tiene demasiados equipos, se divide. Cada nueva subred obtiene su propia dirección de red, rango de hosts y broadcast; ninguna dirección puede repetirse.',
+    'El equipo 192.168.10.20 quiere comunicarse con 192.168.20.30. Como el destino no pertenece a su red, entrega el paquete a su puerta de enlace para que el router decida la ruta.',
+    'Al conectarse, DHCP puede entregar dirección, prefijo, puerta de enlace y DNS. IPv6 ofrece un espacio de direcciones mucho mayor que IPv4 y utiliza una escritura hexadecimal separada por dos puntos.',
+  ],
+  'MTCS-RA-2.1': [
+    'Una escuela protege expedientes, computadoras y servicios. Capacita usuarios, define procedimientos y configura tecnología: las tres partes trabajan juntas.',
+    'Una contraseña escrita junto al monitor es una vulnerabilidad. Una persona que intenta usarla es la amenaza. El acceso indebido y la exposición de datos constituyen el riesgo.',
+    'Leer calificaciones sin permiso afecta confidencialidad; modificarlas afecta integridad; impedir que el sistema abra durante evaluaciones afecta disponibilidad.',
+    'Un empleado que comparte accidentalmente un archivo provoca una amenaza interna. Un atacante que intenta ingresar desde Internet representa una amenaza externa.',
+    'Bloquear archivos peligrosos es preventivo; generar una alerta es detectivo; restaurar una copia limpia después del incidente es correctivo.',
+  ],
+}
+
+const guidedExercises = {
+  'MTCS-RA-1.2': [
+    'Explica qué función cumple la capa de acceso cuando dos computadoras del mismo laboratorio se comunican.',
+    'Para 192.168.40.18/24, identifica red, parte de host y cantidad máxima de hosts utilizables.',
+    'Escribe un ejemplo propio de unicast, broadcast y multicast sin repetir los del ejemplo.',
+    'Obtén red, primer host, último host y broadcast de 192.168.50.0/24.',
+    'Explica el recorrido de un paquete que sale de una red local hacia otra red e identifica cuándo interviene el router.',
+    'Compara una dirección IPv4 con una IPv6 e indica qué parámetros podría entregar DHCP.',
+  ],
+  'MTCS-RA-2.1': [
+    'Selecciona un recurso del laboratorio y escribe cómo lo protegerías mediante personas, procesos y tecnología.',
+    'Construye un ejemplo nuevo que identifique claramente amenaza, vulnerabilidad, impacto y riesgo.',
+    'Clasifica tres situaciones propias según afecten confidencialidad, integridad o disponibilidad y justifica.',
+    'Propón una amenaza interna accidental y una externa intencional para una escuela.',
+    'Para un archivo infectado, propón un control preventivo, uno detectivo y uno correctivo.',
+  ],
+}
+
+function GuidedMaterial({ definition, code, onBack }) {
+  const examples = guidedExamples[code] || []
+  const exercises = guidedExercises[code] || []
   return <section className="panel page-panel activity-workspace mtcs-workspace">
     <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a materiales</button>
     <div className="activity-hero"><div><span className="eyebrow">{definition.label} · MATERIAL DIDÁCTICO</span><h1>{definition.materialTitle}</h1><p>{definition.intro}</p></div><div className="mtcs-value"><BookOpen size={25} /><span>APRENDE Y PRACTICA</span></div></div>
     <div className="mtcs-learning-route"><b>Ruta de aprendizaje</b><span>1. Lee cada tema</span><span>2. Analiza el ejemplo</span><span>3. Resuelve los ejercicios</span><span>4. Después abre la evaluación</span></div>
-    <div className="lesson-grid">{definition.lessons.map(([title, text]) => <article key={title}><span>{title.split('.')[0]}</span><div><h3>{title.replace(/^\d+\.\s*/, '')}</h3><p>{text}</p></div></article>)}</div>
-    <div className="worked-example"><strong>Ejemplo explicado</strong><p>{definition.example}</p></div>
+    <div className="guided-topic-list">{definition.lessons.map(([title, text], index) => <article key={title}><header><span>{index + 1}</span><h2>{title.replace(/^\d+\.\s*/, '')}</h2></header><section><small>PRIMERO: APRENDE</small><h3>Apuntes claros</h3><p>{text}</p></section><section className="guided-example"><small>DESPUÉS: OBSERVA</small><h3>Ejemplo práctico</h3><p>{examples[index]}</p></section><section className="guided-exercise"><small>AHORA: APLICA</small><h3>Ejercicio de refuerzo</h3><p>{exercises[index]}</p></section></article>)}</div>
     <PracticeExercises code={code} />
     <div className="info-note mtcs-ready-note"><CheckCircle2 size={18} /><span>Cuando puedas explicar estos conceptos y resolver los ejercicios sin copiar el ejemplo, continúa en <b>Evaluaciones</b>.</span></div>
   </section>
