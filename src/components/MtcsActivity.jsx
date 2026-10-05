@@ -118,6 +118,7 @@ export default function MtcsActivity({ assessment, session, onBack }) {
   const assignment = useMemo(() => assignmentFor(session.id, assessment.id, assessment.activityCode), [session.id, assessment.id, assessment.activityCode])
   const [tab, setTab] = useState('material')
   const [answers, setAnswers] = useState({})
+  const [packetTracerFiles, setPacketTracerFiles] = useState({})
   const [submitted, setSubmitted] = useState(false)
   const [status, setStatus] = useState('loading')
   const [message, setMessage] = useState('')
@@ -129,6 +130,7 @@ export default function MtcsActivity({ assessment, session, onBack }) {
       if (!active) return
       if (error) { setMessage(error.message); setStatus('error'); return }
       setAnswers(data?.answers?.responses || {})
+      setPacketTracerFiles(data?.answers?.packet_tracer || {})
       setSubmitted(Boolean(data?.submitted_at))
       setStatus('ready')
     })
@@ -142,7 +144,7 @@ export default function MtcsActivity({ assessment, session, onBack }) {
     if (deliver && !complete) { setMessage('Completa todas las respuestas antes de entregar. Revisa que estén explicadas, no solo contestadas con una palabra.'); setStatus('error'); return }
     setStatus('saving'); setMessage('')
     const { data: authData } = await supabase.auth.getUser()
-    const payload = { assessment_id: assessment.id, student_id: authData.user.id, answers: { activity: assessment.activityCode, assigned_case: assignment, responses: answers }, submitted_at: deliver ? new Date().toISOString() : null }
+    const payload = { assessment_id: assessment.id, student_id: authData.user.id, answers: { activity: assessment.activityCode, assigned_case: assignment, responses: answers, ...(Object.keys(packetTracerFiles).length ? { packet_tracer: packetTracerFiles } : {}) }, submitted_at: deliver ? new Date().toISOString() : null }
     const { error } = await supabase.from('submissions').upsert(payload, { onConflict: 'assessment_id,student_id' })
     if (error) { setMessage(error.message || 'No fue posible guardar.'); setStatus('error'); return }
     setSubmitted(deliver)
