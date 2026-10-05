@@ -140,6 +140,7 @@ function Dashboard({ session, onLogout }) {
   const [materialList, setMaterialList] = useState([])
   const [assessmentList, setAssessmentList] = useState([])
   const [selectedAssessment, setSelectedAssessment] = useState(null)
+  const [studentPreview, setStudentPreview] = useState(false)
   const [loading, setLoading] = useState(true)
   const [dataError, setDataError] = useState('')
 
@@ -182,7 +183,8 @@ function Dashboard({ session, onLogout }) {
     if (error) { setDataError(error.message); return }
     await loadData(); saved(nextStatus === 'published' ? 'Actividad publicada para los alumnos' : 'Actividad bloqueada para los alumnos')
   }
-  const pageTitle = view === 'configuracion' ? 'Configuración' : navItems.find(i => i.id === view)?.label || 'Resumen'
+  const pageTitle = studentPreview ? 'Vista del alumno' : view === 'configuracion' ? 'Configuración' : navItems.find(i => i.id === view)?.label || 'Resumen'
+  const previewSession = { id: 'preview-111', email: 'vista.previa@tam.conalep.edu.mx', role: 'student', name: 'Alumno Demo 111', group: '111', semester: 1 }
 
   return <div className="app-shell">
     <aside className={`sidebar ${mobileMenu ? 'open' : ''}`}>
@@ -199,11 +201,11 @@ function Dashboard({ session, onLogout }) {
       <header className="topbar">
         <button className="icon-btn menu-btn" onClick={() => setMobileMenu(true)}><Menu /></button>
         <div><span className="breadcrumb">Aula digital</span><h2>{pageTitle}</h2></div>
-        <div className="top-actions">{isTeacher && view === 'inicio' && <button className="primary" aria-label="Publicar material" title="Publicar material" onClick={() => setModal('material')}><Plus size={18} /><span>Publicar material</span></button>}</div>
+        <div className="top-actions">{isTeacher && <button className={studentPreview ? 'primary' : 'secondary'} onClick={() => setStudentPreview(current => !current)}>{studentPreview ? <ArrowLeft size={17} /> : <Eye size={17} />}<span>{studentPreview ? 'Volver al panel docente' : 'Vista alumno 111'}</span></button>}{isTeacher && !studentPreview && view === 'inicio' && <button className="primary" aria-label="Publicar material" title="Publicar material" onClick={() => setModal('material')}><Plus size={18} /><span>Publicar material</span></button>}</div>
       </header>
       <main className="content">
         {dataError && <div className="form-error data-error">{dataError} <button className="text-btn" onClick={loadData}>Reintentar</button></div>}
-        {loading ? <div className="loading-state">Cargando información real…</div> : <>
+        {loading ? <div className="loading-state">Cargando información real…</div> : studentPreview ? <StudentPreview session={previewSession} courses={courses.filter(course => course.group === '111')} materials={materialList.filter(item => item.group === '111' && item.published)} assessments={assessmentList.filter(item => item.group === '111' && item.status === 'Activa')} /> : <>
         {view === 'inicio' && (isTeacher ? <TeacherHome setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} setView={setView} />)}
         {view === 'modulos' && !isTeacher && <Modules courses={assignedCourses} session={session} setView={setView} />}
         {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} onAdd={() => setModal('material')} onToggle={toggleMaterial} />}
@@ -213,6 +215,7 @@ function Dashboard({ session, onLogout }) {
         </>}
       </main>
     </div>
+    {!isTeacher && <nav className="student-mobile-nav" aria-label="Navegación del alumno">{navItems.filter(item => ['inicio', 'modulos', 'materiales', 'evaluaciones'].includes(item.id)).map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? 'active' : ''} onClick={() => { setView(id); setMobileMenu(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }}><Icon size={20} /><span>{id === 'inicio' ? 'Inicio' : label}</span></button>)}</nav>}
     {mobileMenu && <div className="overlay mobile" onClick={() => setMobileMenu(false)} />}
     {modal === 'material' && <MaterialModal groups={groupList} onClose={() => setModal(null)} onSave={async (item) => {
       const { data: authData } = await supabase.auth.getUser()
@@ -273,6 +276,23 @@ function StudentHome({ session, courses, materials, assessments, setView }) {
   </>
 }
 
+function StudentPreview({ session, courses, materials, assessments }) {
+  const [previewView, setPreviewView] = useState('inicio')
+  return <div className="student-preview-shell">
+    <div className="preview-banner"><div><span className="eyebrow">VISTA PREVIA · GRUPO 111</span><strong>Así verá el alumno únicamente el contenido publicado.</strong></div><div className="preview-avatar">AD</div></div>
+    <nav className="preview-nav">
+      <button className={previewView === 'inicio' ? 'active' : ''} onClick={() => setPreviewView('inicio')}><LayoutDashboard size={17} />Resumen</button>
+      <button className={previewView === 'modulos' ? 'active' : ''} onClick={() => setPreviewView('modulos')}><GraduationCap size={17} />Mis módulos</button>
+      <button className={previewView === 'materiales' ? 'active' : ''} onClick={() => setPreviewView('materiales')}><BookOpen size={17} />Materiales</button>
+      <button className={previewView === 'evaluaciones' ? 'active' : ''} onClick={() => setPreviewView('evaluaciones')}><ClipboardCheck size={17} />Evaluaciones</button>
+    </nav>
+    {previewView === 'inicio' && <StudentHome session={session} courses={courses} materials={materials} assessments={assessments} setView={setPreviewView} />}
+    {previewView === 'modulos' && <Modules courses={courses} session={session} setView={setPreviewView} />}
+    {previewView === 'materiales' && <Materials items={materials} groups={[]} courses={courses} session={session} isTeacher={false} />}
+    {previewView === 'evaluaciones' && <section className="panel page-panel"><div className="list-toolbar"><div><span className="eyebrow">GRUPO 111</span><h1>Mis evaluaciones</h1><p>Evaluaciones publicadas para Pensamiento Matemático I.</p></div></div><AssessmentTable items={assessments} student /></section>}
+  </div>
+}
+
 function Modules({ courses, session, setView }) {
   return <section className="panel page-panel"><div className="list-toolbar"><div><span className="eyebrow">GRUPO {session.group} · {session.semester}º SEMESTRE</span><h1>Mis módulos</h1><p>Materias que cursas durante el periodo actual.</p></div></div><div className="module-grid">{courses.map(course => <article className="module-card" key={course.code}><div className="module-card-head"><div className="module-code large">{course.code}</div><span>{course.hoursPerWeek} h/semana</span></div><h3>{course.name}</h3><p>Grupo {course.group} · {course.semester}º semestre</p>{course.outcomes?.length ? <small>{course.outcomes.length} resultados de aprendizaje</small> : <small>Programa académico asignado</small>}<div className="module-actions"><button className="secondary" onClick={() => setView('materiales')}>Ver materiales</button><button className="text-btn" onClick={() => setView('evaluaciones')}>Evaluaciones <ChevronRight size={15} /></button></div></article>)}</div></section>
 }
@@ -305,7 +325,7 @@ function Assessments({ items, session, isTeacher, onAdd, onRefresh, onToggle, in
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={items} student={!isTeacher} onOpen={setSelected} onToggle={onToggle} /></section>
 }
 
-function AssessmentTable({ items, student, onOpen, onToggle }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className="table-wrap"><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Actividad</th>}<th>{student ? 'Estado' : 'Publicación'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id}><td><div className="title-cell"><div className="mini-icon"><ClipboardCheck size={17} /></div><strong>{a.title}</strong></div></td><td>{a.group}</td><td>{a.due}</td>{!student && <td><strong>{a.submissions}</strong> entregas · {a.drafts} avances</td>}<td><span className={`tag ${a.status === 'Activa' ? 'active' : ''}`}>{a.status}</span></td><td><div className="table-actions"><button className="text-btn" onClick={() => onOpen?.(a)}>{student ? 'Abrir' : 'Resultados'} <ChevronRight size={15} /></button>{!student && onToggle && <button className="lock-btn" onClick={() => onToggle(a)}>{a.status === 'Activa' ? <Lock size={15} /> : <Unlock size={15} />}{a.status === 'Activa' ? 'Bloquear' : 'Publicar'}</button>}</div></td></tr>)}</tbody></table></div> }
+function AssessmentTable({ items, student, onOpen, onToggle }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className={`table-wrap ${student ? 'student-assessment-table' : ''}`}><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Actividad</th>}<th>{student ? 'Estado' : 'Publicación'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id}><td data-label="Evaluación"><div className="title-cell"><div className="mini-icon"><ClipboardCheck size={17} /></div><strong>{a.title}</strong></div></td><td data-label="Grupo">{a.group}</td><td data-label="Entrega">{a.due}</td>{!student && <td data-label="Actividad"><strong>{a.submissions}</strong> entregas · {a.drafts} avances</td>}<td data-label="Estado"><span className={`tag ${a.status === 'Activa' ? 'active' : ''}`}>{a.status}</span></td><td className="assessment-open"><div className="table-actions"><button className="text-btn" onClick={() => onOpen?.(a)}>{student ? 'Abrir actividad' : 'Resultados'} <ChevronRight size={15} /></button>{!student && onToggle && <button className="lock-btn" onClick={() => onToggle(a)}>{a.status === 'Activa' ? <Lock size={15} /> : <Unlock size={15} />}{a.status === 'Activa' ? 'Bloquear' : 'Publicar'}</button>}</div></td></tr>)}</tbody></table></div> }
 
 function GenericActivity({ assessment, onBack }) {
   return <section className="panel page-panel activity-workspace"><button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button><div className="activity-hero"><div><span className="eyebrow">ACTIVIDAD</span><h1>{assessment.title}</h1><p>{assessment.instructions || 'Consulta con tu docente las indicaciones de esta actividad.'}</p></div></div><div className="info-note">Esta actividad es informativa y no solicita una entrega dentro de la plataforma.</div></section>
