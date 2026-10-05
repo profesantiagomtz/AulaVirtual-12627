@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { courses } from './data/academic'
 import AsinActivity from './components/AsinActivity'
+import MtcsActivity from './components/MtcsActivity'
 import { buildMsiiDocument, downloadBlob, readAssignmentId } from './lib/msii-docx'
 import { isSupabaseReady, supabase } from './lib/supabase'
 
@@ -322,6 +323,7 @@ function Assessments({ items, session, isTeacher, onAdd, onRefresh, onToggle, in
     if (selected.activityCode === 'ASIN-RA-1.1') return <AsinActivity assessment={selected} onBack={clearSelected} />
     if (selected.activityCode === 'MSII-RA-1.1') return <MsiiActivity assessment={selected} session={session} onBack={clearSelected} />
     if (selected.activityCode?.startsWith('PEAR-')) return <PearActivity assessment={selected} session={session} onBack={clearSelected} />
+    if (selected.activityCode?.startsWith('MTCS-')) return <MtcsActivity assessment={selected} session={session} onBack={clearSelected} />
     return <GenericActivity assessment={selected} onBack={clearSelected} />
   }
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={items} student={!isTeacher} onOpen={setSelected} onToggle={onToggle} /></section>
