@@ -1,5 +1,13 @@
--- Asigna obligatoriamente el grupo elegido durante el registro.
--- Conserva las reglas automáticas como respaldo para clientes anteriores.
+-- Permite ambos dominios institucionales en perfiles y registros nuevos.
+alter table public.profiles
+  drop constraint if exists profiles_email_check;
+
+alter table public.profiles
+  add constraint profiles_email_check check (
+    lower(email) like '%@tam.conalep.edu.mx'
+    or lower(email) like '%@conaleptamaulipas.edu.mx'
+  );
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -42,14 +50,7 @@ begin
   end if;
 
   insert into public.profiles (id, email, full_name, enrollment_number, role, group_id)
-  values (
-    new.id,
-    lower(new.email),
-    coalesce(new.raw_user_meta_data ->> 'full_name', ''),
-    incoming_enrollment,
-    'student',
-    assigned_group
-  );
+  values (new.id, lower(new.email), coalesce(new.raw_user_meta_data ->> 'full_name', ''), incoming_enrollment, 'student', assigned_group);
 
   return new;
 end;

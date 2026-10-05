@@ -49,7 +49,9 @@ function Login({ onLogin }) {
   async function submit(e) {
     e.preventDefault()
     setError('')
-    if (mode === 'student' && !email.toLowerCase().endsWith('@tam.conalep.edu.mx')) {
+    const institutionalEmail = email.toLowerCase()
+    const allowedStudentDomains = ['@tam.conalep.edu.mx', '@conaleptamaulipas.edu.mx']
+    if (mode === 'student' && !allowedStudentDomains.some(domain => institutionalEmail.endsWith(domain))) {
       setError('Usa tu correo institucional autorizado')
       return
     }

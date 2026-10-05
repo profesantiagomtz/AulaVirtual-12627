@@ -26,7 +26,10 @@ create table public.enrollment_rules (
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  email text unique not null check (lower(email) like '%@tam.conalep.edu.mx'),
+  email text unique not null check (
+    lower(email) like '%@tam.conalep.edu.mx'
+    or lower(email) like '%@conaleptamaulipas.edu.mx'
+  ),
   full_name text not null default '',
   enrollment_number text unique,
   role public.user_role not null default 'student',
@@ -95,7 +98,8 @@ returns trigger language plpgsql security definer set search_path = public as $$
 declare assigned_group uuid;
 declare incoming_enrollment text;
 begin
-  if lower(new.email) not like '%@tam.conalep.edu.mx' then
+  if lower(new.email) not like '%@tam.conalep.edu.mx'
+     and lower(new.email) not like '%@conaleptamaulipas.edu.mx' then
     raise exception 'Solo se permiten correos institucionales autorizados';
   end if;
   incoming_enrollment := new.raw_user_meta_data ->> 'enrollment_number';
