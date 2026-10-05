@@ -144,6 +144,7 @@ function Dashboard({ session, onLogout }) {
   const [assessmentList, setAssessmentList] = useState([])
   const [selectedAssessment, setSelectedAssessment] = useState(null)
   const [studentPreview, setStudentPreview] = useState(false)
+  const [previewGroup, setPreviewGroup] = useState('511')
   const [loading, setLoading] = useState(true)
   const [dataError, setDataError] = useState('')
 
@@ -187,7 +188,8 @@ function Dashboard({ session, onLogout }) {
     await loadData(); saved(nextStatus === 'published' ? 'Actividad publicada para los alumnos' : 'Actividad bloqueada para los alumnos')
   }
   const pageTitle = studentPreview ? 'Vista del alumno' : view === 'configuracion' ? 'Configuración' : navItems.find(i => i.id === view)?.label || 'Resumen'
-  const previewSession = { id: 'preview-111', email: 'vista.previa@tam.conalep.edu.mx', role: 'student', name: 'Alumno Demo 111', group: '111', semester: 1 }
+  const previewGroupData = groupList.find(group => group.code === previewGroup)
+  const previewSession = { id: `preview-${previewGroup}`, email: 'vista.previa@tam.conalep.edu.mx', role: 'student', name: `Alumno Demo ${previewGroup}`, group: previewGroup, semester: previewGroupData?.semester || null, preview: true }
 
   return <div className="app-shell">
     <aside className={`sidebar ${mobileMenu ? 'open' : ''}`}>
@@ -204,11 +206,11 @@ function Dashboard({ session, onLogout }) {
       <header className="topbar">
         <button className="icon-btn menu-btn" onClick={() => setMobileMenu(true)}><Menu /></button>
         <div><span className="breadcrumb">Aula digital</span><h2>{pageTitle}</h2></div>
-        <div className="top-actions">{isTeacher && <button className={studentPreview ? 'primary' : 'secondary'} onClick={() => setStudentPreview(current => !current)}>{studentPreview ? <ArrowLeft size={17} /> : <Eye size={17} />}<span>{studentPreview ? 'Volver al panel docente' : 'Vista alumno 111'}</span></button>}{isTeacher && !studentPreview && view === 'inicio' && <button className="primary" aria-label="Publicar material" title="Publicar material" onClick={() => setModal('material')}><Plus size={18} /><span>Publicar material</span></button>}</div>
+        <div className="top-actions">{isTeacher && studentPreview && <select className="preview-group-select" aria-label="Grupo para vista previa" value={previewGroup} onChange={event => setPreviewGroup(event.target.value)}>{groupList.map(group => <option key={group.id} value={group.code}>Grupo {group.code}</option>)}</select>}{isTeacher && <button className={studentPreview ? 'primary' : 'secondary'} onClick={() => setStudentPreview(current => !current)}>{studentPreview ? <ArrowLeft size={17} /> : <Eye size={17} />}<span>{studentPreview ? 'Volver al panel docente' : 'Vista del alumno'}</span></button>}{isTeacher && !studentPreview && view === 'inicio' && <button className="primary" aria-label="Publicar material" title="Publicar material" onClick={() => setModal('material')}><Plus size={18} /><span>Publicar material</span></button>}</div>
       </header>
       <main className="content">
         {dataError && <div className="form-error data-error">{dataError} <button className="text-btn" onClick={loadData}>Reintentar</button></div>}
-        {loading ? <div className="loading-state">Cargando información real…</div> : studentPreview ? <StudentPreview session={previewSession} courses={courses.filter(course => course.group === '111')} materials={materialList.filter(item => item.group === '111' && item.published)} assessments={assessmentList.filter(item => item.group === '111' && item.status === 'Activa')} /> : <>
+        {loading ? <div className="loading-state">Cargando información real…</div> : studentPreview ? <StudentPreview session={previewSession} courses={courses.filter(course => course.group === previewGroup)} materials={materialList.filter(item => item.group === previewGroup && item.published)} assessments={assessmentList.filter(item => item.group === previewGroup && item.status === 'Activa')} /> : <>
         {view === 'inicio' && (isTeacher ? <TeacherHome setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} setView={setView} />)}
         {view === 'modulos' && !isTeacher && <Modules courses={assignedCourses} session={session} setView={setView} />}
         {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} onAdd={() => setModal('material')} onToggle={toggleMaterial} />}
@@ -281,6 +283,7 @@ function StudentHome({ session, courses, materials, assessments, setView }) {
 
 function StudentPreview({ session, courses, materials, assessments }) {
   const [previewView, setPreviewView] = useState('inicio')
+  useEffect(() => { setPreviewView('inicio') }, [session.group])
   return <div className="student-preview-shell">
     <div className="preview-banner"><div><span className="eyebrow">VISTA PREVIA · GRUPO 111</span><strong>Así verá el alumno únicamente el contenido publicado.</strong></div><div className="preview-avatar">AD</div></div>
     <nav className="preview-nav">
@@ -292,7 +295,7 @@ function StudentPreview({ session, courses, materials, assessments }) {
     {previewView === 'inicio' && <StudentHome session={session} courses={courses} materials={materials} assessments={assessments} setView={setPreviewView} />}
     {previewView === 'modulos' && <Modules courses={courses} session={session} setView={setPreviewView} />}
     {previewView === 'materiales' && <Materials items={materials} groups={[]} courses={courses} session={session} isTeacher={false} />}
-    {previewView === 'evaluaciones' && <section className="panel page-panel"><div className="list-toolbar"><div><span className="eyebrow">GRUPO 111</span><h1>Mis evaluaciones</h1><p>Evaluaciones publicadas para Pensamiento Matemático I.</p></div></div><AssessmentTable items={assessments} student /></section>}
+    {previewView === 'evaluaciones' && <Assessments items={assessments} session={session} isTeacher={false} />}
   </div>
 }
 

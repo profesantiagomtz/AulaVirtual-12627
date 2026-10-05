@@ -123,6 +123,7 @@ export default function MtcsActivity({ assessment, session, onBack }) {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
+    if (session.preview) { setStatus('ready'); return undefined }
     let active = true
     supabase.from('submissions').select('answers, submitted_at').eq('assessment_id', assessment.id).maybeSingle().then(({ data, error }) => {
       if (!active) return
@@ -137,6 +138,7 @@ export default function MtcsActivity({ assessment, session, onBack }) {
   const complete = definition.fields.every(([key]) => String(answers[key] || '').trim().length >= 12)
 
   async function save(deliver = false) {
+    if (session.preview) { setMessage('Esta es una vista previa. Las respuestas no se guardan ni generan entregas.'); setStatus('ready'); return }
     if (deliver && !complete) { setMessage('Completa todas las respuestas antes de entregar. Revisa que estén explicadas, no solo contestadas con una palabra.'); setStatus('error'); return }
     setStatus('saving'); setMessage('')
     const { data: authData } = await supabase.auth.getUser()
