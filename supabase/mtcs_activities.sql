@@ -1,6 +1,23 @@
 -- Material de estudio y actividades MTCS para el grupo 511.
 -- El contenido didáctico se presenta dentro de cada espacio de trabajo.
 
+create table if not exists public.learning_progress(
+  id uuid primary key default uuid_generate_v4(),
+  student_id uuid not null references public.profiles(id) on delete cascade,
+  material_code text not null,
+  completed_steps jsonb not null default '[]'::jsonb,
+  completed_at timestamptz,
+  updated_at timestamptz not null default now(),
+  unique(student_id,material_code)
+);
+alter table public.learning_progress enable row level security;
+drop policy if exists "progress self or staff read" on public.learning_progress;
+create policy "progress self or staff read" on public.learning_progress for select to authenticated using(student_id=auth.uid() or public.is_staff());
+drop policy if exists "student creates progress" on public.learning_progress;
+create policy "student creates progress" on public.learning_progress for insert to authenticated with check(student_id=auth.uid());
+drop policy if exists "student updates progress" on public.learning_progress;
+create policy "student updates progress" on public.learning_progress for update to authenticated using(student_id=auth.uid()) with check(student_id=auth.uid());
+
 insert into public.materials(teacher_id,group_id,title,description,unit,resource_type,resource_url,published)
 select p.id,g.id,'MTCS · Material didáctico R.A. 1.1','Comunicación, componentes, conexiones, medios y protocolos de red.','R.A. 1.1','link','mtcs://MTCS-RA-1.1',true
 from public.profiles p cross join public.groups g

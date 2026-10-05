@@ -168,9 +168,19 @@ export default function MtcsActivity({ assessment, session, onBack }) {
   </section>
 }
 
-export function MtcsMaterialView({ code, onBack }) {
+const ra11Checks = [
+  { question: '¿Qué elemento solicita normalmente un servicio en la red?', options: ['Cliente', 'Medio', 'Router'], correct: 'Cliente' },
+  { question: '¿Cuál es un dispositivo intermediario?', options: ['Switch', 'Teclado', 'Documento'], correct: 'Switch' },
+  { question: '¿Qué permite que dos equipos interpreten la comunicación con las mismas reglas?', options: ['Un protocolo', 'El tamaño del monitor', 'La marca del equipo'], correct: 'Un protocolo' },
+  { question: '¿Qué aspecto debe revisarse al planear una red inalámbrica?', options: ['Cobertura e interferencia', 'Color de los cables', 'Fondo de pantalla'], correct: 'Cobertura e interferencia' },
+  { question: '¿Qué medio suele ser adecuado para movilidad?', options: ['Inalámbrico', 'Fibra sin equipos', 'Cable desconectado'], correct: 'Inalámbrico' },
+  { question: '¿Para qué sirven las capas de un modelo de red?', options: ['Organizar funciones y localizar fallas', 'Aumentar el tamaño de archivos', 'Eliminar protocolos'], correct: 'Organizar funciones y localizar fallas' },
+]
+
+export function MtcsMaterialView({ code, session, onBack, onProgressUpdate }) {
   const definition = mtcsContent[code]
   if (!definition) return null
+  if (code === 'MTCS-RA-1.1') return <Ra11LearningPath definition={definition} session={session} onBack={onBack} onProgressUpdate={onProgressUpdate} />
   return <section className="panel page-panel activity-workspace mtcs-workspace">
     <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a materiales</button>
     <div className="activity-hero"><div><span className="eyebrow">{definition.label} · MATERIAL DIDÁCTICO</span><h1>{definition.materialTitle}</h1><p>{definition.intro}</p></div><div className="mtcs-value"><BookOpen size={25} /><span>APRENDE Y PRACTICA</span></div></div>
@@ -179,6 +189,71 @@ export function MtcsMaterialView({ code, onBack }) {
     <div className="worked-example"><strong>Ejemplo explicado</strong><p>{definition.example}</p></div>
     <PracticeExercises code={code} />
     <div className="info-note mtcs-ready-note"><CheckCircle2 size={18} /><span>Cuando puedas explicar estos conceptos y resolver los ejercicios sin copiar el ejemplo, continúa en <b>Evaluaciones</b>.</span></div>
+  </section>
+}
+
+function Ra11LearningPath({ definition, session, onBack, onProgressUpdate }) {
+  const [completed, setCompleted] = useState([])
+  const [answers, setAnswers] = useState({})
+  const [feedback, setFeedback] = useState({})
+  const [command, setCommand] = useState('')
+  const [terminal, setTerminal] = useState(['Escribe un comando para comenzar el diagnóstico.'])
+  const [status, setStatus] = useState('loading')
+  const totalSteps = definition.lessons.length + 1
+
+  useEffect(() => {
+    if (session?.preview) { setStatus('ready'); return undefined }
+    let active = true
+    supabase.from('learning_progress').select('completed_steps').eq('material_code', 'MTCS-RA-1.1').maybeSingle().then(({ data, error }) => {
+      if (!active) return
+      if (!error) setCompleted(Array.isArray(data?.completed_steps) ? data.completed_steps : [])
+      setStatus(error ? 'error' : 'ready')
+    })
+    return () => { active = false }
+  }, [session?.id])
+
+  async function completeStep(step) {
+    if (completed.includes(step)) return
+    const next = [...completed, step]
+    setCompleted(next)
+    if (session?.preview) { onProgressUpdate?.({ material_code: 'MTCS-RA-1.1', completed_steps: next, completed_at: next.length >= totalSteps ? new Date().toISOString() : null }); return }
+    setStatus('saving')
+    const done = next.length >= totalSteps
+    const { error } = await supabase.from('learning_progress').upsert({ student_id: session.id, material_code: 'MTCS-RA-1.1', completed_steps: next, completed_at: done ? new Date().toISOString() : null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,material_code' })
+    setStatus(error ? 'error' : 'ready')
+    if (!error) onProgressUpdate?.({ material_code: 'MTCS-RA-1.1', completed_steps: next, completed_at: done ? new Date().toISOString() : null })
+  }
+
+  function checkLesson(index) {
+    const correct = answers[index] === ra11Checks[index].correct
+    setFeedback(current => ({ ...current, [index]: correct ? '¡Correcto! Tema completado.' : 'Revisa nuevamente los apuntes y vuelve a intentarlo.' }))
+    if (correct) completeStep(`tema-${index + 1}`)
+  }
+
+  function runCommand(event) {
+    event.preventDefault()
+    const clean = command.trim().toLowerCase()
+    const outputs = {
+      ipconfig: 'IPv4: 192.168.10.24  Máscara: 255.255.255.0  Puerta de enlace: 192.168.10.1',
+      'ping 192.168.10.1': 'Respuesta desde 192.168.10.1: tiempo=2ms. Conexión local correcta.',
+      'ping 8.8.8.8': 'Respuesta desde 8.8.8.8: tiempo=24ms. Hay salida a otra red.',
+      'tracert 8.8.8.8': '1  192.168.10.1\n2  10.20.0.1\n3  8.8.8.8  Ruta completada.',
+    }
+    setTerminal(current => [...current, `> ${command}`, outputs[clean] || 'Comando no reconocido. Prueba: ipconfig, ping 192.168.10.1, ping 8.8.8.8 o tracert 8.8.8.8'])
+    setCommand('')
+    const history = [...terminal, clean].join(' ').toLowerCase()
+    if (history.includes('ipconfig') && history.includes('ping 192.168.10.1') && history.includes('tracert 8.8.8.8')) completeStep('practica-comandos')
+  }
+
+  const percent = Math.round(completed.length / totalSteps * 100)
+  return <section className="panel page-panel activity-workspace mtcs-workspace">
+    <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a materiales</button>
+    <div className="activity-hero"><div><span className="eyebrow">MTCS · R.A. 1.1 · MATERIAL DIDÁCTICO</span><h1>{definition.materialTitle}</h1><p>Aprende un tema, contesta su ejercicio y continúa. La evaluación se desbloquea al completar toda la ruta.</p></div><div className="mtcs-progress-ring"><strong>{percent}%</strong><span>COMPLETADO</span></div></div>
+    <div className="learning-progress-bar"><i style={{ width: `${percent}%` }} /></div>
+    <div className="learning-topic-list">{definition.lessons.map(([title, text], index) => { const done = completed.includes(`tema-${index + 1}`); const check = ra11Checks[index]; return <article className={done ? 'topic-complete' : ''} key={title}><header><span>{done ? <CheckCircle2 size={18} /> : index + 1}</span><div><small>TEMA {index + 1}</small><h2>{title.replace(/^\d+\.\s*/, '')}</h2></div></header><div className="topic-notes"><h3>Apuntes claros</h3><p>{text}</p><div className="topic-example"><b>En palabras sencillas:</b> {index === 0 ? 'la red funciona como un servicio de mensajería: necesita remitente, destino, camino y reglas.' : index === 1 ? 'el dispositivo final crea o recibe; el intermediario dirige; el medio transporta.' : index === 2 ? 'cliente pregunta, servidor responde y el protocolo define cómo conversan.' : index === 3 ? 'tener señal no basta: debe llegar bien, soportar usuarios y estar protegida.' : index === 4 ? 'no existe un medio perfecto; se elige el que mejor resuelve la necesidad.' : 'las capas permiten revisar una parte del problema a la vez.'}</div></div><div className="topic-check"><b>Ejercicio del tema</b><p>{check.question}</p><div className="check-options">{check.options.map(option => <label key={option}><input type="radio" name={`check-${index}`} checked={answers[index] === option} onChange={() => setAnswers(current => ({ ...current, [index]: option }))} />{option}</label>)}</div><button className="secondary" onClick={() => checkLesson(index)} disabled={!answers[index] || done}>{done ? 'Ejercicio completado' : 'Comprobar respuesta'}</button>{feedback[index] && <small className={done ? 'correct-feedback' : 'wrong-feedback'}>{feedback[index]}</small>}</div></article> })}</div>
+    <section className={`network-simulator ${completed.includes('practica-comandos') ? 'topic-complete' : ''}`}><div className="stage-heading"><span>PRÁCTICA OBLIGATORIA</span><h2>Simulador de diagnóstico de red</h2><p>Obtén la configuración, comprueba la puerta de enlace y observa la ruta. Debes ejecutar <b>ipconfig</b>, <b>ping 192.168.10.1</b> y <b>tracert 8.8.8.8</b>.</p></div><div className="fake-terminal">{terminal.map((line, index) => <pre key={`${line}-${index}`}>{line}</pre>)}<form onSubmit={runCommand}><span>C:\AulaVirtual&gt;</span><input value={command} onChange={event => setCommand(event.target.value)} placeholder="Escribe un comando" autoComplete="off" /><button>Ejecutar</button></form></div>{completed.includes('practica-comandos') && <div className="submission-success"><CheckCircle2 size={17} /> Práctica completada.</div>}</section>
+    {status === 'error' && <div className="form-error">No fue posible guardar el avance. Revisa la conexión y vuelve a intentarlo.</div>}
+    <div className={`unlock-status ${percent === 100 ? 'unlocked' : ''}`}><ShieldCheck size={24} /><div><strong>{percent === 100 ? 'Actividad de evaluación desbloqueada' : 'Actividad de evaluación bloqueada'}</strong><p>{percent === 100 ? 'Ya puedes ir a Evaluaciones y comenzar la actividad del R.A. 1.1.' : `Completa los ${totalSteps - completed.length} pasos pendientes para desbloquearla.`}</p></div></div>
   </section>
 }
 

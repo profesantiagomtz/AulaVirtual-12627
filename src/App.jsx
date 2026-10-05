@@ -142,6 +142,7 @@ function Dashboard({ session, onLogout }) {
   const [studentList, setStudentList] = useState([])
   const [materialList, setMaterialList] = useState([])
   const [assessmentList, setAssessmentList] = useState([])
+  const [learningProgress, setLearningProgress] = useState([])
   const [selectedAssessment, setSelectedAssessment] = useState(null)
   const [studentPreview, setStudentPreview] = useState(false)
   const [previewGroup, setPreviewGroup] = useState('511')
@@ -152,13 +153,14 @@ function Dashboard({ session, onLogout }) {
     setLoading(true); setDataError('')
     try {
       const materialsQuery = supabase.from('materials').select('id, title, description, unit, resource_type, resource_url, published, created_at, groups(code)').order('created_at', { ascending: false })
-      const [groupResult, studentResult, materialResult, assessmentResult] = await Promise.all([
+      const [groupResult, studentResult, materialResult, assessmentResult, progressResult] = await Promise.all([
         supabase.from('groups').select('id, code, semester, career').eq('active', true).order('code'),
         isTeacher ? supabase.from('profiles').select('id, full_name, email, enrollment_number, group_id, groups(code)').eq('role', 'student').order('full_name') : Promise.resolve({ data: [] }),
         isTeacher ? materialsQuery : materialsQuery.eq('published', true),
         supabase.from('assessments').select('id, title, instructions, activity_code, status, due_at, group_id, groups(code), submissions(id, student_id, score, started_at, submitted_at, answers, file_path, original_filename, profiles!submissions_student_id_fkey(full_name, email, enrollment_number))').order('created_at', { ascending: false }),
+        isTeacher ? Promise.resolve({ data: [] }) : supabase.from('learning_progress').select('material_code, completed_steps, completed_at'),
       ])
-      const firstError = [groupResult, studentResult, materialResult, assessmentResult].find(result => result.error)?.error
+      const firstError = [groupResult, studentResult, materialResult, assessmentResult, progressResult].find(result => result.error)?.error
       if (firstError) throw firstError
       const directory = (studentResult.data || []).map(student => ({ ...student, group_code: student.groups?.code || 'Sin asignar', active: true }))
       setGroupList((groupResult.data || []).map(group => ({ ...group, students: directory.filter(student => student.group_code === group.code).length })))
@@ -169,6 +171,7 @@ function Dashboard({ session, onLogout }) {
         const scored = submissions.filter(item => item.score !== null)
         return { id: assessment.id, title: assessment.title, instructions: assessment.instructions, activityCode: assessment.activity_code, group: assessment.groups?.code || '—', groupId: assessment.group_id, due: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha', submissions: submissions.filter(item => item.submitted_at).length, drafts: submissions.filter(item => !item.submitted_at).length, submissionDetails: submissions.map(item => ({ ...item, student: item.profiles ? { name: formatPersonName(item.profiles.full_name), email: item.profiles.email, enrollment: item.profiles.enrollment_number } : null })), total: directory.filter(student => student.group_code === assessment.groups?.code).length, average: scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.score), 0) / scored.length) : null, status: assessment.status === 'published' ? 'Activa' : assessment.status === 'closed' ? 'Cerrada' : 'Borrador' }
       }))
+      setLearningProgress(progressResult.data || [])
     } catch (err) { setDataError(err.message || 'No fue posible cargar la información') }
     finally { setLoading(false) }
   }
@@ -213,8 +216,8 @@ function Dashboard({ session, onLogout }) {
         {loading ? <div className="loading-state">Cargando información real…</div> : studentPreview ? <StudentPreview session={previewSession} courses={courses.filter(course => course.group === previewGroup)} materials={materialList.filter(item => item.group === previewGroup && item.published)} assessments={assessmentList.filter(item => item.group === previewGroup && item.status === 'Activa')} /> : <>
         {view === 'inicio' && (isTeacher ? <TeacherHome setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} setView={setView} />)}
         {view === 'modulos' && !isTeacher && <Modules courses={assignedCourses} session={session} setView={setView} />}
-        {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} onAdd={() => setModal('material')} onToggle={toggleMaterial} />}
-        {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} onAdd={() => setModal('assessment')} onRefresh={loadData} onToggle={toggleAssessment} initialSelected={selectedAssessment} onClearSelected={() => setSelectedAssessment(null)} />}
+        {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} onAdd={() => setModal('material')} onToggle={toggleMaterial} onProgressUpdate={progress => setLearningProgress(current => [...current.filter(item => item.material_code !== progress.material_code), progress])} />}
+        {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} learningProgress={learningProgress} onAdd={() => setModal('assessment')} onRefresh={loadData} onToggle={toggleAssessment} initialSelected={selectedAssessment} onClearSelected={() => setSelectedAssessment(null)} />}
         {view === 'alumnos' && isTeacher && <Students students={studentList} groups={groupList} assessments={assessmentList} />}
         {view === 'configuracion' && isTeacher && <SettingsPage session={session} groups={groupList} />}
         </>}
@@ -283,9 +286,10 @@ function StudentHome({ session, courses, materials, assessments, setView }) {
 
 function StudentPreview({ session, courses, materials, assessments }) {
   const [previewView, setPreviewView] = useState('inicio')
-  useEffect(() => { setPreviewView('inicio') }, [session.group])
+  const [previewProgress, setPreviewProgress] = useState([])
+  useEffect(() => { setPreviewView('inicio'); setPreviewProgress([]) }, [session.group])
   return <div className="student-preview-shell">
-    <div className="preview-banner"><div><span className="eyebrow">VISTA PREVIA · GRUPO 111</span><strong>Así verá el alumno únicamente el contenido publicado.</strong></div><div className="preview-avatar">AD</div></div>
+    <div className="preview-banner"><div><span className="eyebrow">VISTA PREVIA · GRUPO {session.group}</span><strong>Así verá el alumno únicamente el contenido publicado.</strong></div><div className="preview-avatar">AD</div></div>
     <nav className="preview-nav">
       <button className={previewView === 'inicio' ? 'active' : ''} onClick={() => setPreviewView('inicio')}><LayoutDashboard size={17} />Resumen</button>
       <button className={previewView === 'modulos' ? 'active' : ''} onClick={() => setPreviewView('modulos')}><GraduationCap size={17} />Mis módulos</button>
@@ -294,8 +298,8 @@ function StudentPreview({ session, courses, materials, assessments }) {
     </nav>
     {previewView === 'inicio' && <StudentHome session={session} courses={courses} materials={materials} assessments={assessments} setView={setPreviewView} />}
     {previewView === 'modulos' && <Modules courses={courses} session={session} setView={setPreviewView} />}
-    {previewView === 'materiales' && <Materials items={materials} groups={[]} courses={courses} session={session} isTeacher={false} />}
-    {previewView === 'evaluaciones' && <Assessments items={assessments} session={session} isTeacher={false} />}
+    {previewView === 'materiales' && <Materials items={materials} groups={[]} courses={courses} session={session} isTeacher={false} onProgressUpdate={progress => setPreviewProgress(current => [...current.filter(item => item.material_code !== progress.material_code), progress])} />}
+    {previewView === 'evaluaciones' && <Assessments items={assessments} session={session} isTeacher={false} learningProgress={previewProgress} />}
   </div>
 }
 
@@ -303,7 +307,7 @@ function Modules({ courses, session, setView }) {
   return <section className="panel page-panel"><div className="list-toolbar"><div><span className="eyebrow">GRUPO {session.group} · {session.semester}º SEMESTRE</span><h1>Mis módulos</h1><p>Materias que cursas durante el periodo actual.</p></div></div><div className="module-grid">{courses.map(course => <article className="module-card" key={course.code}><div className="module-card-head"><div className="module-code large">{course.code}</div><span>{course.hoursPerWeek} h/semana</span></div><h3>{course.name}</h3><p>Grupo {course.group} · {course.semester}º semestre</p>{course.outcomes?.length ? <small>{course.outcomes.length} resultados de aprendizaje</small> : <small>Programa académico asignado</small>}<div className="module-actions"><button className="secondary" onClick={() => setView('materiales')}>Ver materiales</button><button className="text-btn" onClick={() => setView('evaluaciones')}>Evaluaciones <ChevronRight size={15} /></button></div></article>)}</div></section>
 }
 
-function Materials({ items, groups, courses, session, isTeacher, onAdd, onToggle }) {
+function Materials({ items, groups, courses, session, isTeacher, onAdd, onToggle, onProgressUpdate }) {
   const [query, setQuery] = useState('')
   const [group, setGroup] = useState('Todos')
   const [selectedMaterial, setSelectedMaterial] = useState(null)
@@ -317,11 +321,11 @@ function Materials({ items, groups, courses, session, isTeacher, onAdd, onToggle
     if (preview) preview.location.href = data.signedUrl
     else window.location.href = data.signedUrl
   }
-  if (selectedMaterial) return <MtcsMaterialView code={selectedMaterial.url.replace('mtcs://', '')} onBack={() => setSelectedMaterial(null)} />
+  if (selectedMaterial) return <MtcsMaterialView code={selectedMaterial.url.replace('mtcs://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} />
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Material didáctico' : 'Mis materiales'}</h1><p>{isTeacher ? 'Recursos organizados por grupo y unidad.' : `Recursos de ${courses.map(course => course.name).join(' y ')}.`}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar material…" /></div>{isTeacher ? <select value={group} onChange={e => setGroup(e.target.value)}><option value="Todos">Todos los grupos</option>{groups.map(item => <option key={item.id} value={item.code}>Grupo {item.code}</option>)}</select> : <div className="group-chip">Grupo {session.group}</div>}</div>{filtered.length ? <div className="card-grid">{filtered.map(m => <article className={`material-card ${!m.published ? 'locked-card' : ''}`} key={m.id}><div className="material-icon"><FileText /></div><span className={`tag ${m.published ? 'active' : ''}`}>{isTeacher ? (m.published ? 'PUBLICADO' : 'BLOQUEADO') : m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group} · {m.unit}</p><footer><span>{m.published ? 'Visible para alumnos' : 'Oculto para alumnos'}</span><div className="card-actions"><button className="text-btn" onClick={() => openMaterial(m)}>Abrir <ChevronRight size={15} /></button>{isTeacher && <button className="lock-btn" onClick={() => onToggle?.(m)}>{m.published ? <Lock size={15} /> : <Unlock size={15} />}{m.published ? 'Bloquear' : 'Publicar'}</button>}</div></footer></article>)}</div> : <EmptyState text={isTeacher ? 'No hay materiales con estos filtros.' : 'Todavía no hay materiales publicados para tu grupo.'} />}</section>
 }
 
-function Assessments({ items, session, isTeacher, onAdd, onRefresh, onToggle, initialSelected, onClearSelected }) {
+function Assessments({ items, session, isTeacher, learningProgress = [], onAdd, onRefresh, onToggle, initialSelected, onClearSelected }) {
   const [selected, setSelected] = useState(initialSelected || null)
   function clearSelected() { setSelected(null); onClearSelected?.() }
   if (selected && isTeacher) return <AssessmentResults assessment={selected} onBack={clearSelected} onRefresh={onRefresh} />
@@ -332,10 +336,11 @@ function Assessments({ items, session, isTeacher, onAdd, onRefresh, onToggle, in
     if (selected.activityCode?.startsWith('MTCS-')) return <MtcsActivity assessment={selected} session={session} onBack={clearSelected} />
     return <GenericActivity assessment={selected} onBack={clearSelected} />
   }
-  return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={items} student={!isTeacher} onOpen={setSelected} onToggle={onToggle} /></section>
+  const visibleItems = items.map(item => ({ ...item, locked: !isTeacher && item.activityCode === 'MTCS-RA-1.1' && !learningProgress.some(progress => progress.material_code === 'MTCS-RA-1.1' && progress.completed_at) }))
+  return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={visibleItems} student={!isTeacher} onOpen={setSelected} onToggle={onToggle} /></section>
 }
 
-function AssessmentTable({ items, student, onOpen, onToggle }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className={`table-wrap ${student ? 'student-assessment-table' : ''}`}><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Actividad</th>}<th>{student ? 'Estado' : 'Publicación'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id}><td data-label="Evaluación"><div className="title-cell"><div className="mini-icon"><ClipboardCheck size={17} /></div><strong>{a.title}</strong></div></td><td data-label="Grupo">{a.group}</td><td data-label="Entrega">{a.due}</td>{!student && <td data-label="Actividad"><strong>{a.submissions}</strong> entregas · {a.drafts} avances</td>}<td data-label="Estado"><span className={`tag ${a.status === 'Activa' ? 'active' : ''}`}>{a.status}</span></td><td className="assessment-open"><div className="table-actions"><button className="text-btn" onClick={() => onOpen?.(a)}>{student ? 'Abrir actividad' : 'Resultados'} <ChevronRight size={15} /></button>{!student && onToggle && <button className="lock-btn" onClick={() => onToggle(a)}>{a.status === 'Activa' ? <Lock size={15} /> : <Unlock size={15} />}{a.status === 'Activa' ? 'Bloquear' : 'Publicar'}</button>}</div></td></tr>)}</tbody></table></div> }
+function AssessmentTable({ items, student, onOpen, onToggle }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className={`table-wrap ${student ? 'student-assessment-table' : ''}`}><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Actividad</th>}<th>{student ? 'Estado' : 'Publicación'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id} className={a.locked ? 'locked-assessment' : ''}><td data-label="Evaluación"><div className="title-cell"><div className="mini-icon">{a.locked ? <Lock size={17} /> : <ClipboardCheck size={17} />}</div><strong>{a.title}</strong></div></td><td data-label="Grupo">{a.group}</td><td data-label="Entrega">{a.due}</td>{!student && <td data-label="Actividad"><strong>{a.submissions}</strong> entregas · {a.drafts} avances</td>}<td data-label="Estado"><span className={`tag ${a.status === 'Activa' && !a.locked ? 'active' : ''}`}>{a.locked ? 'BLOQUEADA' : a.status}</span></td><td className="assessment-open"><div className="table-actions"><button className="text-btn" disabled={a.locked} onClick={() => !a.locked && onOpen?.(a)}>{a.locked ? 'Completa los materiales' : student ? 'Abrir actividad' : 'Resultados'} {!a.locked && <ChevronRight size={15} />}</button>{!student && onToggle && <button className="lock-btn" onClick={() => onToggle(a)}>{a.status === 'Activa' ? <Lock size={15} /> : <Unlock size={15} />}{a.status === 'Activa' ? 'Bloquear' : 'Publicar'}</button>}</div></td></tr>)}</tbody></table></div> }
 
 function GenericActivity({ assessment, onBack }) {
   return <section className="panel page-panel activity-workspace"><button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button><div className="activity-hero"><div><span className="eyebrow">ACTIVIDAD</span><h1>{assessment.title}</h1><p>{assessment.instructions || 'Consulta con tu docente las indicaciones de esta actividad.'}</p></div></div><div className="info-note">Esta actividad es informativa y no solicita una entrega dentro de la plataforma.</div></section>
