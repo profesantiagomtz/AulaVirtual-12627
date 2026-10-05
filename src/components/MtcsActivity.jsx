@@ -177,6 +177,42 @@ const ra11Checks = [
   { question: '¿Para qué sirven las capas de un modelo de red?', options: ['Organizar funciones y localizar fallas', 'Aumentar el tamaño de archivos', 'Eliminar protocolos'], correct: 'Organizar funciones y localizar fallas' },
 ]
 
+const ra11ExtraChecks = [
+  [
+    { question: '¿Qué necesita todo mensaje para llegar correctamente?', options: ['Origen, destino, medio y reglas', 'Solo electricidad', 'Únicamente Internet'], correct: 'Origen, destino, medio y reglas' },
+    { question: '¿Qué situación puede disminuir el rendimiento?', options: ['Demasiado tráfico y alta latencia', 'Nombrar los equipos', 'Usar una carpeta'], correct: 'Demasiado tráfico y alta latencia' },
+  ],
+  [
+    { question: '¿Cuál es un equipo final?', options: ['Computadora', 'Switch', 'Cable UTP'], correct: 'Computadora' },
+    { question: '¿Qué elemento transporta físicamente o por ondas la información?', options: ['El medio', 'El usuario', 'La contraseña'], correct: 'El medio' },
+  ],
+  [
+    { question: '¿Qué hace normalmente un servidor?', options: ['Proporciona recursos o servicios', 'Solo solicita servicios', 'Sustituye todo el cableado'], correct: 'Proporciona recursos o servicios' },
+    { question: '¿Por qué son necesarios los protocolos?', options: ['Definen reglas comunes de comunicación', 'Cambian el tamaño del monitor', 'Eliminan las direcciones'], correct: 'Definen reglas comunes de comunicación' },
+  ],
+  [
+    { question: '¿Qué puede afectar una señal Wi-Fi?', options: ['Distancia, obstáculos e interferencias', 'El nombre del usuario', 'El formato de un documento'], correct: 'Distancia, obstáculos e interferencias' },
+    { question: '¿Qué acción mejora la seguridad inalámbrica?', options: ['Usar cifrado y una clave robusta', 'Compartir la clave públicamente', 'Desactivar toda autenticación'], correct: 'Usar cifrado y una clave robusta' },
+  ],
+  [
+    { question: '¿Qué medio ofrece alta velocidad y resistencia a interferencias?', options: ['Fibra óptica', 'Papel', 'Bluetooth sin adaptador'], correct: 'Fibra óptica' },
+    { question: '¿Qué criterio ayuda a elegir un medio?', options: ['Distancia, velocidad, ambiente y costo', 'El color favorito', 'La marca del escritorio'], correct: 'Distancia, velocidad, ambiente y costo' },
+  ],
+  [
+    { question: 'Si falla el cable, ¿qué parte conviene revisar primero?', options: ['Acceso físico al medio', 'Aplicación de correo', 'Diseño del documento'], correct: 'Acceso físico al medio' },
+    { question: '¿Qué ventaja ofrece trabajar por capas?', options: ['Diagnosticar una función a la vez', 'Evitar todos los dispositivos', 'No utilizar protocolos'], correct: 'Diagnosticar una función a la vez' },
+  ],
+]
+
+const ra11Details = [
+  ['Emisor: dispositivo que origina la información.', 'Receptor: dispositivo o servicio que debe recibirla.', 'Mensaje: datos que se desean comunicar.', 'Medio: camino por cable, fibra u ondas.', 'Protocolo: reglas que ordenan el intercambio.', 'Ancho de banda es capacidad; latencia es tiempo de respuesta. No significan lo mismo.'],
+  ['Equipos finales: computadoras, celulares, impresoras y servidores.', 'Intermediarios: switches, routers y puntos de acceso.', 'El switch conecta equipos dentro de una red local.', 'El router comunica redes diferentes y selecciona rutas.', 'El punto de acceso permite que dispositivos inalámbricos entren a la red.'],
+  ['El cliente inicia una solicitud; el servidor procesa y responde.', 'DNS traduce nombres comprensibles a direcciones IP.', 'DHCP entrega parámetros de red automáticamente.', 'HTTP y HTTPS permiten solicitar recursos web.', 'Una comunicación real utiliza varios protocolos de manera coordinada.'],
+  ['La cobertura indica hasta dónde llega una señal útil.', 'Paredes, distancia y otros equipos pueden producir pérdida o interferencia.', 'Más usuarios simultáneos significan más capacidad compartida.', 'La autenticación controla quién entra; el cifrado protege la comunicación.', 'La ubicación del punto de acceso influye en cobertura y rendimiento.'],
+  ['Cobre: económico y común, pero limitado por distancia e interferencias.', 'Fibra: alta velocidad y largas distancias, con mayor cuidado de instalación.', 'Inalámbrico: movilidad y rapidez de despliegue, pero comparte el aire.', 'La decisión correcta depende del problema, no de escoger siempre el medio más costoso.'],
+  ['Las capas separan funciones para comprender y diagnosticar.', 'Las capas inferiores se relacionan con señal, medio y acceso.', 'Las capas intermedias identifican destinos y transportan información.', 'Las capas superiores atienden los servicios que utiliza el usuario.', 'Al diagnosticar se empieza por lo básico y se avanza de manera ordenada.'],
+]
+
 export function MtcsMaterialView({ code, session, onBack, onProgressUpdate }) {
   const definition = mtcsContent[code]
   if (!definition) return null
@@ -266,7 +302,8 @@ function Ra11LearningPath({ definition, session, onBack, onProgressUpdate }) {
   }
 
   function checkLesson(index) {
-    const correct = answers[index] === ra11Checks[index].correct
+    const questions = [ra11Checks[index], ...ra11ExtraChecks[index]]
+    const correct = questions.every((item, questionIndex) => answers[`${index}-${questionIndex}`] === item.correct)
     setFeedback(current => ({ ...current, [index]: correct ? '¡Correcto! Tema completado.' : 'Revisa nuevamente los apuntes y vuelve a intentarlo.' }))
     if (correct) completeStep(`tema-${index + 1}`)
   }
@@ -291,11 +328,33 @@ function Ra11LearningPath({ definition, session, onBack, onProgressUpdate }) {
     <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a materiales</button>
     <div className="activity-hero"><div><span className="eyebrow">MTCS · R.A. 1.1 · MATERIAL DIDÁCTICO</span><h1>{definition.materialTitle}</h1><p>Aprende un tema, contesta su ejercicio y continúa. La evaluación se desbloquea al completar toda la ruta.</p></div><div className="mtcs-progress-ring"><strong>{percent}%</strong><span>COMPLETADO</span></div></div>
     <div className="learning-progress-bar"><i style={{ width: `${percent}%` }} /></div>
-    <div className="learning-topic-list">{definition.lessons.map(([title, text], index) => { const done = completed.includes(`tema-${index + 1}`); const check = ra11Checks[index]; return <article className={done ? 'topic-complete' : ''} key={title}><header><span>{done ? <CheckCircle2 size={18} /> : index + 1}</span><div><small>TEMA {index + 1}</small><h2>{title.replace(/^\d+\.\s*/, '')}</h2></div></header><div className="topic-notes"><h3>Conceptos clave</h3><p>{text}</p><div className="topic-example"><b>Para visualizarlo:</b> {index === 0 ? 'la red funciona como un servicio de mensajería: necesita remitente, destino, camino y reglas.' : index === 1 ? 'el dispositivo final crea o recibe; el intermediario dirige; el medio transporta.' : index === 2 ? 'cliente pregunta, servidor responde y el protocolo define cómo conversan.' : index === 3 ? 'tener señal no basta: debe llegar bien, soportar usuarios y estar protegida.' : index === 4 ? 'no existe un medio perfecto; se elige el que mejor resuelve la necesidad.' : 'las capas permiten revisar una parte del problema a la vez.'}</div></div><div className="topic-check"><b>Ejercicio del tema</b><p>{check.question}</p><div className="check-options">{check.options.map(option => <label key={option}><input type="radio" name={`check-${index}`} checked={answers[index] === option} onChange={() => setAnswers(current => ({ ...current, [index]: option }))} />{option}</label>)}</div><button className="secondary" onClick={() => checkLesson(index)} disabled={!answers[index] || done}>{done ? 'Ejercicio completado' : 'Comprobar respuesta'}</button>{feedback[index] && <small className={done ? 'correct-feedback' : 'wrong-feedback'}>{feedback[index]}</small>}</div></article> })}</div>
+    <div className="learning-topic-list">{definition.lessons.map(([title, text], index) => { const done = completed.includes(`tema-${index + 1}`); const questions = [ra11Checks[index], ...ra11ExtraChecks[index]]; const answered = questions.every((_, questionIndex) => answers[`${index}-${questionIndex}`]); return <article className={done ? 'topic-complete' : ''} key={title}><header><span>{done ? <CheckCircle2 size={18} /> : index + 1}</span><div><small>TEMA {index + 1}</small><h2>{title.replace(/^\d+\.\s*/, '')}</h2></div></header><div className="topic-notes"><h3>Conceptos clave</h3><p>{text}</p><ul className="concept-list">{ra11Details[index].map(detail => <li key={detail}>{detail}</li>)}</ul><TopicDiagram index={index} /><div className="topic-example"><b>Para visualizarlo:</b> {index === 0 ? 'la red funciona como un servicio de mensajería: necesita remitente, destino, camino y reglas.' : index === 1 ? 'el dispositivo final crea o recibe; el intermediario dirige; el medio transporta.' : index === 2 ? 'cliente pregunta, servidor responde y el protocolo define cómo conversan.' : index === 3 ? 'tener señal no basta: debe llegar bien, soportar usuarios y estar protegida.' : index === 4 ? 'no existe un medio perfecto; se elige el que mejor resuelve la necesidad.' : 'las capas permiten revisar una parte del problema a la vez.'}</div></div><div className="topic-check"><b>Ejercicios del tema</b>{questions.map((check, questionIndex) => <div className="topic-question" key={check.question}><p>{questionIndex + 1}. {check.question}</p><div className="check-options">{check.options.map(option => <label key={option}><input type="radio" name={`check-${index}-${questionIndex}`} checked={answers[`${index}-${questionIndex}`] === option} onChange={() => setAnswers(current => ({ ...current, [`${index}-${questionIndex}`]: option }))} />{option}</label>)}</div></div>)}<button className="secondary" onClick={() => checkLesson(index)} disabled={!answered || done}>{done ? 'Ejercicios completados' : 'Comprobar respuestas'}</button>{feedback[index] && <small className={done ? 'correct-feedback' : 'wrong-feedback'}>{feedback[index]}</small>}</div></article> })}</div>
+    <CommandGuide />
     <section className={`network-simulator ${completed.includes('practica-comandos') ? 'topic-complete' : ''}`}><div className="stage-heading"><span>PRÁCTICA OBLIGATORIA</span><h2>Simulador de diagnóstico de red</h2><p>Obtén la configuración, comprueba la puerta de enlace y observa la ruta. Debes ejecutar <b>ipconfig</b>, <b>ping 192.168.10.1</b> y <b>tracert 8.8.8.8</b>.</p></div><div className="fake-terminal">{terminal.map((line, index) => <pre key={`${line}-${index}`}>{line}</pre>)}<form onSubmit={runCommand}><span>C:\AulaVirtual&gt;</span><input value={command} onChange={event => setCommand(event.target.value)} placeholder="Escribe un comando" autoComplete="off" /><button>Ejecutar</button></form></div>{completed.includes('practica-comandos') && <div className="submission-success"><CheckCircle2 size={17} /> Práctica completada.</div>}</section>
     {status === 'error' && <div className="form-error">No fue posible guardar el avance. Revisa la conexión y vuelve a intentarlo.</div>}
     <div className={`unlock-status ${percent === 100 ? 'unlocked' : ''}`}><ShieldCheck size={24} /><div><strong>{percent === 100 ? 'Actividad de evaluación desbloqueada' : 'Actividad de evaluación bloqueada'}</strong><p>{percent === 100 ? 'Ya puedes ir a Evaluaciones y comenzar la actividad del R.A. 1.1.' : `Completa los ${totalSteps - completed.length} pasos pendientes para desbloquearla.`}</p></div></div>
   </section>
+}
+
+function TopicDiagram({ index }) {
+  if (index === 5) return <div className="layer-diagram"><span>Aplicación</span><span>Transporte</span><span>Red</span><span>Acceso y medio</span></div>
+  const diagrams = [
+    ['Emisor', 'Datos', 'Medio', 'Receptor'],
+    ['Computadora', 'Switch', 'Router', 'Internet'],
+    ['Cliente', 'Solicitud', 'Servidor', 'Respuesta'],
+    ['Dispositivo', 'Punto de acceso', 'Router', 'Internet'],
+    ['Necesidad', 'Distancia', 'Ambiente', 'Medio adecuado'],
+  ]
+  return <div className="flow-diagram" aria-label="Esquema del tema">{diagrams[index].map((item, itemIndex) => <span key={item}>{item}{itemIndex < diagrams[index].length - 1 && <i>→</i>}</span>)}</div>
+}
+
+function CommandGuide() {
+  const commands = [
+    { name: 'ipconfig', purpose: 'Muestra la configuración de red del equipo.', use: 'Úsalo primero para conocer la dirección IP, máscara y puerta de enlace.', example: 'ipconfig' },
+    { name: 'ping', purpose: 'Comprueba si otro dispositivo responde y mide el tiempo de comunicación.', use: 'Úsalo para saber si alcanzas la puerta de enlace, otro equipo o un destino de Internet.', example: 'ping 192.168.10.1' },
+    { name: 'tracert', purpose: 'Muestra los saltos que sigue la información hasta el destino.', use: 'Úsalo cuando hay conexión parcial y necesitas localizar en qué tramo se interrumpe la ruta.', example: 'tracert 8.8.8.8' },
+  ]
+  return <section className="command-guide"><div className="stage-heading"><span>ANTES DEL SIMULADOR</span><h2>Herramientas básicas de diagnóstico</h2><p>Los comandos no reparan por sí solos la red: proporcionan información para localizar el problema y decidir qué revisar.</p></div><div className="command-grid">{commands.map(command => <article key={command.name}><code>{command.name}</code><h3>¿Para qué sirve?</h3><p>{command.purpose}</p><h3>¿Cuándo se utiliza?</h3><p>{command.use}</p><div><span>Ejemplo</span><b>C:\&gt; {command.example}</b></div></article>)}</div><div className="diagnostic-order"><b>Orden recomendado</b><span>1. Revisar configuración con <code>ipconfig</code></span><span>2. Probar comunicación local con <code>ping</code></span><span>3. Seguir la ruta con <code>tracert</code></span></div></section>
 }
 
 function PracticeExercises({ code }) {
