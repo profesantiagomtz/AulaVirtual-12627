@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, BookOpen, CheckCircle2, Save, Send, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, BookOpen, CheckCircle2, Save, Send, ShieldCheck, Upload } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 export const mtcsContent = {
@@ -213,6 +213,58 @@ const ra11Details = [
   ['Las capas separan funciones para comprender y diagnosticar.', 'Las capas inferiores se relacionan con señal, medio y acceso.', 'Las capas intermedias identifican destinos y transportan información.', 'Las capas superiores atienden los servicios que utiliza el usuario.', 'Al diagnosticar se empieza por lo básico y se avanza de manera ordenada.'],
 ]
 
+const packetTracerPractices = [
+  {
+    id: 'pt-componentes',
+    title: 'Práctica 1 · Construcción de una red local básica',
+    related: 'Temas 2 y 3: componentes, conexiones, clientes y servidores',
+    goal: 'Construir una red local sencilla, asignar direcciones y comprobar la comunicación entre sus equipos.',
+    steps: [
+      'Abre Packet Tracer y crea un archivo nuevo.',
+      'Agrega un switch 2960, tres computadoras y un servidor.',
+      'Conecta cada equipo al switch con cable de cobre directo.',
+      'Configura las direcciones 192.168.10.10, 192.168.10.11, 192.168.10.12 y 192.168.10.100 con máscara 255.255.255.0.',
+      'Cambia al modo Simulation y envía una PDU simple entre dos computadoras.',
+      'Desde una computadora ejecuta ping hacia las otras dos y hacia el servidor.',
+      'Guarda el archivo con el formato: Grupo_Apellido_Practica1.pkt.',
+    ],
+    checks: ['Los cuatro equipos muestran enlace activo.', 'No existen direcciones IP repetidas.', 'Los cuatro destinos responden correctamente.'],
+  },
+  {
+    id: 'pt-inalambrica',
+    title: 'Práctica 2 · Red cableada e inalámbrica',
+    related: 'Temas 4 y 5: redes inalámbricas, red doméstica y medios',
+    goal: 'Integrar dispositivos cableados e inalámbricos y observar cómo cambia el medio de conexión.',
+    steps: [
+      'Crea una topología con un router inalámbrico, una computadora cableada, una laptop y un teléfono.',
+      'Conecta la computadora por cable al router inalámbrico.',
+      'Configura el nombre de la red como AULA-GRUPO y protege el acceso con WPA2-PSK.',
+      'Conecta la laptop y el teléfono a la red inalámbrica usando la clave configurada.',
+      'Comprueba que todos los dispositivos reciban una dirección válida.',
+      'Ejecuta ping desde la computadora hacia la laptop y observa el recorrido en modo Simulation.',
+      'Guarda el archivo con el formato: Grupo_Apellido_Practica2.pkt.',
+    ],
+    checks: ['El equipo cableado y los inalámbricos pertenecen a la misma red.', 'La red tiene seguridad configurada.', 'La prueba de comunicación es satisfactoria.'],
+  },
+  {
+    id: 'pt-diagnostico',
+    title: 'Práctica 3 · Diagnóstico y corrección de conectividad',
+    related: 'Tema 6: modelos de comunicación y diagnóstico por capas',
+    goal: 'Aplicar un orden de diagnóstico, localizar errores de configuración y comprobar la solución.',
+    steps: [
+      'Construye una red con un switch y cuatro computadoras.',
+      'Configura tres equipos en la red 192.168.20.0/24.',
+      'En el cuarto equipo coloca intencionalmente una dirección de otra red.',
+      'Usa ipconfig y ping para identificar cuál equipo no se comunica y explica mentalmente la causa.',
+      'Corrige la dirección sin cambiar el cableado ni los demás equipos.',
+      'Repite las pruebas hasta obtener respuesta de los cuatro equipos.',
+      'Agrega una nota dentro de la topología indicando el error encontrado y la corrección aplicada.',
+      'Guarda el archivo con el formato: Grupo_Apellido_Practica3.pkt.',
+    ],
+    checks: ['El archivo conserva la nota del diagnóstico.', 'Las cuatro computadoras quedan en la misma red.', 'Todos los equipos responden después de la corrección.'],
+  },
+]
+
 export function MtcsMaterialView({ code, session, onBack, onProgressUpdate }) {
   const definition = mtcsContent[code]
   if (!definition) return null
@@ -276,15 +328,28 @@ function Ra11LearningPath({ definition, session, onBack, onProgressUpdate }) {
   const [command, setCommand] = useState('')
   const [terminal, setTerminal] = useState(['Escribe un comando para comenzar el diagnóstico.'])
   const [status, setStatus] = useState('loading')
-  const totalSteps = definition.lessons.length + 1
+  const [assessmentId, setAssessmentId] = useState(null)
+  const [packetUploads, setPacketUploads] = useState({})
+  const [uploadingPractice, setUploadingPractice] = useState('')
+  const [practiceMessage, setPracticeMessage] = useState({})
+  const totalSteps = definition.lessons.length + 1 + packetTracerPractices.length
 
   useEffect(() => {
     if (session?.preview) { setStatus('ready'); return undefined }
     let active = true
-    supabase.from('learning_progress').select('completed_steps').eq('material_code', 'MTCS-RA-1.1').maybeSingle().then(({ data, error }) => {
+    Promise.all([
+      supabase.from('learning_progress').select('completed_steps').eq('material_code', 'MTCS-RA-1.1').maybeSingle(),
+      supabase.from('assessments').select('id').eq('activity_code', 'MTCS-RA-1.1').maybeSingle(),
+    ]).then(([progressResult, assessmentResult]) => {
       if (!active) return
-      if (!error) setCompleted(Array.isArray(data?.completed_steps) ? data.completed_steps : [])
-      setStatus(error ? 'error' : 'ready')
+      if (!progressResult.error) setCompleted(Array.isArray(progressResult.data?.completed_steps) ? progressResult.data.completed_steps : [])
+      if (!assessmentResult.error && assessmentResult.data?.id) {
+        setAssessmentId(assessmentResult.data.id)
+        supabase.from('submissions').select('answers').eq('assessment_id', assessmentResult.data.id).maybeSingle().then(({ data }) => {
+          if (active) setPacketUploads(data?.answers?.packet_tracer || {})
+        })
+      }
+      setStatus(progressResult.error || assessmentResult.error ? 'error' : 'ready')
     })
     return () => { active = false }
   }, [session?.id])
@@ -323,6 +388,40 @@ function Ra11LearningPath({ definition, session, onBack, onProgressUpdate }) {
     if (history.includes('ipconfig') && history.includes('ping 192.168.10.1') && history.includes('tracert 8.8.8.8')) completeStep('practica-comandos')
   }
 
+  async function uploadPacketPractice(practice, file) {
+    if (!file) return
+    if (!file.name.toLowerCase().endsWith('.pkt')) { setPracticeMessage(current => ({ ...current, [practice.id]: 'Selecciona el archivo .pkt que guardaste en Packet Tracer.' })); return }
+    if (file.size > 20 * 1024 * 1024) { setPracticeMessage(current => ({ ...current, [practice.id]: 'El archivo supera el límite de 20 MB.' })); return }
+    if (session?.preview) { setPracticeMessage(current => ({ ...current, [practice.id]: 'En la vista previa no se generan entregas.' })); return }
+    if (!assessmentId) { setPracticeMessage(current => ({ ...current, [practice.id]: 'No fue posible identificar la actividad. Actualiza la página e inténtalo nuevamente.' })); return }
+    setUploadingPractice(practice.id)
+    setPracticeMessage(current => ({ ...current, [practice.id]: '' }))
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser()
+      if (authError || !authData.user) throw authError || new Error('La sesión ya no está disponible.')
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const path = `${authData.user.id}/${assessmentId}/packet-tracer/${practice.id}-${safeName}`
+      const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true, contentType: file.type || 'application/octet-stream' })
+      if (uploadError) throw uploadError
+      const { data: existing, error: readError } = await supabase.from('submissions').select('id, answers, submitted_at').eq('assessment_id', assessmentId).maybeSingle()
+      if (readError) throw readError
+      if (existing?.submitted_at) throw new Error('La evaluación final ya fue entregada y no admite cambios.')
+      const entry = { path, filename: file.name, practice: practice.title, uploaded_at: new Date().toISOString() }
+      const nextUploads = { ...(existing?.answers?.packet_tracer || packetUploads), [practice.id]: entry }
+      const answers = { ...(existing?.answers || {}), packet_tracer: nextUploads }
+      const query = existing?.id
+        ? supabase.from('submissions').update({ answers }).eq('id', existing.id)
+        : supabase.from('submissions').insert({ assessment_id: assessmentId, student_id: authData.user.id, answers })
+      const { error: saveError } = await query
+      if (saveError) throw saveError
+      setPacketUploads(nextUploads)
+      await completeStep(practice.id)
+      setPracticeMessage(current => ({ ...current, [practice.id]: 'Práctica entregada correctamente. Puedes reemplazarla antes de entregar la evaluación final.' }))
+    } catch (error) {
+      setPracticeMessage(current => ({ ...current, [practice.id]: error.message || 'No fue posible entregar el archivo.' }))
+    } finally { setUploadingPractice('') }
+  }
+
   const percent = Math.round(completed.length / totalSteps * 100)
   return <section className="panel page-panel activity-workspace mtcs-workspace">
     <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a materiales</button>
@@ -331,9 +430,14 @@ function Ra11LearningPath({ definition, session, onBack, onProgressUpdate }) {
     <div className="learning-topic-list">{definition.lessons.map(([title, text], index) => { const done = completed.includes(`tema-${index + 1}`); const questions = [ra11Checks[index], ...ra11ExtraChecks[index]]; const answered = questions.every((_, questionIndex) => answers[`${index}-${questionIndex}`]); return <article className={done ? 'topic-complete' : ''} key={title}><header><span>{done ? <CheckCircle2 size={18} /> : index + 1}</span><div><small>TEMA {index + 1}</small><h2>{title.replace(/^\d+\.\s*/, '')}</h2></div></header><div className="topic-notes"><h3>Conceptos clave</h3><p>{text}</p><ul className="concept-list">{ra11Details[index].map(detail => <li key={detail}>{detail}</li>)}</ul><TopicDiagram index={index} /><div className="topic-example"><b>Para visualizarlo:</b> {index === 0 ? 'la red funciona como un servicio de mensajería: necesita remitente, destino, camino y reglas.' : index === 1 ? 'el dispositivo final crea o recibe; el intermediario dirige; el medio transporta.' : index === 2 ? 'cliente pregunta, servidor responde y el protocolo define cómo conversan.' : index === 3 ? 'tener señal no basta: debe llegar bien, soportar usuarios y estar protegida.' : index === 4 ? 'no existe un medio perfecto; se elige el que mejor resuelve la necesidad.' : 'las capas permiten revisar una parte del problema a la vez.'}</div></div><div className="topic-check"><b>Ejercicios del tema</b>{questions.map((check, questionIndex) => <div className="topic-question" key={check.question}><p>{questionIndex + 1}. {check.question}</p><div className="check-options">{check.options.map(option => <label key={option}><input type="radio" name={`check-${index}-${questionIndex}`} checked={answers[`${index}-${questionIndex}`] === option} onChange={() => setAnswers(current => ({ ...current, [`${index}-${questionIndex}`]: option }))} />{option}</label>)}</div></div>)}<button className="secondary" onClick={() => checkLesson(index)} disabled={!answered || done}>{done ? 'Ejercicios completados' : 'Comprobar respuestas'}</button>{feedback[index] && <small className={done ? 'correct-feedback' : 'wrong-feedback'}>{feedback[index]}</small>}</div></article> })}</div>
     <CommandGuide />
     <section className={`network-simulator ${completed.includes('practica-comandos') ? 'topic-complete' : ''}`}><div className="stage-heading"><span>PRÁCTICA OBLIGATORIA</span><h2>Simulador de diagnóstico de red</h2><p>Obtén la configuración, comprueba la puerta de enlace y observa la ruta. Debes ejecutar <b>ipconfig</b>, <b>ping 192.168.10.1</b> y <b>tracert 8.8.8.8</b>.</p></div><div className="fake-terminal">{terminal.map((line, index) => <pre key={`${line}-${index}`}>{line}</pre>)}<form onSubmit={runCommand}><span>C:\AulaVirtual&gt;</span><input value={command} onChange={event => setCommand(event.target.value)} placeholder="Escribe un comando" autoComplete="off" /><button>Ejecutar</button></form></div>{completed.includes('practica-comandos') && <div className="submission-success"><CheckCircle2 size={17} /> Práctica completada.</div>}</section>
+    <PacketTracerPractices completed={completed} uploads={packetUploads} uploading={uploadingPractice} messages={practiceMessage} preview={session?.preview} onUpload={uploadPacketPractice} />
     {status === 'error' && <div className="form-error">No fue posible guardar el avance. Revisa la conexión y vuelve a intentarlo.</div>}
     <div className={`unlock-status ${percent === 100 ? 'unlocked' : ''}`}><ShieldCheck size={24} /><div><strong>{percent === 100 ? 'Actividad de evaluación desbloqueada' : 'Actividad de evaluación bloqueada'}</strong><p>{percent === 100 ? 'Ya puedes ir a Evaluaciones y comenzar la actividad del R.A. 1.1.' : `Completa los ${totalSteps - completed.length} pasos pendientes para desbloquearla.`}</p></div></div>
   </section>
+}
+
+function PacketTracerPractices({ completed, uploads, uploading, messages, preview, onUpload }) {
+  return <section className="packet-tracer-section"><div className="stage-heading"><span>PRÁCTICAS EN PACKET TRACER</span><h2>Construye, prueba y entrega tus redes</h2><p>Realiza únicamente estas prácticas en Cisco Packet Tracer. Sigue el orden, comprueba el funcionamiento y sube el mismo archivo <b>.pkt</b> que terminaste.</p></div><div className="packet-practice-list">{packetTracerPractices.map((practice, index) => { const delivered = Boolean(uploads[practice.id]) || completed.includes(practice.id); return <article className={delivered ? 'practice-delivered' : ''} key={practice.id}><header><span>{delivered ? <CheckCircle2 size={20} /> : index + 1}</span><div><small>{practice.related}</small><h3>{practice.title}</h3></div></header><div className="packet-practice-body"><div className="practice-goal"><b>Meta</b><p>{practice.goal}</p></div><div className="practice-columns"><div><h4>Pasos</h4><ol>{practice.steps.map(step => <li key={step}>{step}</li>)}</ol></div><div><h4>Antes de entregar, comprueba</h4><ul>{practice.checks.map(check => <li key={check}>{check}</li>)}</ul></div></div><label className="packet-upload"><Upload size={20} /><span><strong>{uploads[practice.id]?.filename || 'Selecciona tu archivo de Packet Tracer'}</strong><small>Formato permitido: .pkt · máximo 20 MB</small></span><input type="file" accept=".pkt,application/octet-stream" disabled={uploading === practice.id || preview} onChange={event => onUpload(practice, event.target.files?.[0])} /></label>{uploading === practice.id && <div className="upload-status">Subiendo y vinculando tu práctica…</div>}{messages[practice.id] && <div className={delivered ? 'submission-success' : 'form-error'}>{messages[practice.id]}</div>}{delivered && !messages[practice.id] && <div className="submission-success"><CheckCircle2 size={17} /> Archivo entregado. Puedes reemplazarlo mientras no hayas enviado la evaluación final.</div>}</div></article> })}</div></section>
 }
 
 function TopicDiagram({ index }) {

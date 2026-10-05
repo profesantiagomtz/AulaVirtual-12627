@@ -387,6 +387,13 @@ function AssessmentResults({ assessment, onBack, onRefresh }) {
     else window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
   }
 
+  async function downloadPractice(practice) {
+    if (!practice?.path) return
+    const { data, error } = await supabase.storage.from('submissions').createSignedUrl(practice.path, 300)
+    if (error) setMessage(error.message || 'No fue posible abrir la práctica.')
+    else window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
+  }
+
   return <section className="panel page-panel results-page">
     <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button>
     <div className="results-head"><div><span className="eyebrow">GRUPO {assessment.group}</span><h1>{assessment.title}</h1><p>{assessment.submissions} entregas y {assessment.drafts} avances guardados.</p></div><div className="result-total"><strong>{rows.length}</strong><span>{rows.length === 1 ? 'alumno con actividad' : 'alumnos con actividad'}</span></div></div>
@@ -394,7 +401,7 @@ function AssessmentResults({ assessment, onBack, onRefresh }) {
     {rows.length ? <div className="submission-list">{rows.map(submission => <article className="submission-card" key={submission.id}>
       <header><div className="student-cell"><div className="avatar small">{(submission.student?.name || 'A').split(' ').slice(0, 2).map(part => part[0]).join('')}</div><div><strong>{submission.student?.name || 'Alumno'}</strong><span>{submission.student?.enrollment || submission.student?.email || 'Sin matrícula'}</span></div></div><span className={`tag ${submission.submitted_at ? 'active' : ''}`}>{submission.submitted_at ? 'ENTREGADA' : 'EN PROCESO'}</span></header>
       <div className="submission-meta"><span>Inicio: {formatDateTime(submission.started_at)}</span>{submission.submitted_at && <span>Entrega: {formatDateTime(submission.submitted_at)}</span>}</div>
-      <div className="submission-actions">{submission.file_path && <button className="secondary" onClick={() => downloadSubmission(submission)}><Download size={16} /> {submission.original_filename || 'Descargar archivo'}</button>}{submission.answers && Object.keys(submission.answers).length > 0 && <details><summary><Eye size={16} /> Ver respuestas capturadas</summary><AnswerPreview answers={submission.answers} /></details>}</div>
+      <div className="submission-actions">{submission.file_path && <button className="secondary" onClick={() => downloadSubmission(submission)}><Download size={16} /> {submission.original_filename || 'Descargar archivo'}</button>}{Object.values(submission.answers?.packet_tracer || {}).map(practice => <button className="secondary packet-download" key={practice.path} onClick={() => downloadPractice(practice)}><Download size={16} /> {practice.practice || practice.filename}</button>)}{submission.answers && Object.keys(submission.answers).length > 0 && <details><summary><Eye size={16} /> Ver respuestas capturadas</summary><AnswerPreview answers={submission.answers} /></details>}</div>
       {submission.submitted_at && <div className="score-box"><label>Calificación de la actividad (máximo 60 puntos)<input type="number" min="0" max="60" step="1" value={scores[submission.id]} onChange={e => setScores(current => ({ ...current, [submission.id]: e.target.value }))} /></label><button className="primary" disabled={busy === submission.id} onClick={() => saveScore(submission)}>{busy === submission.id ? 'Guardando…' : 'Guardar calificación'}</button></div>}
     </article>)}</div> : <EmptyState text="Ningún alumno ha iniciado esta actividad todavía." />}
   </section>
@@ -409,12 +416,14 @@ function AnswerPreview({ answers }) {
   const equipment = answers.equipment || {}
   const questions = [...(answers.questionnaires?.users || []), ...(answers.questionnaires?.administrators || [])]
   const responses = answers.responses || {}
-  const hasContent = risks.some(item => item.risk || item.description) || Object.values(equipment).some(Boolean) || questions.some(item => item.text) || Object.values(responses).some(Boolean)
+  const packetTracer = Object.values(answers.packet_tracer || {})
+  const hasContent = risks.some(item => item.risk || item.description) || Object.values(equipment).some(Boolean) || questions.some(item => item.text) || Object.values(responses).some(Boolean) || packetTracer.length > 0
   if (!hasContent) return <div className="answer-preview empty">El alumno inició la actividad, pero todavía no ha capturado respuestas.</div>
   return <div className="answer-preview">
     {risks.some(item => item.risk || item.description) && <section><h4>Matrices de riesgo</h4>{risks.map((risk, index) => (risk.risk || risk.description) && <article key={index}><strong>{index + 1}. {risk.risk || 'Riesgo sin nombre'}</strong><p>{risk.description || 'Sin descripción'}</p><small>Probabilidad: {risk.probability || '—'} · Impacto: {risk.impact || '—'} · Medidas: {risk.measures || '—'}</small></article>)}</section>}
     {Object.values(equipment).some(Boolean) && <section><h4>Ficha técnica</h4><div className="answer-grid">{Object.entries(equipment).filter(([, value]) => value).map(([key, value]) => <div key={key}><span>{equipmentLabels[key] || key}</span><strong>{value}</strong></div>)}</div></section>}
     {questions.some(item => item.text) && <section><h4>Cuestionarios</h4><ol>{questions.filter(item => item.text).map((item, index) => <li key={index}>{item.text} <small>{item.type}</small></li>)}</ol></section>}
+    {packetTracer.length > 0 && <section><h4>Prácticas de Packet Tracer</h4>{packetTracer.map(practice => <article key={practice.path}><strong>{practice.practice}</strong><p>{practice.filename}</p><small>Entregada: {formatDateTime(practice.uploaded_at)}</small></article>)}</section>}
     {Object.values(responses).some(Boolean) && <section><h4>Actividad MTCS</h4>{answers.assigned_case?.lines?.length > 0 && <article><strong>{answers.assigned_case.title || 'Caso asignado'}</strong><p>{answers.assigned_case.lines.join(' · ')}</p></article>}<div className="mtcs-answer-list">{Object.entries(responses).map(([key, value], index) => value && <article key={key}><strong>{index + 1}. Respuesta</strong><p>{value}</p></article>)}</div></section>}
   </div>
 }
