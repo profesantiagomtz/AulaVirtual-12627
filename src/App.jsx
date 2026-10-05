@@ -28,6 +28,20 @@ function formatPersonName(name = '') {
 
 function App() {
   const [session, setSession] = useState(() => JSON.parse(localStorage.getItem('aula-session') || 'null'))
+  useEffect(() => {
+    if (!session || !isSupabaseReady) return
+    let active = true
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return
+      const { data: profile } = await supabase.from('profiles').select('full_name, role, groups(code, semester)').eq('id', data.user.id).single()
+      if (!active || !profile) return
+      const current = JSON.parse(localStorage.getItem('aula-session') || 'null')
+      const synced = { ...current, name: profile.full_name || current?.name, role: profile.role, group: profile.groups?.code || 'Sin asignar', semester: profile.groups?.semester || null }
+      localStorage.setItem('aula-session', JSON.stringify(synced))
+      setSession(previous => JSON.stringify(previous) === JSON.stringify(synced) ? previous : synced)
+    })
+    return () => { active = false }
+  }, [session?.id, session?.group])
   return <Routes>
     <Route path="/acceso" element={session ? <Navigate to="/panel" /> : <Login onLogin={setSession} />} />
     <Route path="/panel/*" element={session ? <Dashboard session={session} onLogout={() => { localStorage.removeItem('aula-session'); setSession(null) }} /> : <Navigate to="/acceso" />} />
