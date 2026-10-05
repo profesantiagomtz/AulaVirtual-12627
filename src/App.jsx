@@ -283,6 +283,7 @@ function Assessments({ items, session, isTeacher, onAdd, onRefresh, initialSelec
   if (selected) {
     if (selected.activityCode === 'ASIN-RA-1.1') return <AsinActivity assessment={selected} onBack={clearSelected} />
     if (selected.activityCode === 'MSII-RA-1.1') return <MsiiActivity assessment={selected} session={session} onBack={clearSelected} />
+    if (selected.activityCode?.startsWith('PEAR-')) return <PearActivity assessment={selected} session={session} onBack={clearSelected} />
     return <GenericActivity assessment={selected} onBack={clearSelected} />
   }
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={items} student={!isTeacher} onOpen={setSelected} /></section>
@@ -443,6 +444,62 @@ function MsiiActivity({ assessment, session, onBack }) {
 }
 
 function AssignedValue({ label, value }) { return <div className="assigned-value"><span>{label}</span><strong>{value}</strong></div> }
+
+function PearActivity({ assessment, session, onBack }) {
+  const [file, setFile] = useState(null)
+  const [status, setStatus] = useState('loading')
+  const [message, setMessage] = useState('')
+  const assignment = useMemo(() => buildPearAssignment(`${session.id}-${assessment.id}`, assessment.activityCode), [session.id, assessment.id, assessment.activityCode])
+
+  useEffect(() => {
+    let active = true
+    supabase.from('submissions').select('submitted_at').eq('assessment_id', assessment.id).maybeSingle().then(({ data, error }) => {
+      if (!active) return
+      if (error) { setMessage(error.message); setStatus('error') }
+      else setStatus(data?.submitted_at ? 'submitted' : 'ready')
+    })
+    return () => { active = false }
+  }, [assessment.id])
+
+  async function submit(event) {
+    event.preventDefault()
+    if (!file) return
+    try {
+      setStatus('working'); setMessage('')
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) throw new Error('Entrega un archivo en formato PDF.')
+      if (file.size > 20 * 1024 * 1024) throw new Error('El archivo no debe superar 20 MB.')
+      const { data: authData } = await supabase.auth.getUser()
+      const path = `${authData.user.id}/${assessment.id}/entrega.pdf`
+      const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true, contentType: 'application/pdf' })
+      if (uploadError) throw uploadError
+      const { error } = await supabase.from('submissions').insert({ assessment_id: assessment.id, student_id: authData.user.id, answers: { assigned_case: assignment }, file_path: path, original_filename: file.name, submitted_at: new Date().toISOString() })
+      if (error) throw error
+      setStatus('submitted'); setMessage('Actividad entregada correctamente.')
+    } catch (error) { setStatus('error'); setMessage(error.message || 'No fue posible entregar la actividad.') }
+  }
+
+  return <section className="panel page-panel activity-workspace pear-workspace">
+    <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button>
+    <div className="activity-hero"><div><span className="eyebrow">PEAR · {assessment.activityCode.includes('1.2') ? 'PROPÓSITO 1.2' : 'PROPÓSITO 1.3'}</span><h1>{assessment.title}</h1><p>{assessment.instructions}</p></div></div>
+    <div className="assigned-case"><h2>Datos asignados para tu trabajo</h2><p>Utiliza estos datos en el reporte que entregarás.</p><div className="assigned-grid">{assignment.map(item => <AssignedValue key={item.label} label={item.label} value={item.value} />)}</div></div>
+    <form className="pear-submit" onSubmit={submit}><label>Entrega tu archivo PDF<input type="file" accept=".pdf,application/pdf" disabled={status === 'submitted' || status === 'working'} required onChange={event => setFile(event.target.files[0] || null)} /></label><button className="primary" disabled={!file || status === 'submitted' || status === 'working'}><Upload size={17} /> {status === 'submitted' ? 'Actividad entregada' : status === 'working' ? 'Subiendo…' : 'Entregar actividad'}</button></form>
+    {message && <div className={status === 'submitted' ? 'submission-success' : 'form-error'}>{message}</div>}
+  </section>
+}
+
+function buildPearAssignment(seedText, activityCode) {
+  let seed = 0
+  for (const char of seedText) seed = (seed * 31 + char.charCodeAt(0)) >>> 0
+  const pick = (min, max, offset = 0) => min + ((seed >>> offset) % (max - min + 1))
+  if (activityCode.includes('1.2')) {
+    const first = pick(240, 780)
+    const second = pick(110, Math.min(390, first - 20), 8)
+    const operation = seed % 2 ? 'Suma' : 'Resta'
+    return [{ label: 'Operación que debes representar', value: operation }, { label: 'Primera cantidad', value: first }, { label: 'Segunda cantidad', value: second }]
+  }
+  const income = pick(680, 980) * 10
+  return [{ label: 'Ingreso mensual', value: `$${income.toLocaleString('es-MX')}` }, { label: 'Integrantes del hogar', value: pick(3, 6, 6) }, { label: 'Compra de higiene', value: `Cada ${pick(12, 20, 10)} días` }, { label: 'Compra de alimentos base', value: `Cada ${pick(5, 9, 14)} días` }]
+}
 
 function Students({ students, groups, assessments }) {
   const [query, setQuery] = useState('')
