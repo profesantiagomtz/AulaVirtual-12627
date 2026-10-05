@@ -42,6 +42,7 @@ function Login({ onLogin }) {
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [enrollment, setEnrollment] = useState('')
+  const [studentGroup, setStudentGroup] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -56,7 +57,7 @@ function Login({ onLogin }) {
     try {
       if (isSupabaseReady) {
         const result = authMode === 'register'
-          ? await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName, enrollment_number: enrollment, role: 'student' } } })
+          ? await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName, enrollment_number: enrollment, group_code: studentGroup, role: 'student' } } })
           : await supabase.auth.signInWithPassword({ email, password })
         const { data, error: authError } = result
         if (authError) throw authError
@@ -110,7 +111,7 @@ function Login({ onLogin }) {
           <button type="button" className={mode === 'student' ? 'active' : ''} onClick={() => setMode('student')}>Alumno</button>
           <button type="button" className={mode === 'teacher' ? 'active' : ''} onClick={() => { setMode('teacher'); setAuthMode('login') }}>Docente</button>
         </div>
-        {authMode === 'register' && <><label>Nombre completo<input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Como aparece en tu expediente" required /></label><label>Matrícula<input value={enrollment} onChange={e => setEnrollment(e.target.value)} placeholder="Tu matrícula institucional" required /></label></>}
+        {authMode === 'register' && <><label>Nombre completo<input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Como aparece en tu expediente" required /></label><label>Matrícula<input value={enrollment} onChange={e => setEnrollment(e.target.value)} placeholder="Tu matrícula institucional" required /></label><label>Grupo<select value={studentGroup} onChange={e => setStudentGroup(e.target.value)} required><option value="">Selecciona tu grupo</option><option value="111">111</option><option value="310">310</option><option value="311">311</option><option value="511">511</option></select></label></>}
         <label>Correo institucional
           <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="correo institucional" required />
         </label>
