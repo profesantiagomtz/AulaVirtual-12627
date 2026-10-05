@@ -383,12 +383,14 @@ function AnswerPreview({ answers }) {
   const risks = answers.risks || []
   const equipment = answers.equipment || {}
   const questions = [...(answers.questionnaires?.users || []), ...(answers.questionnaires?.administrators || [])]
-  const hasContent = risks.some(item => item.risk || item.description) || Object.values(equipment).some(Boolean) || questions.some(item => item.text)
+  const responses = answers.responses || {}
+  const hasContent = risks.some(item => item.risk || item.description) || Object.values(equipment).some(Boolean) || questions.some(item => item.text) || Object.values(responses).some(Boolean)
   if (!hasContent) return <div className="answer-preview empty">El alumno inició la actividad, pero todavía no ha capturado respuestas.</div>
   return <div className="answer-preview">
     {risks.some(item => item.risk || item.description) && <section><h4>Matrices de riesgo</h4>{risks.map((risk, index) => (risk.risk || risk.description) && <article key={index}><strong>{index + 1}. {risk.risk || 'Riesgo sin nombre'}</strong><p>{risk.description || 'Sin descripción'}</p><small>Probabilidad: {risk.probability || '—'} · Impacto: {risk.impact || '—'} · Medidas: {risk.measures || '—'}</small></article>)}</section>}
     {Object.values(equipment).some(Boolean) && <section><h4>Ficha técnica</h4><div className="answer-grid">{Object.entries(equipment).filter(([, value]) => value).map(([key, value]) => <div key={key}><span>{equipmentLabels[key] || key}</span><strong>{value}</strong></div>)}</div></section>}
     {questions.some(item => item.text) && <section><h4>Cuestionarios</h4><ol>{questions.filter(item => item.text).map((item, index) => <li key={index}>{item.text} <small>{item.type}</small></li>)}</ol></section>}
+    {Object.values(responses).some(Boolean) && <section><h4>Actividad MTCS</h4>{answers.assigned_case?.lines?.length > 0 && <article><strong>{answers.assigned_case.title || 'Caso asignado'}</strong><p>{answers.assigned_case.lines.join(' · ')}</p></article>}<div className="mtcs-answer-list">{Object.entries(responses).map(([key, value], index) => value && <article key={key}><strong>{index + 1}. Respuesta</strong><p>{value}</p></article>)}</div></section>}
   </div>
 }
 
