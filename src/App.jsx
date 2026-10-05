@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { courses } from './data/academic'
 import AsinActivity from './components/AsinActivity'
-import MtcsActivity from './components/MtcsActivity'
+import MtcsActivity, { MtcsMaterialView } from './components/MtcsActivity'
 import { buildMsiiDocument, downloadBlob, readAssignmentId } from './lib/msii-docx'
 import { isSupabaseReady, supabase } from './lib/supabase'
 
@@ -306,8 +306,10 @@ function Modules({ courses, session, setView }) {
 function Materials({ items, groups, courses, session, isTeacher, onAdd, onToggle }) {
   const [query, setQuery] = useState('')
   const [group, setGroup] = useState('Todos')
+  const [selectedMaterial, setSelectedMaterial] = useState(null)
   const filtered = items.filter(m => (group === 'Todos' || m.group === group) && m.title.toLowerCase().includes(query.toLowerCase()))
   async function openMaterial(material) {
+    if (material.url?.startsWith('mtcs://')) { setSelectedMaterial(material); return }
     if (material.type !== 'Archivo') return window.open(material.url, '_blank', 'noopener,noreferrer')
     const preview = window.open('about:blank', '_blank')
     const { data, error } = await supabase.storage.from('materials').createSignedUrl(material.url, 300)
@@ -315,6 +317,7 @@ function Materials({ items, groups, courses, session, isTeacher, onAdd, onToggle
     if (preview) preview.location.href = data.signedUrl
     else window.location.href = data.signedUrl
   }
+  if (selectedMaterial) return <MtcsMaterialView code={selectedMaterial.url.replace('mtcs://', '')} onBack={() => setSelectedMaterial(null)} />
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Material didáctico' : 'Mis materiales'}</h1><p>{isTeacher ? 'Recursos organizados por grupo y unidad.' : `Recursos de ${courses.map(course => course.name).join(' y ')}.`}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar material…" /></div>{isTeacher ? <select value={group} onChange={e => setGroup(e.target.value)}><option value="Todos">Todos los grupos</option>{groups.map(item => <option key={item.id} value={item.code}>Grupo {item.code}</option>)}</select> : <div className="group-chip">Grupo {session.group}</div>}</div>{filtered.length ? <div className="card-grid">{filtered.map(m => <article className={`material-card ${!m.published ? 'locked-card' : ''}`} key={m.id}><div className="material-icon"><FileText /></div><span className={`tag ${m.published ? 'active' : ''}`}>{isTeacher ? (m.published ? 'PUBLICADO' : 'BLOQUEADO') : m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group} · {m.unit}</p><footer><span>{m.published ? 'Visible para alumnos' : 'Oculto para alumnos'}</span><div className="card-actions"><button className="text-btn" onClick={() => openMaterial(m)}>Abrir <ChevronRight size={15} /></button>{isTeacher && <button className="lock-btn" onClick={() => onToggle?.(m)}>{m.published ? <Lock size={15} /> : <Unlock size={15} />}{m.published ? 'Bloquear' : 'Publicar'}</button>}</div></footer></article>)}</div> : <EmptyState text={isTeacher ? 'No hay materiales con estos filtros.' : 'Todavía no hay materiales publicados para tu grupo.'} />}</section>
 }
 

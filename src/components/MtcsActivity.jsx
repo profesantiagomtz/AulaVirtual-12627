@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, BookOpen, CheckCircle2, Save, Send, ShieldCheck } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
-const content = {
+export const mtcsContent = {
   'MTCS-RA-1.1': {
     label: 'MTCS · R.A. 1.1',
     materialTitle: 'Comunicación y componentes de una red',
@@ -114,7 +114,7 @@ function assignmentFor(studentId, assessmentId, code) {
 }
 
 export default function MtcsActivity({ assessment, session, onBack }) {
-  const definition = content[assessment.activityCode]
+  const definition = mtcsContent[assessment.activityCode]
   const assignment = useMemo(() => assignmentFor(session.id, assessment.id, assessment.activityCode), [session.id, assessment.id, assessment.activityCode])
   const [tab, setTab] = useState('material')
   const [answers, setAnswers] = useState({})
@@ -166,4 +166,37 @@ export default function MtcsActivity({ assessment, session, onBack }) {
       <footer className="activity-footer"><span className="mtcs-progress">{definition.fields.filter(([key]) => String(answers[key] || '').trim().length >= 12).length} de {definition.fields.length} respuestas completas</span><div className="activity-footer-actions">{!submitted && <button className="secondary" onClick={() => save(false)} disabled={status === 'saving'}><Save size={17} /> Guardar avance</button>}<button className="primary" onClick={() => save(true)} disabled={submitted || status === 'saving'}>{submitted ? <CheckCircle2 size={17} /> : <Send size={17} />}{submitted ? 'Actividad entregada' : 'Entregar actividad'}</button></div></footer>
     </div>}
   </section>
+}
+
+export function MtcsMaterialView({ code, onBack }) {
+  const definition = mtcsContent[code]
+  if (!definition) return null
+  return <section className="panel page-panel activity-workspace mtcs-workspace">
+    <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a materiales</button>
+    <div className="activity-hero"><div><span className="eyebrow">{definition.label} · MATERIAL DIDÁCTICO</span><h1>{definition.materialTitle}</h1><p>{definition.intro}</p></div><div className="mtcs-value"><BookOpen size={25} /><span>APRENDE Y PRACTICA</span></div></div>
+    <div className="mtcs-learning-route"><b>Ruta de aprendizaje</b><span>1. Lee cada tema</span><span>2. Analiza el ejemplo</span><span>3. Resuelve los ejercicios</span><span>4. Después abre la evaluación</span></div>
+    <div className="lesson-grid">{definition.lessons.map(([title, text]) => <article key={title}><span>{title.split('.')[0]}</span><div><h3>{title.replace(/^\d+\.\s*/, '')}</h3><p>{text}</p></div></article>)}</div>
+    <div className="worked-example"><strong>Ejemplo explicado</strong><p>{definition.example}</p></div>
+    <PracticeExercises code={code} />
+    <div className="info-note mtcs-ready-note"><CheckCircle2 size={18} /><span>Cuando puedas explicar estos conceptos y resolver los ejercicios sin copiar el ejemplo, continúa en <b>Evaluaciones</b>.</span></div>
+  </section>
+}
+
+function PracticeExercises({ code }) {
+  const exercises = code === 'MTCS-RA-1.1' ? [
+    'Clasifica cinco elementos de una red cercana como equipo final, dispositivo intermediario o medio.',
+    'Compara cable de cobre, fibra óptica y conexión inalámbrica. Escribe una ventaja y una limitación de cada uno.',
+    'Dibuja el recorrido de la información desde una computadora hasta un servicio de Internet e identifica los componentes que intervienen.',
+    'Propón dos cambios para mejorar una red con señal inalámbrica débil y conexión inestable.',
+  ] : code === 'MTCS-RA-1.2' ? [
+    'En la red 192.168.50.0/24 identifica dirección de red, primer host, último host y broadcast.',
+    'Explica qué ocurre cuando dos equipos de la misma red se comunican y qué cambia cuando el destino está en otra red.',
+    'Determina si 192.168.20.15/24 y 192.168.21.15/24 pertenecen a la misma red. Justifica tu respuesta.',
+    'Un equipo tiene dirección IP y máscara correctas, pero no puede salir de su red. Escribe un orden lógico de revisión.',
+  ] : [
+    'Escribe un ejemplo propio de amenaza, vulnerabilidad y riesgo sin utilizar el ejemplo del material.',
+    'Clasifica tres situaciones como afectación a confidencialidad, integridad o disponibilidad y explica por qué.',
+    'Propón un control preventivo, uno detectivo y uno correctivo para un equipo compartido.',
+  ]
+  return <section className="mtcs-practice"><div className="stage-heading"><span>PRACTICA ANTES DE EVALUARTE</span><h2>Ejercicios de comprobación</h2><p>Resuélvelos en tu libreta o coméntalos con tu docente. No se entregan en este apartado.</p></div><ol>{exercises.map(item => <li key={item}>{item}</li>)}</ol></section>
 }
