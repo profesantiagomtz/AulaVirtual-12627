@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, BookOpen, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, FileText, GraduationCap,
-  LayoutDashboard, LogOut, Menu, Plus, Search, Settings, TrendingUp, Upload, Users, X
+  LayoutDashboard, Lock, LogOut, Menu, Plus, Search, Settings, TrendingUp, Unlock, Upload, Users, X
 } from 'lucide-react'
 import { courses } from './data/academic'
 import AsinActivity from './components/AsinActivity'
@@ -145,10 +145,11 @@ function Dashboard({ session, onLogout }) {
   async function loadData() {
     setLoading(true); setDataError('')
     try {
+      const materialsQuery = supabase.from('materials').select('id, title, description, unit, resource_type, resource_url, published, created_at, groups(code)').order('created_at', { ascending: false })
       const [groupResult, studentResult, materialResult, assessmentResult] = await Promise.all([
         supabase.from('groups').select('id, code, semester, career').eq('active', true).order('code'),
         isTeacher ? supabase.from('student_directory').select('id, full_name, email, enrollment_number, group_code, active').eq('active', true).order('full_name') : Promise.resolve({ data: [] }),
-        supabase.from('materials').select('id, title, description, unit, resource_type, resource_url, created_at, groups(code)').eq('published', true).order('created_at', { ascending: false }),
+        isTeacher ? materialsQuery : materialsQuery.eq('published', true),
         supabase.from('assessments').select('id, title, instructions, activity_code, status, due_at, group_id, groups(code), submissions(id, student_id, score, started_at, submitted_at, answers, file_path, original_filename, profiles!submissions_student_id_fkey(full_name, email, enrollment_number))').order('created_at', { ascending: false }),
       ])
       const firstError = [groupResult, studentResult, materialResult, assessmentResult].find(result => result.error)?.error
@@ -156,7 +157,7 @@ function Dashboard({ session, onLogout }) {
       const directory = studentResult.data || []
       setGroupList((groupResult.data || []).map(group => ({ ...group, students: directory.filter(student => student.group_code === group.code).length })))
       setStudentList(directory.map(student => ({ id: student.id, name: formatPersonName(student.full_name), email: student.email || 'Cuenta pendiente', enrollment: student.enrollment_number, group: student.group_code })))
-      setMaterialList((materialResult.data || []).map(material => ({ id: material.id, title: material.title, description: material.description, unit: material.unit || 'Sin unidad', type: material.resource_type === 'file' ? 'Archivo' : material.resource_type, url: material.resource_url, group: material.groups?.code || 'Todos', date: new Date(material.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) })))
+      setMaterialList((materialResult.data || []).map(material => ({ id: material.id, title: material.title, description: material.description, unit: material.unit || 'Sin unidad', type: material.resource_type === 'file' ? 'Archivo' : material.resource_type, url: material.resource_url, published: material.published, group: material.groups?.code || 'Todos', date: new Date(material.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) })))
       setAssessmentList((assessmentResult.data || []).map(assessment => {
         const submissions = assessment.submissions || []
         const scored = submissions.filter(item => item.score !== null)
@@ -169,6 +170,17 @@ function Dashboard({ session, onLogout }) {
   useEffect(() => { if (isSupabaseReady) loadData() }, [])
 
   function saved(message) { setModal(null); setToast(message); setTimeout(() => setToast(''), 2600) }
+  async function toggleMaterial(item) {
+    const { error } = await supabase.from('materials').update({ published: !item.published }).eq('id', item.id)
+    if (error) { setDataError(error.message); return }
+    await loadData(); saved(item.published ? 'Material bloqueado para los alumnos' : 'Material publicado para los alumnos')
+  }
+  async function toggleAssessment(item) {
+    const nextStatus = item.status === 'Activa' ? 'draft' : 'published'
+    const { error } = await supabase.from('assessments').update({ status: nextStatus }).eq('id', item.id)
+    if (error) { setDataError(error.message); return }
+    await loadData(); saved(nextStatus === 'published' ? 'Actividad publicada para los alumnos' : 'Actividad bloqueada para los alumnos')
+  }
   const pageTitle = view === 'configuracion' ? 'Configuración' : navItems.find(i => i.id === view)?.label || 'Resumen'
 
   return <div className="app-shell">
@@ -193,8 +205,8 @@ function Dashboard({ session, onLogout }) {
         {loading ? <div className="loading-state">Cargando información real…</div> : <>
         {view === 'inicio' && (isTeacher ? <TeacherHome setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} setView={setView} />)}
         {view === 'modulos' && !isTeacher && <Modules courses={assignedCourses} session={session} setView={setView} />}
-        {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} onAdd={() => setModal('material')} />}
-        {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} onAdd={() => setModal('assessment')} onRefresh={loadData} initialSelected={selectedAssessment} onClearSelected={() => setSelectedAssessment(null)} />}
+        {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} onAdd={() => setModal('material')} onToggle={toggleMaterial} />}
+        {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} onAdd={() => setModal('assessment')} onRefresh={loadData} onToggle={toggleAssessment} initialSelected={selectedAssessment} onClearSelected={() => setSelectedAssessment(null)} />}
         {view === 'alumnos' && isTeacher && <Students students={studentList} groups={groupList} assessments={assessmentList} />}
         {view === 'configuracion' && isTeacher && <SettingsPage session={session} groups={groupList} />}
         </>}
@@ -233,7 +245,7 @@ function TeacherHome({ setView, groups, students, materials, assessments, onOpen
     <section className="welcome-row"><div><span className="eyebrow">{today}</span><h1>Buenos días, profesor.</h1><p>Esto es lo que sucede hoy con tus grupos.</p></div><div className="term-card"><span>Periodo actual</span><strong>Agosto 2026 – Enero 2027</strong></div></section>
     <section className="stat-grid">
       <Stat icon={Users} value={students.length} label="Alumnos en padrón" note={`${groups.length} grupos`} color="blue" />
-      <Stat icon={BookOpen} value={materials.length} label="Materiales publicados" note="Información real" color="gold" />
+      <Stat icon={BookOpen} value={materials.filter(item => item.published).length} label="Materiales publicados" note="Información real" color="gold" />
       <Stat icon={ClipboardCheck} value={activeAssessments.length} label="Evaluaciones activas" note={`${submitted} entregas · ${drafts} avances`} color="purple" />
       <Stat icon={TrendingUp} value={overallAverage === null ? '—' : `${overallAverage} / 60`} label="Promedio general" note={overallAverage === null ? 'Sin calificaciones' : 'Calculado con entregas'} color="green" />
     </section>
@@ -264,7 +276,7 @@ function Modules({ courses, session, setView }) {
   return <section className="panel page-panel"><div className="list-toolbar"><div><span className="eyebrow">GRUPO {session.group} · {session.semester}º SEMESTRE</span><h1>Mis módulos</h1><p>Materias que cursas durante el periodo actual.</p></div></div><div className="module-grid">{courses.map(course => <article className="module-card" key={course.code}><div className="module-card-head"><div className="module-code large">{course.code}</div><span>{course.hoursPerWeek} h/semana</span></div><h3>{course.name}</h3><p>Grupo {course.group} · {course.semester}º semestre</p>{course.outcomes?.length ? <small>{course.outcomes.length} resultados de aprendizaje</small> : <small>Programa académico asignado</small>}<div className="module-actions"><button className="secondary" onClick={() => setView('materiales')}>Ver materiales</button><button className="text-btn" onClick={() => setView('evaluaciones')}>Evaluaciones <ChevronRight size={15} /></button></div></article>)}</div></section>
 }
 
-function Materials({ items, groups, courses, session, isTeacher, onAdd }) {
+function Materials({ items, groups, courses, session, isTeacher, onAdd, onToggle }) {
   const [query, setQuery] = useState('')
   const [group, setGroup] = useState('Todos')
   const filtered = items.filter(m => (group === 'Todos' || m.group === group) && m.title.toLowerCase().includes(query.toLowerCase()))
@@ -273,10 +285,10 @@ function Materials({ items, groups, courses, session, isTeacher, onAdd }) {
     const { data, error } = await supabase.storage.from('materials').createSignedUrl(material.url, 300)
     if (!error) window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
   }
-  return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Material didáctico' : 'Mis materiales'}</h1><p>{isTeacher ? 'Recursos organizados por grupo y unidad.' : `Recursos de ${courses.map(course => course.name).join(' y ')}.`}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar material…" /></div>{isTeacher ? <select value={group} onChange={e => setGroup(e.target.value)}><option value="Todos">Todos los grupos</option>{groups.map(item => <option key={item.id} value={item.code}>Grupo {item.code}</option>)}</select> : <div className="group-chip">Grupo {session.group}</div>}</div>{filtered.length ? <div className="card-grid">{filtered.map(m => <article className="material-card" key={m.id}><div className="material-icon"><FileText /></div><span className="tag">{m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group}</p><footer><span>Publicado {m.date}</span><button className="text-btn" onClick={() => openMaterial(m)}>Abrir <ChevronRight size={15} /></button></footer></article>)}</div> : <EmptyState text={isTeacher ? 'No hay materiales publicados con estos filtros.' : 'Todavía no hay materiales publicados para tu grupo.'} />}</section>
+  return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Material didáctico' : 'Mis materiales'}</h1><p>{isTeacher ? 'Recursos organizados por grupo y unidad.' : `Recursos de ${courses.map(course => course.name).join(' y ')}.`}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar material…" /></div>{isTeacher ? <select value={group} onChange={e => setGroup(e.target.value)}><option value="Todos">Todos los grupos</option>{groups.map(item => <option key={item.id} value={item.code}>Grupo {item.code}</option>)}</select> : <div className="group-chip">Grupo {session.group}</div>}</div>{filtered.length ? <div className="card-grid">{filtered.map(m => <article className={`material-card ${!m.published ? 'locked-card' : ''}`} key={m.id}><div className="material-icon"><FileText /></div><span className={`tag ${m.published ? 'active' : ''}`}>{isTeacher ? (m.published ? 'PUBLICADO' : 'BLOQUEADO') : m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group} · {m.unit}</p><footer><span>{m.published ? 'Visible para alumnos' : 'Oculto para alumnos'}</span><div className="card-actions"><button className="text-btn" onClick={() => openMaterial(m)}>Abrir <ChevronRight size={15} /></button>{isTeacher && <button className="lock-btn" onClick={() => onToggle?.(m)}>{m.published ? <Lock size={15} /> : <Unlock size={15} />}{m.published ? 'Bloquear' : 'Publicar'}</button>}</div></footer></article>)}</div> : <EmptyState text={isTeacher ? 'No hay materiales con estos filtros.' : 'Todavía no hay materiales publicados para tu grupo.'} />}</section>
 }
 
-function Assessments({ items, session, isTeacher, onAdd, onRefresh, initialSelected, onClearSelected }) {
+function Assessments({ items, session, isTeacher, onAdd, onRefresh, onToggle, initialSelected, onClearSelected }) {
   const [selected, setSelected] = useState(initialSelected || null)
   function clearSelected() { setSelected(null); onClearSelected?.() }
   if (selected && isTeacher) return <AssessmentResults assessment={selected} onBack={clearSelected} onRefresh={onRefresh} />
@@ -286,10 +298,10 @@ function Assessments({ items, session, isTeacher, onAdd, onRefresh, initialSelec
     if (selected.activityCode?.startsWith('PEAR-')) return <PearActivity assessment={selected} session={session} onBack={clearSelected} />
     return <GenericActivity assessment={selected} onBack={clearSelected} />
   }
-  return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={items} student={!isTeacher} onOpen={setSelected} /></section>
+  return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={items} student={!isTeacher} onOpen={setSelected} onToggle={onToggle} /></section>
 }
 
-function AssessmentTable({ items, student, onOpen }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className="table-wrap"><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Actividad</th>}<th>{student ? 'Estado' : 'Promedio'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id}><td><div className="title-cell"><div className="mini-icon"><ClipboardCheck size={17} /></div><strong>{a.title}</strong></div></td><td>{a.group}</td><td>{a.due}</td>{!student && <td><strong>{a.submissions}</strong> entregas · {a.drafts} avances</td>}<td>{student ? <span className={`tag ${a.status === 'Activa' ? 'active' : ''}`}>{a.status}</span> : (a.average !== null ? `${a.average} / 60` : '—')}</td><td><button className="text-btn" onClick={() => onOpen?.(a)}>{student ? 'Abrir' : 'Resultados'} <ChevronRight size={15} /></button></td></tr>)}</tbody></table></div> }
+function AssessmentTable({ items, student, onOpen, onToggle }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className="table-wrap"><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Actividad</th>}<th>{student ? 'Estado' : 'Publicación'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id}><td><div className="title-cell"><div className="mini-icon"><ClipboardCheck size={17} /></div><strong>{a.title}</strong></div></td><td>{a.group}</td><td>{a.due}</td>{!student && <td><strong>{a.submissions}</strong> entregas · {a.drafts} avances</td>}<td><span className={`tag ${a.status === 'Activa' ? 'active' : ''}`}>{a.status}</span></td><td><div className="table-actions"><button className="text-btn" onClick={() => onOpen?.(a)}>{student ? 'Abrir' : 'Resultados'} <ChevronRight size={15} /></button>{!student && onToggle && <button className="lock-btn" onClick={() => onToggle(a)}>{a.status === 'Activa' ? <Lock size={15} /> : <Unlock size={15} />}{a.status === 'Activa' ? 'Bloquear' : 'Publicar'}</button>}</div></td></tr>)}</tbody></table></div> }
 
 function GenericActivity({ assessment, onBack }) {
   return <section className="panel page-panel activity-workspace"><button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button><div className="activity-hero"><div><span className="eyebrow">ACTIVIDAD</span><h1>{assessment.title}</h1><p>{assessment.instructions || 'Consulta con tu docente las indicaciones de esta actividad.'}</p></div></div><div className="info-note">Esta actividad es informativa y no solicita una entrega dentro de la plataforma.</div></section>
@@ -491,6 +503,17 @@ function buildPearAssignment(seedText, activityCode) {
   let seed = 0
   for (const char of seedText) seed = (seed * 31 + char.charCodeAt(0)) >>> 0
   const pick = (min, max, offset = 0) => min + ((seed >>> offset) % (max - min + 1))
+  if (activityCode.includes('1.1')) {
+    const cases = [
+      ['Derecho a la educación', 'Todas las personas tienen acceso a la educación.', 'La escuela ofrece condiciones de igualdad.', 'La comunidad participa en las decisiones escolares.'],
+      ['Privacidad digital', 'Los datos personales están protegidos.', 'Las aplicaciones solicitan autorización informada.', 'Las personas conocen cómo se utiliza su información.'],
+      ['Igualdad y no discriminación', 'Todas las personas reciben un trato digno.', 'Las reglas se aplican sin distinciones injustificadas.', 'Existen mecanismos para denunciar la discriminación.'],
+      ['Libertad de expresión', 'Las personas pueden expresar sus ideas.', 'Las opiniones respetan los derechos de otras personas.', 'El diálogo permite responder a los desacuerdos.'],
+      ['Derecho a un ambiente sano', 'La comunidad reduce la generación de residuos.', 'Las autoridades atienden los reportes ambientales.', 'La población participa en el cuidado de los espacios comunes.'],
+    ]
+    const selected = cases[seed % cases.length]
+    return [{ label: 'Tema del debate', value: selected[0] }, { label: 'Proposición p', value: selected[1] }, { label: 'Proposición q', value: selected[2] }, { label: 'Proposición r', value: selected[3] }, { label: 'Expresiones para las tablas', value: '¬p, p ∧ q, (p ∨ q) → r, p ↔ q' }]
+  }
   if (activityCode.includes('1.2')) {
     const first = pick(240, 780)
     const second = pick(110, Math.min(390, first - 20), 8)

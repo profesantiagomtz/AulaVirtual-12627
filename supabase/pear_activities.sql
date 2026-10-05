@@ -35,6 +35,22 @@ set public=false,
 where id='submissions';
 
 insert into public.assessments(
+  teacher_id, group_id, title, instructions, status, activity_code
+)
+select teacher.id, groups.id,
+  'PEAR · Actividad de evaluación 1.1',
+  'Analiza el caso asignado, construye las tablas de verdad solicitadas y entrega en PDF tu postura fundamentada.',
+  'published', 'PEAR-1.1.1'
+from public.profiles teacher
+cross join public.groups groups
+where teacher.email='santiago.gonzalez@tam.conalep.edu.mx'
+  and groups.code='111'
+on conflict (activity_code, group_id) where activity_code is not null
+do update set
+  title=excluded.title,
+  instructions=excluded.instructions;
+
+insert into public.assessments(
   teacher_id, group_id, title, instructions, status, activity_code, due_at
 )
 select teacher.id, groups.id,

@@ -63,6 +63,66 @@ def table(data, widths, header=True, font=8.2):
     t.setStyle(TableStyle(cmds))
     return t
 
+def material_11():
+    story=[]
+    story += section('Qué aprenderás', [p('Utilizarás la lógica matemática para reconocer proposiciones, construir expresiones compuestas y analizar argumentos relacionados con situaciones de tu contexto.')])
+    story += bullets(['Distinguir enunciados que son proposiciones.', 'Representar proposiciones con letras y símbolos.', 'Usar negación, conjunción, disyunción, condicional y bicondicional.', 'Construir e interpretar tablas de verdad.', 'Sustentar una decisión mediante un razonamiento lógico.'])
+    story += [PageBreak()]
+    story += section('1  Proposiciones y valor de verdad', [p('Una <b>proposición</b> es un enunciado declarativo que puede clasificarse como verdadero o falso, pero no ambos al mismo tiempo. Las preguntas, órdenes y expresiones abiertas no son proposiciones hasta que se especifican sus datos.')])
+    story.append(table([
+        ['Enunciado','¿Es proposición?','Razón'],
+        ['El número 12 es par.','Sí','Puede determinarse que es verdadero.'],
+        ['¿Terminaste la actividad?','No','Es una pregunta.'],
+        ['Respeta el turno de participación.','No','Es una indicación.'],
+        ['x + 3 = 10','No, todavía','Depende del valor asignado a x.'],
+    ], [6.3*cm,3*cm,5.7*cm]))
+    story += [p('Representación', 'H2x'), p('Las proposiciones simples se representan con letras minúsculas: <b>p</b>, <b>q</b>, <b>r</b>. Por ejemplo: p: “La información fue verificada”. Cada letra puede tener valor verdadero (V) o falso (F).')]
+    story += [PageBreak()]
+    story += section('2  Operadores lógicos', [p('Un operador permite formar una proposición compuesta a partir de una o más proposiciones simples.')])
+    story.append(table([
+        ['Operador','Símbolo','Lectura','Es verdadero cuando...'],
+        ['Negación','¬p','no p','p es falsa.'],
+        ['Conjunción','p ∧ q','p y q','ambas proposiciones son verdaderas.'],
+        ['Disyunción','p ∨ q','p o q','al menos una proposición es verdadera.'],
+        ['Condicional','p → q','si p, entonces q','no ocurre el caso p verdadera y q falsa.'],
+        ['Bicondicional','p ↔ q','p si y solo si q','p y q tienen el mismo valor.'],
+    ], [3.0*cm,2.1*cm,4.2*cm,5.7*cm]))
+    story += [p('Atención', 'H2x'), p('En lógica, la disyunción “o” normalmente es inclusiva: también es verdadera cuando las dos proposiciones son verdaderas. El condicional solamente es falso cuando se cumple la condición, pero no la consecuencia.')]
+    story += [PageBreak()]
+    story += section('3  Cómo construir una tabla de verdad', [p('Una tabla de verdad muestra todas las combinaciones posibles de valores. Con dos proposiciones hay 2² = 4 filas; con tres proposiciones hay 2³ = 8 filas.')])
+    story += bullets(['Identifica las proposiciones simples.', 'Cuenta cuántas combinaciones se necesitan.', 'Escribe las columnas de p, q y r en un orden sistemático.', 'Agrega una columna por cada operación intermedia.', 'Calcula la expresión principal fila por fila.', 'Interpreta qué significa el resultado en la situación analizada.'])
+    story.append(table([
+        ['p','q','p ∧ q','p ∨ q','p → q','p ↔ q'],
+        ['V','V','V','V','V','V'],
+        ['V','F','F','V','F','F'],
+        ['F','V','F','V','V','F'],
+        ['F','F','F','F','V','V'],
+    ], [2.5*cm]*6))
+    story += [PageBreak()]
+    story += section('4  Del resultado a una decisión', [p('La tabla no sustituye el diálogo: ayuda a revisar si una conclusión se desprende de las condiciones planteadas. Después de calcularla, se debe explicar el significado de las filas relevantes con palabras propias y contrastarlo con razones, evidencias y derechos de las personas.')])
+    story += [p('Guía de análisis', 'H2x')] + bullets(['¿Qué hechos representan p, q y r?', '¿Qué operador conecta correctamente las ideas?', '¿En qué combinaciones la expresión es verdadera?', '¿Qué conclusión sí está respaldada por la tabla?', '¿Qué información adicional se necesita para tomar una decisión responsable?'])
+    story += [p('Practica sin respuestas', 'H2x')] + bullets(['Decide cuáles de cinco enunciados cotidianos son proposiciones.', 'Representa con símbolos: “Si se respeta la privacidad, entonces se protege la dignidad”.', 'Construye la tabla de verdad de (p ∧ q) → r.', 'Explica una fila de la tabla con una oración completa.'])
+    doc(OUT/'PEAR_Proposito_1.1_Material_didactico.pdf','Propósito 1.1  Lógica matemática y tablas de verdad','Guía didáctica para reconocer proposiciones, utilizar operadores lógicos y fundamentar decisiones con tablas de verdad.','MATERIAL DIDÁCTICO 1.1',story)
+
+def activity_11():
+    story=[]
+    story += section('Actividad', [p('Analiza el caso sobre derechos humanos asignado en Aula Virtual. Construye las tablas de verdad solicitadas y utiliza sus resultados para sustentar una postura razonada.')])
+    story += section('Instrucciones', bullets(['Copia en tu reporte el tema y las tres proposiciones asignadas.', 'Identifica cada proposición con las letras p, q y r sin modificar su significado.', 'Escribe en lenguaje cotidiano y en símbolos las expresiones: negación, conjunción, disyunción, condicional y bicondicional indicadas.', 'Construye una tabla de verdad completa para cada una de las cuatro expresiones compuestas asignadas.', 'Marca las filas que resulten importantes para analizar el caso.', 'Interpreta cada tabla con un párrafo breve; no escribas únicamente V y F.', 'Redacta una postura final de 150 a 200 palabras y susténtala con al menos dos resultados de tus tablas.', 'Incluye una reflexión de cinco líneas sobre la importancia de escuchar posturas distintas durante un debate.', 'Entrega todo en un solo archivo PDF en Aula Virtual.']))
+    story += [p('Estructura del reporte', 'H1x')]
+    story.append(table([
+        ['Sección','Contenido mínimo'],
+        ['1  Caso asignado','Tema y proposiciones p, q y r.'],
+        ['2  Expresiones lógicas','Traducción entre lenguaje cotidiano y símbolos.'],
+        ['3  Tablas de verdad','Cuatro tablas completas, ordenadas y legibles.'],
+        ['4  Interpretación','Explicación breve de cada resultado.'],
+        ['5  Postura final','Conclusión de 150 a 200 palabras.'],
+        ['6  Reflexión','Escucha, respeto y diálogo durante el debate.'],
+    ], [4.2*cm,10.8*cm]))
+    story += [p('Datos de entrega', 'H1x')]
+    story.append(table([['Elemento','Indicación'],['Producto','Reporte con tablas de verdad en PDF'],['Trabajo','Individual'],['Valor','15%'],['Nombre del archivo','PEAR_111_Apellido_Nombre_1.1.pdf']], [4*cm,11*cm]))
+    story += [p('Antes de entregar', 'H1x')] + bullets(['Las tablas contienen todas las combinaciones necesarias.', 'Cada operador fue aplicado correctamente.', 'Las interpretaciones están escritas con palabras propias.', 'La postura utiliza resultados de las tablas.', 'El PDF abre correctamente y tiene el nombre solicitado.'])
+    doc(OUT/'PEAR_Actividad_evaluacion_1.1.pdf','Actividad de evaluación 1.1  Lógica y derechos humanos','Instrucciones para analizar proposiciones de un debate mediante tablas de verdad y formular una postura fundamentada.','ACTIVIDAD DE EVALUACIÓN 1.1',story)
+
 def material_12():
     story=[]
     story += section('Qué aprenderás', [p('Comprenderás cómo diferentes civilizaciones resolvieron la necesidad de contar, por qué el cero cambió las matemáticas y cómo el sistema indoarábigo y el ábaco siguen presentes en la vida cotidiana.')])
@@ -138,5 +198,5 @@ def activity_13():
     doc(OUT/'PEAR_Actividad_evaluacion_1.3.pdf','Actividad de evaluación 1.3  Presupuesto de salud comunitaria','Instrucciones para integrar conteo, operaciones, propiedades, factorización, MCD y MCM en un presupuesto.','ACTIVIDAD DE EVALUACIÓN 1.3',story)
 
 if __name__ == '__main__':
-    material_12(); activity_12(); material_13(); activity_13()
+    material_11(); activity_11(); material_12(); activity_12(); material_13(); activity_13()
     for item in sorted(OUT.glob('*.pdf')): print(item)
