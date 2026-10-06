@@ -204,15 +204,15 @@ function Dashboard({ session, onLogout }) {
     if (error) { setDataError(error.message); return }
     await loadData(); saved(nextStatus === 'published' ? 'Actividad publicada para los alumnos' : 'Actividad bloqueada para los alumnos')
   }
-  const pageTitle = studentPreview ? 'Vista del alumno' : view === 'configuracion' ? 'Configuración' : navItems.find(i => i.id === view)?.label || 'Resumen'
+  const pageTitle = studentPreview ? 'Vista del alumno' : view === 'configuracion' ? 'Configuración' : isTeacher && view === 'modulos' ? 'Módulos' : navItems.find(i => i.id === view)?.label || 'Resumen'
   const previewGroupData = groupList.find(group => group.code === previewGroup)
   const previewSession = { id: `preview-${previewGroup}`, email: 'vista.previa@tam.conalep.edu.mx', role: 'student', name: `Alumno Demo ${previewGroup}`, group: previewGroup, semester: previewGroupData?.semester || null, preview: true }
 
   return <div className="app-shell">
     <aside className={`sidebar ${mobileMenu ? 'open' : ''}`}>
       <div className="side-brand"><GraduationCap size={26} /><span>Aula <b>Virtual</b></span><button className="icon-btn close-menu" onClick={() => setMobileMenu(false)}><X /></button></div>
-      <nav>{navItems.filter(item => isTeacher ? item.id !== 'modulos' : item.id !== 'alumnos').map(({ id, label, icon: Icon }) =>
-        <button key={id} className={view === id ? 'active' : ''} onClick={() => { setView(id); setMobileMenu(false) }}><Icon size={19} />{label}</button>
+      <nav>{navItems.filter(item => isTeacher || item.id !== 'alumnos').map(({ id, label, icon: Icon }) =>
+        <button key={id} className={view === id ? 'active' : ''} onClick={() => { setView(id); setMobileMenu(false) }}><Icon size={19} />{isTeacher && id === 'modulos' ? 'Módulos' : label}</button>
       )}</nav>
       <div className="side-bottom">
         {isTeacher && <button className={view === 'configuracion' ? 'active' : ''} onClick={() => { setView('configuracion'); setMobileMenu(false) }}><Settings size={19} />Configuración</button>}
@@ -229,7 +229,7 @@ function Dashboard({ session, onLogout }) {
         {dataError && <div className="form-error data-error">{dataError} <button className="text-btn" onClick={loadData}>Reintentar</button></div>}
         {loading ? <div className="loading-state">Cargando información real…</div> : studentPreview ? <StudentPreview session={previewSession} courses={courses.filter(course => course.group === previewGroup)} materials={materialList.filter(item => item.group === previewGroup && item.published)} assessments={assessmentList.filter(item => item.group === previewGroup && item.status === 'Activa')} /> : <>
         {view === 'inicio' && (isTeacher ? <TeacherHome setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} setView={setView} />)}
-        {view === 'modulos' && !isTeacher && <Modules courses={assignedCourses} session={session} setView={setView} />}
+        {view === 'modulos' && (isTeacher ? <TeacherModules courses={assignedCourses} students={studentList} materials={materialList} assessments={assessmentList} setView={setView} /> : <Modules courses={assignedCourses} session={session} setView={setView} />)}
         {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} onAdd={() => setModal('material')} onToggle={toggleMaterial} onProgressUpdate={progress => setLearningProgress(current => [...current.filter(item => item.material_code !== progress.material_code), progress])} />}
         {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} learningProgress={learningProgress} onAdd={() => setModal('assessment')} onRefresh={loadData} onToggle={toggleAssessment} initialSelected={selectedAssessment} onClearSelected={() => setSelectedAssessment(null)} />}
         {view === 'alumnos' && isTeacher && <Students students={studentList} groups={groupList} assessments={assessmentList} />}
@@ -260,6 +260,7 @@ function Dashboard({ session, onLogout }) {
 }
 
 function TeacherHome({ setView, groups, students, materials, assessments, onOpenAssessment }) {
+  const [moduleFilter, setModuleFilter] = useState('Todos')
   const activeAssessments = assessments.filter(item => item.status === 'Activa')
   const submitted = assessments.reduce((sum, item) => sum + item.submissions, 0)
   const drafts = assessments.reduce((sum, item) => sum + item.drafts, 0)
@@ -267,24 +268,62 @@ function TeacherHome({ setView, groups, students, materials, assessments, onOpen
   const overallAverage = scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : null
   const today = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()).toLocaleUpperCase('es-MX')
   const recent = assessments.flatMap(assessment => assessment.submissionDetails.map(submission => ({ ...submission, assessment: assessment.title, group: assessment.group, date: submission.submitted_at || submission.started_at }))).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5)
+  const metrics = buildModuleMetrics(courses, students, materials, assessments)
+  const filteredMetrics = moduleFilter === 'Todos' ? metrics : metrics.filter(item => item.code === moduleFilter)
+  const overdue = activeAssessments.reduce((sum, item) => sum + Math.max(0, item.total - item.submissions), 0)
+  const ungraded = assessments.reduce((sum, item) => sum + item.submissionDetails.filter(submission => submission.submitted_at && submission.score === null).length, 0)
   return <>
-    <section className="welcome-row"><div><span className="eyebrow">{today}</span><h1>Buenos días, profesor.</h1><p>Esto es lo que sucede hoy con tus grupos.</p></div><div className="term-card"><span>Periodo actual</span><strong>Agosto 2026 – Enero 2027</strong></div></section>
-    <section className="stat-grid">
+    <section className="teacher-command-hero"><div><span className="eyebrow">{today}</span><h1>Centro de control docente</h1><p>Supervisa grupos, contenidos, entregas y resultados desde un solo lugar.</p></div><div className="command-actions"><button onClick={() => setView('alumnos')}><Users size={17} />Alumnos</button><button onClick={() => setView('materiales')}><BookOpen size={17} />Materiales</button><button onClick={() => setView('evaluaciones')}><ClipboardCheck size={17} />Evaluaciones</button></div></section>
+    <section className="teacher-kpi-grid">
       <Stat icon={Users} value={students.length} label="Alumnos en padrón" note={`${groups.length} grupos`} color="blue" />
       <Stat icon={BookOpen} value={materials.filter(item => item.published).length} label="Materiales publicados" note="Información real" color="gold" />
       <Stat icon={ClipboardCheck} value={activeAssessments.length} label="Evaluaciones activas" note={`${submitted} entregas · ${drafts} avances`} color="purple" />
       <Stat icon={TrendingUp} value={overallAverage === null ? '—' : `${overallAverage} / 60`} label="Promedio general" note={overallAverage === null ? 'Sin calificaciones' : 'Calculado con entregas'} color="green" />
+      <Stat icon={FileText} value={ungraded} label="Pendientes de calificar" note={ungraded ? 'Requieren revisión' : 'Todo revisado'} color="gold" />
     </section>
-    <section className="two-cols">
-      <div className="panel"><PanelTitle title="Actividad reciente" action="Ver alumnos" onClick={() => setView('alumnos')} />
-        {recent.length ? <div className="recent-list">{recent.map(item => <Activity key={item.id} initials={(item.student?.name || 'Alumno').split(' ').slice(0, 2).map(part => part[0]).join('')} title={item.student?.name || 'Alumno'} meta={`${item.submitted_at ? 'Entregó' : 'Guardó avance'} · ${item.assessment} · Grupo ${item.group}`} color={item.submitted_at ? 'green' : 'blue'} />)}</div> : <EmptyState text="Todavía no hay actividad de alumnos registrada." />}
-      </div>
-      <div className="panel"><PanelTitle title="Avance por grupo" />
-        <div className="group-progress">{groups.map(group => { const activeStudents = new Set(assessments.filter(item => item.group === group.code).flatMap(item => item.submissionDetails.map(submission => submission.student_id))).size; const progress = group.students ? Math.round(activeStudents / group.students * 100) : 0; return <div className="progress-row" key={group.id}><div><strong>Grupo {group.code}</strong><span>{group.students} alumnos · {group.semester}º semestre</span></div><div className="progress-meta"><b>{activeStudents ? `${activeStudents} con actividad` : 'Sin actividad'}</b><div className="bar"><i style={{ width: `${progress}%` }} /></div></div></div> })}</div>
-      </div>
+    <section className="dashboard-toolbar"><div><strong>Panorama por módulo</strong><span>Las gráficas se calculan con alumnos, actividades y calificaciones reales.</span></div><select value={moduleFilter} onChange={event => setModuleFilter(event.target.value)}><option value="Todos">Todos los módulos</option>{metrics.map(item => <option key={item.key} value={item.code}>{item.code} · Grupo {item.group}</option>)}</select></section>
+    <section className="module-insight-grid">{filteredMetrics.map(metric => <ModuleInsight key={metric.key} metric={metric} onMaterials={() => setView('materiales')} onAssessments={() => setView('evaluaciones')} />)}</section>
+    <section className="teacher-chart-grid">
+      <div className="panel chart-panel"><PanelTitle title="Entregas por módulo" /><ModuleBarChart metrics={metrics} field="completion" suffix="%" /></div>
+      <div className="panel chart-panel"><PanelTitle title="Promedio por módulo" /><ModuleBarChart metrics={metrics} field="average" suffix="/60" /></div>
+      <div className="panel attention-panel"><PanelTitle title="Atención necesaria" /><div className="attention-list"><button onClick={() => setView('evaluaciones')}><span className="attention-number">{ungraded}</span><span><strong>Entregas sin calificar</strong><small>Abrir resultados y registrar calificación</small></span><ChevronRight size={18} /></button><button onClick={() => setView('evaluaciones')}><span className="attention-number amber">{overdue}</span><span><strong>Entregas pendientes</strong><small>Alumnos que aún no entregan actividades activas</small></span><ChevronRight size={18} /></button><button onClick={() => setView('materiales')}><span className="attention-number blue">{materials.filter(item => !item.published).length}</span><span><strong>Materiales bloqueados</strong><small>Listos para publicar cuando usted decida</small></span><ChevronRight size={18} /></button></div></div>
+    </section>
+    <section className="two-cols teacher-lower-grid">
+      <div className="panel"><PanelTitle title="Actividad reciente" action="Ver alumnos" onClick={() => setView('alumnos')} />{recent.length ? <div className="recent-list">{recent.map(item => <Activity key={item.id} initials={(item.student?.name || 'Alumno').split(' ').slice(0, 2).map(part => part[0]).join('')} title={item.student?.name || 'Alumno'} meta={`${item.submitted_at ? 'Entregó' : 'Guardó avance'} · ${item.assessment} · Grupo ${item.group}`} color={item.submitted_at ? 'green' : 'blue'} />)}</div> : <EmptyState text="Todavía no hay actividad de alumnos registrada." />}</div>
+      <div className="panel"><PanelTitle title="Avance por grupo" /><div className="group-progress">{groups.map(group => { const activeStudents = new Set(assessments.filter(item => item.group === group.code).flatMap(item => item.submissionDetails.map(submission => submission.student_id))).size; const progress = group.students ? Math.round(activeStudents / group.students * 100) : 0; return <div className="progress-row" key={group.id}><div><strong>Grupo {group.code}</strong><span>{group.students} alumnos · {group.semester}º semestre</span></div><div className="progress-meta"><b>{activeStudents ? `${activeStudents} con actividad` : 'Sin actividad'}</b><div className="bar"><i style={{ width: `${progress}%` }} /></div></div></div> })}</div></div>
     </section>
     <section className="panel"><PanelTitle title="Evaluaciones activas" action="Ver todas" onClick={() => setView('evaluaciones')} /><AssessmentTable items={activeAssessments} onOpen={onOpenAssessment} /></section>
   </>
+}
+
+function itemBelongsToCourse(item, course, sameGroupCourses) {
+  if (item.group !== course.group) return false
+  const code = item.activityCode?.split('-')[0]
+  if (code) return code === course.code
+  if (String(item.title || '').toUpperCase().includes(course.code)) return true
+  return sameGroupCourses.length === 1
+}
+
+function buildModuleMetrics(courseList, students, materials, assessments) {
+  return courseList.map(course => {
+    const sameGroupCourses = courseList.filter(item => item.group === course.group)
+    const moduleStudents = students.filter(student => student.group === course.group)
+    const moduleMaterials = materials.filter(item => itemBelongsToCourse(item, course, sameGroupCourses))
+    const moduleAssessments = assessments.filter(item => itemBelongsToCourse(item, course, sameGroupCourses))
+    const possible = moduleStudents.length * moduleAssessments.length
+    const delivered = moduleAssessments.reduce((sum, item) => sum + item.submissions, 0)
+    const scores = moduleAssessments.flatMap(item => item.submissionDetails).filter(item => item.score !== null).map(item => Number(item.score))
+    return { ...course, key: `${course.code}-${course.group}`, students: moduleStudents.length, materials: moduleMaterials.length, publishedMaterials: moduleMaterials.filter(item => item.published).length, assessments: moduleAssessments.length, activeAssessments: moduleAssessments.filter(item => item.status === 'Activa').length, delivered, possible, completion: possible ? Math.round(delivered / possible * 100) : 0, average: scores.length ? Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length) : 0, hasScores: scores.length > 0 }
+  })
+}
+
+function ModuleInsight({ metric, onMaterials, onAssessments }) {
+  return <article className="module-insight"><header><div className="module-code">{metric.code}</div><div><strong>{metric.name}</strong><span>Grupo {metric.group} · {metric.students} alumnos</span></div><div className="completion-donut" style={{ '--progress': `${metric.completion * 3.6}deg` }}><i>{metric.completion}%</i></div></header><div className="module-metric-row"><div><b>{metric.publishedMaterials}/{metric.materials}</b><span>Materiales visibles</span></div><div><b>{metric.activeAssessments}/{metric.assessments}</b><span>Evaluaciones activas</span></div><div><b>{metric.delivered}/{metric.possible || 0}</b><span>Entregas</span></div><div><b>{metric.hasScores ? `${metric.average}/60` : '—'}</b><span>Promedio</span></div></div><footer><button onClick={onMaterials}>Administrar materiales</button><button onClick={onAssessments}>Ver evaluaciones</button></footer></article>
+}
+
+function ModuleBarChart({ metrics, field, suffix }) {
+  const max = field === 'average' ? 60 : 100
+  return <div className="module-bar-chart">{metrics.map(metric => <div className="chart-row" key={metric.key}><span><b>{metric.code}</b><small>Gpo. {metric.group}</small></span><div><i style={{ width: `${Math.min(100, metric[field] / max * 100)}%` }} /></div><strong>{field === 'average' && !metric.hasScores ? '—' : `${metric[field]}${suffix}`}</strong></div>)}</div>
 }
 
 function StudentHome({ session, courses, materials, assessments, setView }) {
@@ -319,6 +358,11 @@ function StudentPreview({ session, courses, materials, assessments }) {
 
 function Modules({ courses, session, setView }) {
   return <section className="panel page-panel"><div className="list-toolbar"><div><span className="eyebrow">GRUPO {session.group} · {session.semester}º SEMESTRE</span><h1>Mis módulos</h1><p>Materias que cursas durante el periodo actual.</p></div></div><div className="module-grid">{courses.map(course => <article className="module-card" key={course.code}><div className="module-card-head"><div className="module-code large">{course.code}</div><span>{course.hoursPerWeek} h/semana</span></div><h3>{course.name}</h3><p>Grupo {course.group} · {course.semester}º semestre</p>{course.outcomes?.length ? <small>{course.outcomes.length} resultados de aprendizaje</small> : <small>Programa académico asignado</small>}<div className="module-actions"><button className="secondary" onClick={() => setView('materiales')}>Ver materiales</button><button className="text-btn" onClick={() => setView('evaluaciones')}>Evaluaciones <ChevronRight size={15} /></button></div></article>)}</div></section>
+}
+
+function TeacherModules({ courses, students, materials, assessments, setView }) {
+  const metrics = buildModuleMetrics(courses, students, materials, assessments)
+  return <section className="teacher-modules-page"><div className="list-toolbar"><div><span className="eyebrow">CONTROL ACADÉMICO</span><h1>Módulos asignados</h1><p>Consulta el estado de cada materia y entra directamente a sus recursos.</p></div></div><div className="module-insight-grid expanded">{metrics.map(metric => <ModuleInsight key={metric.key} metric={metric} onMaterials={() => setView('materiales')} onAssessments={() => setView('evaluaciones')} />)}</div><div className="panel module-comparison"><PanelTitle title="Comparación general" /><div className="comparison-grid"><div><h3>Porcentaje de entregas</h3><ModuleBarChart metrics={metrics} field="completion" suffix="%" /></div><div><h3>Promedio registrado</h3><ModuleBarChart metrics={metrics} field="average" suffix="/60" /></div></div></div></section>
 }
 
 function Materials({ items, groups, courses, session, isTeacher, onAdd, onToggle, onProgressUpdate }) {
