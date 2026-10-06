@@ -370,7 +370,16 @@ function Materials({ items, groups, courses, session, isTeacher, onAdd, onToggle
   const [query, setQuery] = useState('')
   const [group, setGroup] = useState('Todos')
   const [selectedMaterial, setSelectedMaterial] = useState(null)
-  const filtered = items.filter(m => (group === 'Todos' || m.group === group) && m.title.toLowerCase().includes(query.toLowerCase()))
+  const courseOrder = new Map(courses.map((course, index) => [course.code, index]))
+  const sequenceFor = material => {
+    const match = `${material.unit} ${material.title}`.match(/(?:propósito|r\.?a\.?)\s*(\d+)\.(\d+)/i)
+    return match ? Number(match[1]) * 100 + Number(match[2]) : 9999
+  }
+  const filtered = items.filter(m => (group === 'Todos' || m.group === group) && m.title.toLowerCase().includes(query.toLowerCase())).sort((a, b) => {
+    const aCode = courses.find(course => a.title.toUpperCase().startsWith(course.code))?.code
+    const bCode = courses.find(course => b.title.toUpperCase().startsWith(course.code))?.code
+    return (courseOrder.get(aCode) ?? 999) - (courseOrder.get(bCode) ?? 999) || sequenceFor(a) - sequenceFor(b) || a.title.localeCompare(b.title, 'es-MX')
+  })
   async function openMaterial(material) {
     if (material.url?.startsWith('mtcs://')) { setSelectedMaterial(material); return }
     if (material.url?.startsWith('pear://')) { setSelectedMaterial(material); return }
