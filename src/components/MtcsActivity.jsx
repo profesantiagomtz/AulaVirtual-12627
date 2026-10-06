@@ -225,7 +225,7 @@ const packetTracerPractices = [
       'Abre Packet Tracer y crea un archivo nuevo.',
       'Agrega un switch 2960, tres computadoras y un servidor.',
       'Conecta cada equipo al switch con cable de cobre directo.',
-      'Configura las direcciones 192.168.10.10, 192.168.10.11, 192.168.10.12 y 192.168.10.100 con máscara 255.255.255.0.',
+      'Configura las cuatro direcciones indicadas en tus datos asignados con máscara 255.255.255.0.',
       'Cambia al modo Simulation y envía una PDU simple entre dos computadoras.',
       'Desde una computadora ejecuta ping hacia las otras dos y hacia el servidor.',
       'Guarda el archivo con el formato: Grupo_Apellido_Practica1.pkt.',
@@ -240,7 +240,7 @@ const packetTracerPractices = [
     steps: [
       'Crea una topología con un router inalámbrico, una computadora cableada, una laptop y un teléfono.',
       'Conecta la computadora por cable al router inalámbrico.',
-      'Configura el nombre de la red como AULA-GRUPO y protege el acceso con WPA2-PSK.',
+      'Configura el nombre de red que te asignó la plataforma y protege el acceso con WPA2-PSK.',
       'Conecta la laptop y el teléfono a la red inalámbrica usando la clave configurada.',
       'Comprueba que todos los dispositivos reciban una dirección válida.',
       'Ejecuta ping desde la computadora hacia la laptop y observa el recorrido en modo Simulation.',
@@ -255,8 +255,8 @@ const packetTracerPractices = [
     goal: 'Aplicar un orden de diagnóstico, localizar errores de configuración y comprobar la solución.',
     steps: [
       'Construye una red con un switch y cuatro computadoras.',
-      'Configura tres equipos en la red 192.168.20.0/24.',
-      'En el cuarto equipo coloca intencionalmente una dirección de otra red.',
+      'Configura los equipos en la red correcta indicada en tus datos asignados.',
+      'En el equipo señalado por la plataforma coloca intencionalmente una dirección de otra red.',
       'Usa ipconfig y ping para identificar cuál equipo no se comunica y explica mentalmente la causa.',
       'Corrige la dirección sin cambiar el cableado ni los demás equipos.',
       'Repite las pruebas hasta obtener respuesta de los cuatro equipos.',
@@ -266,6 +266,31 @@ const packetTracerPractices = [
     checks: ['El archivo conserva la nota del diagnóstico.', 'Las cuatro computadoras quedan en la misma red.', 'Todos los equipos responden después de la corrección.'],
   },
 ]
+
+function packetAssignmentsFor(studentId = '') {
+  const seed = hash(`packet-tracer-${studentId}`)
+  const networkA = 30 + (seed % 50)
+  const networkB = 100 + ((seed >>> 4) % 50)
+  const station = 2 + ((seed >>> 8) % 3)
+  const code = String(1000 + (seed % 9000))
+  return {
+    'pt-componentes': {
+      code: `PT1-${code}`,
+      values: [`Red asignada: 192.168.${networkA}.0/24`, `Hosts: .10, .11, .12 y .100`, `Código de identificación: PT1-${code}`],
+      note: `Agrega una nota visible en la topología con el código PT1-${code}.`,
+    },
+    'pt-inalambrica': {
+      code: `PT2-${code}`,
+      values: [`Nombre de red: AULA-${code}`, `Red local: 192.168.${networkB}.0/24`, `Código de identificación: PT2-${code}`],
+      note: `Agrega una nota visible junto al router con el código PT2-${code}.`,
+    },
+    'pt-diagnostico': {
+      code: `PT3-${code}`,
+      values: [`Red correcta: 192.168.${networkA + 80}.0/24`, `Equipo que debe iniciar con error: PC-${station}`, `Código de identificación: PT3-${code}`],
+      note: `La nota final debe incluir el código PT3-${code}, el error encontrado y la corrección.`,
+    },
+  }
+}
 
 export function MtcsMaterialView({ code, session, onBack, onProgressUpdate }) {
   const definition = mtcsContent[code]
@@ -334,6 +359,7 @@ function Ra11LearningPath({ definition, session, onBack, onProgressUpdate }) {
   const [packetUploads, setPacketUploads] = useState({})
   const [uploadingPractice, setUploadingPractice] = useState('')
   const [practiceMessage, setPracticeMessage] = useState({})
+  const packetAssignments = useMemo(() => packetAssignmentsFor(session?.id || session?.email), [session?.id, session?.email])
   const totalSteps = definition.lessons.length + 1 + packetTracerPractices.length
 
   useEffect(() => {
@@ -403,12 +429,14 @@ function Ra11LearningPath({ definition, session, onBack, onProgressUpdate }) {
       if (authError || !authData.user) throw authError || new Error('La sesión ya no está disponible.')
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
       const path = `${authData.user.id}/${assessmentId}/packet-tracer/${practice.id}-${safeName}`
+      const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+      const checksum = Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('')
       const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true, contentType: file.type || 'application/octet-stream' })
       if (uploadError) throw uploadError
       const { data: existing, error: readError } = await supabase.from('submissions').select('id, answers, submitted_at').eq('assessment_id', assessmentId).maybeSingle()
       if (readError) throw readError
       if (existing?.submitted_at) throw new Error('La evaluación final ya fue entregada y no admite cambios.')
-      const entry = { path, filename: file.name, practice: practice.title, uploaded_at: new Date().toISOString() }
+      const entry = { path, filename: file.name, practice: practice.title, assigned_code: packetAssignments[practice.id].code, assigned_values: packetAssignments[practice.id].values, checksum, size: file.size, uploaded_at: new Date().toISOString() }
       const nextUploads = { ...(existing?.answers?.packet_tracer || packetUploads), [practice.id]: entry }
       const answers = { ...(existing?.answers || {}), packet_tracer: nextUploads }
       const query = existing?.id
@@ -432,14 +460,14 @@ function Ra11LearningPath({ definition, session, onBack, onProgressUpdate }) {
     <div className="learning-topic-list">{definition.lessons.map(([title, text], index) => { const done = completed.includes(`tema-${index + 1}`); const questions = [ra11Checks[index], ...ra11ExtraChecks[index]]; const answered = questions.every((_, questionIndex) => answers[`${index}-${questionIndex}`]); return <article className={done ? 'topic-complete' : ''} key={title}><header><span>{done ? <CheckCircle2 size={18} /> : index + 1}</span><div><small>TEMA {index + 1}</small><h2>{title.replace(/^\d+\.\s*/, '')}</h2></div></header><div className="topic-notes"><h3>Conceptos clave</h3><p>{text}</p><ul className="concept-list">{ra11Details[index].map(detail => <li key={detail}>{detail}</li>)}</ul><TopicDiagram index={index} /><div className="topic-example"><b>Para visualizarlo:</b> {index === 0 ? 'la red funciona como un servicio de mensajería: necesita remitente, destino, camino y reglas.' : index === 1 ? 'el dispositivo final crea o recibe; el intermediario dirige; el medio transporta.' : index === 2 ? 'cliente pregunta, servidor responde y el protocolo define cómo conversan.' : index === 3 ? 'tener señal no basta: debe llegar bien, soportar usuarios y estar protegida.' : index === 4 ? 'no existe un medio perfecto; se elige el que mejor resuelve la necesidad.' : 'las capas permiten revisar una parte del problema a la vez.'}</div></div><div className="topic-check"><b>Ejercicios del tema</b>{questions.map((check, questionIndex) => <div className="topic-question" key={check.question}><p>{questionIndex + 1}. {check.question}</p><div className="check-options">{check.options.map(option => <label key={option}><input type="radio" name={`check-${index}-${questionIndex}`} checked={answers[`${index}-${questionIndex}`] === option} onChange={() => setAnswers(current => ({ ...current, [`${index}-${questionIndex}`]: option }))} />{option}</label>)}</div></div>)}<button className="secondary" onClick={() => checkLesson(index)} disabled={!answered || done}>{done ? 'Ejercicios completados' : 'Comprobar respuestas'}</button>{feedback[index] && <small className={done ? 'correct-feedback' : 'wrong-feedback'}>{feedback[index]}</small>}</div></article> })}</div>
     <CommandGuide />
     <section className={`network-simulator ${completed.includes('practica-comandos') ? 'topic-complete' : ''}`}><div className="stage-heading"><span>PRÁCTICA OBLIGATORIA</span><h2>Simulador de diagnóstico de red</h2><p>Obtén la configuración, comprueba la puerta de enlace y observa la ruta. Debes ejecutar <b>ipconfig</b>, <b>ping 192.168.10.1</b> y <b>tracert 8.8.8.8</b>.</p></div><div className="fake-terminal">{terminal.map((line, index) => <pre key={`${line}-${index}`}>{line}</pre>)}<form onSubmit={runCommand}><span>C:\AulaVirtual&gt;</span><input value={command} onChange={event => setCommand(event.target.value)} placeholder="Escribe un comando" autoComplete="off" /><button>Ejecutar</button></form></div>{completed.includes('practica-comandos') && <div className="submission-success"><CheckCircle2 size={17} /> Práctica completada.</div>}</section>
-    <PacketTracerPractices completed={completed} uploads={packetUploads} uploading={uploadingPractice} messages={practiceMessage} preview={session?.preview} onUpload={uploadPacketPractice} />
+    <PacketTracerPractices completed={completed} uploads={packetUploads} uploading={uploadingPractice} messages={practiceMessage} assignments={packetAssignments} preview={session?.preview} onUpload={uploadPacketPractice} />
     {status === 'error' && <div className="form-error">No fue posible guardar el avance. Revisa la conexión y vuelve a intentarlo.</div>}
     <div className={`unlock-status ${percent === 100 ? 'unlocked' : ''}`}><ShieldCheck size={24} /><div><strong>{percent === 100 ? 'Actividad de evaluación desbloqueada' : 'Actividad de evaluación bloqueada'}</strong><p>{percent === 100 ? 'Ya puedes ir a Evaluaciones y comenzar la actividad del R.A. 1.1.' : `Completa los ${totalSteps - completed.length} pasos pendientes para desbloquearla.`}</p></div></div>
   </section>
 }
 
-function PacketTracerPractices({ completed, uploads, uploading, messages, preview, onUpload }) {
-  return <section className="packet-tracer-section"><div className="stage-heading"><span>PRÁCTICAS EN PACKET TRACER</span><h2>Construye, prueba y entrega tus redes</h2><p>Realiza únicamente estas prácticas en Cisco Packet Tracer. Sigue el orden, comprueba el funcionamiento y sube el mismo archivo <b>.pkt</b> que terminaste.</p></div><div className="packet-practice-list">{packetTracerPractices.map((practice, index) => { const delivered = Boolean(uploads[practice.id]) || completed.includes(practice.id); return <article className={delivered ? 'practice-delivered' : ''} key={practice.id}><header><span>{delivered ? <CheckCircle2 size={20} /> : index + 1}</span><div><small>{practice.related}</small><h3>{practice.title}</h3></div></header><div className="packet-practice-body"><div className="practice-goal"><b>Meta</b><p>{practice.goal}</p></div><div className="practice-columns"><div><h4>Pasos</h4><ol>{practice.steps.map(step => <li key={step}>{step}</li>)}</ol></div><div><h4>Antes de entregar, comprueba</h4><ul>{practice.checks.map(check => <li key={check}>{check}</li>)}</ul></div></div><label className="packet-upload"><Upload size={20} /><span><strong>{uploads[practice.id]?.filename || 'Selecciona tu archivo de Packet Tracer'}</strong><small>Formato permitido: .pkt · máximo 20 MB</small></span><input type="file" accept=".pkt,application/octet-stream" disabled={uploading === practice.id || preview} onChange={event => onUpload(practice, event.target.files?.[0])} /></label>{uploading === practice.id && <div className="upload-status">Subiendo y vinculando tu práctica…</div>}{messages[practice.id] && <div className={delivered ? 'submission-success' : 'form-error'}>{messages[practice.id]}</div>}{delivered && !messages[practice.id] && <div className="submission-success"><CheckCircle2 size={17} /> Archivo entregado. Puedes reemplazarlo mientras no hayas enviado la evaluación final.</div>}</div></article> })}</div></section>
+function PacketTracerPractices({ completed, uploads, uploading, messages, assignments, preview, onUpload }) {
+  return <section className="packet-tracer-section"><div className="stage-heading"><span>PRÁCTICAS EN PACKET TRACER</span><h2>Construye, prueba y entrega tus redes</h2><p>Realiza únicamente estas prácticas en Cisco Packet Tracer. Sigue el orden, comprueba el funcionamiento y sube el mismo archivo <b>.pkt</b> que terminaste.</p></div><div className="packet-practice-list">{packetTracerPractices.map((practice, index) => { const delivered = Boolean(uploads[practice.id]) || completed.includes(practice.id); const assignment = assignments[practice.id]; return <article className={delivered ? 'practice-delivered' : ''} key={practice.id}><header><span>{delivered ? <CheckCircle2 size={20} /> : index + 1}</span><div><small>{practice.related}</small><h3>{practice.title}</h3></div></header><div className="packet-practice-body"><div className="practice-goal"><b>Meta</b><p>{practice.goal}</p></div><div className="packet-assignment"><b>Datos asignados para tu práctica</b>{assignment.values.map(value => <span key={value}>{value}</span>)}<p>{assignment.note}</p></div><div className="practice-columns"><div><h4>Pasos</h4><ol>{practice.steps.map(step => <li key={step}>{step}</li>)}</ol></div><div><h4>Antes de entregar, comprueba</h4><ul>{practice.checks.map(check => <li key={check}>{check}</li>)}<li>{assignment.note}</li></ul></div></div><label className="packet-upload"><Upload size={20} /><span><strong>{uploads[practice.id]?.filename || 'Selecciona tu archivo de Packet Tracer'}</strong><small>Formato permitido: .pkt · máximo 20 MB</small></span><input type="file" accept=".pkt,application/octet-stream" disabled={uploading === practice.id || preview} onChange={event => onUpload(practice, event.target.files?.[0])} /></label>{uploading === practice.id && <div className="upload-status">Subiendo y vinculando tu práctica…</div>}{messages[practice.id] && <div className={delivered ? 'submission-success' : 'form-error'}>{messages[practice.id]}</div>}{delivered && !messages[practice.id] && <div className="submission-success"><CheckCircle2 size={17} /> Archivo entregado. Puedes reemplazarlo mientras no hayas enviado la evaluación final.</div>}</div></article> })}</div></section>
 }
 
 function TopicDiagram({ index }) {
