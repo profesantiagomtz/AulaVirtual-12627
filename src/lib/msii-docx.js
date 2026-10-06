@@ -50,6 +50,31 @@ export async function readAssignmentId(file) {
   return match?.[1]?.trim() || null
 }
 
+export async function analyzeMsiiDocument(file, assignment = {}) {
+  const zip = await JSZip.loadAsync(file)
+  const documentFile = zip.file('word/document.xml')
+  if (!documentFile) throw new Error('El archivo no contiene un documento de Word válido.')
+  const xml = await documentFile.async('string')
+  const text = xml
+    .replace(/<w:tab\/>/g, ' ')
+    .replace(/<\/w:p>/g, '\n')
+    .replace(/<\/w:tr>/g, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&apos;', "'")
+    .replace(/[ \t]+/g, ' ').replace(/\n+/g, '\n').trim()
+  const remainingPlaceholders = (text.match(/Escribe aqu[ií]/gi) || []).length
+  const initialPlaceholders = 30
+  const completedFields = Math.max(0, initialPlaceholders - remainingPlaceholders)
+  const expectedValues = [assignment.equipment, assignment.compare_os, assignment.decimal_number, assignment.ascii_character, assignment.capacity].filter(value => value !== undefined && value !== null && String(value).trim())
+  const matchingValues = expectedValues.filter(value => text.toLocaleLowerCase('es-MX').includes(String(value).toLocaleLowerCase('es-MX')))
+  const wordCount = text.split(/\s+/).filter(Boolean).length
+  const conceptLabels = ['informática', 'sistema informático', 'red de computadoras', 'unidad de medida', 'sistemas numéricos', 'sistema operativo']
+  const sectionsPresent = conceptLabels.filter(label => text.toLocaleLowerCase('es-MX').includes(label)).length
+  const completionPercent = Math.round(completedFields / initialPlaceholders * 100)
+  const suggested = Math.min(60, Math.round(completionPercent * .42 + (matchingValues.length / Math.max(1, expectedValues.length)) * 8 + Math.min(10, wordCount / 90)))
+  return { text, remainingPlaceholders, completedFields, initialPlaceholders, completionPercent, wordCount, sectionsPresent, matchingValues: matchingValues.length, expectedValues: expectedValues.length, suggested }
+}
+
 export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')

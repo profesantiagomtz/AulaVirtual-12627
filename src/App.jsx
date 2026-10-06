@@ -7,7 +7,7 @@ import {
 import { courses } from './data/academic'
 import AsinActivity from './components/AsinActivity'
 import MtcsActivity, { MtcsMaterialView } from './components/MtcsActivity'
-import { buildMsiiDocument, downloadBlob, readAssignmentId } from './lib/msii-docx'
+import { analyzeMsiiDocument, buildMsiiDocument, downloadBlob, readAssignmentId } from './lib/msii-docx'
 import { isSupabaseReady, supabase } from './lib/supabase'
 
 const navItems = [
@@ -171,7 +171,7 @@ function Dashboard({ session, onLogout }) {
         supabase.from('groups').select('id, code, semester, career').eq('active', true).order('code'),
         isTeacher ? supabase.from('profiles').select('id, full_name, email, enrollment_number, group_id, groups(code)').eq('role', 'student').order('full_name') : Promise.resolve({ data: [] }),
         isTeacher ? materialsQuery : materialsQuery.eq('published', true),
-        supabase.from('assessments').select('id, title, instructions, activity_code, status, due_at, group_id, groups(code), submissions(id, student_id, score, started_at, submitted_at, answers, file_path, original_filename, profiles!submissions_student_id_fkey(full_name, email, enrollment_number))').order('created_at', { ascending: false }),
+        supabase.from('assessments').select('id, title, instructions, activity_code, status, due_at, group_id, groups(code), submissions(id, student_id, score, started_at, submitted_at, answers, file_path, original_filename, assessment_assignments(variant), profiles!submissions_student_id_fkey(full_name, email, enrollment_number))').order('created_at', { ascending: false }),
         isTeacher ? Promise.resolve({ data: [] }) : supabase.from('learning_progress').select('material_code, completed_steps, completed_at'),
       ])
       const firstError = [groupResult, studentResult, materialResult, assessmentResult, progressResult].find(result => result.error)?.error
@@ -183,7 +183,7 @@ function Dashboard({ session, onLogout }) {
       setAssessmentList((assessmentResult.data || []).map(assessment => {
         const submissions = assessment.submissions || []
         const scored = submissions.filter(item => item.score !== null)
-        return { id: assessment.id, title: assessment.title, instructions: assessment.instructions, activityCode: assessment.activity_code, group: assessment.groups?.code || '—', groupId: assessment.group_id, due: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha', submissions: submissions.filter(item => item.submitted_at).length, drafts: submissions.filter(item => !item.submitted_at).length, submissionDetails: submissions.map(item => ({ ...item, student: item.profiles ? { name: formatPersonName(item.profiles.full_name), email: item.profiles.email, enrollment: item.profiles.enrollment_number } : null })), total: directory.filter(student => student.group_code === assessment.groups?.code).length, average: scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.score), 0) / scored.length) : null, status: assessment.status === 'published' ? 'Activa' : assessment.status === 'closed' ? 'Cerrada' : 'Borrador' }
+        return { id: assessment.id, title: assessment.title, instructions: assessment.instructions, activityCode: assessment.activity_code, group: assessment.groups?.code || '—', groupId: assessment.group_id, due: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha', submissions: submissions.filter(item => item.submitted_at).length, drafts: submissions.filter(item => !item.submitted_at).length, submissionDetails: submissions.map(item => ({ ...item, assignment: item.assessment_assignments?.variant || null, student: item.profiles ? { name: formatPersonName(item.profiles.full_name), email: item.profiles.email, enrollment: item.profiles.enrollment_number } : null })), total: directory.filter(student => student.group_code === assessment.groups?.code).length, average: scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.score), 0) / scored.length) : null, status: assessment.status === 'published' ? 'Activa' : assessment.status === 'closed' ? 'Cerrada' : 'Borrador' }
       }))
       setLearningProgress(progressResult.data || [])
     } catch (err) { setDataError(err.message || 'No fue posible cargar la información') }
@@ -664,6 +664,24 @@ function evidenceReview(assessment, submission) {
   const equipment = Object.values(answers.equipment || {}).filter(Boolean)
   const questions = [...(answers.questionnaires?.users || []), ...(answers.questionnaires?.administrators || [])].filter(item => item.text)
   const packetFiles = Object.values(answers.packet_tracer || {})
+  if (assessment.activityCode === 'ASIN-RA-1.1') {
+    const completeRisks = (answers.risks || []).filter(item => item.risk && item.description && item.probability && item.impact && item.actionNeeded && item.measures)
+    const equipmentFields = Object.values(answers.equipment || {}).filter(value => String(value || '').trim())
+    const userQuestions = (answers.questionnaires?.users || []).filter(item => item.text && item.type)
+    const adminQuestions = (answers.questionnaires?.administrators || []).filter(item => item.text && item.type)
+    const suggested = Math.min(60, (submission.submitted_at ? 5 : 0) + completeRisks.length * 8 + Math.round(equipmentFields.length / 9 * 11) + userQuestions.length * 2 + adminQuestions.length * 2)
+    return { suggested, checks: [
+      { label: `${completeRisks.length} de 3 matrices de riesgo completas`, ok: completeRisks.length === 3 },
+      { label: `${equipmentFields.length} de 9 datos de la ficha técnica`, ok: equipmentFields.length === 9 },
+      { label: `${userQuestions.length} de 5 preguntas para usuarios`, ok: userQuestions.length === 5 },
+      { label: `${adminQuestions.length} de 5 preguntas para administradores`, ok: adminQuestions.length === 5 },
+      { label: submission.submitted_at ? 'Actividad entregada formalmente' : 'La actividad permanece en proceso', ok: Boolean(submission.submitted_at) },
+    ] }
+  }
+  if (assessment.activityCode === 'MSII-RA-1.1') return { suggested: submission.submitted_at && submission.file_path ? 10 : 0, checks: [
+    { label: submission.submitted_at ? 'Documento entregado formalmente' : 'La actividad permanece en proceso', ok: Boolean(submission.submitted_at) },
+    { label: submission.file_path ? `Documento recibido: ${submission.original_filename || 'archivo DOCX'}` : 'No contiene documento DOCX', ok: Boolean(submission.file_path) },
+  ] }
   const hasStructured = responses.length || risks.length || equipment.length || questions.length
   let suggested = submission.submitted_at ? 10 : 4
   if (submission.file_path) suggested += 20
@@ -677,12 +695,13 @@ function evidenceReview(assessment, submission) {
     { label: submission.submitted_at ? 'Actividad entregada formalmente' : 'La actividad permanece en proceso', ok: Boolean(submission.submitted_at) },
     { label: submission.file_path ? `Archivo adjunto: ${submission.original_filename || 'evidencia'}` : 'No contiene archivo final', ok: Boolean(submission.file_path) },
     { label: hasStructured ? 'Contiene respuestas o evidencias capturadas' : 'Sin respuestas capturadas en la plataforma', ok: Boolean(hasStructured) },
-    { label: packetFiles.length ? `${packetFiles.length} práctica(s) de Packet Tracer registrada(s)` : 'Sin prácticas de Packet Tracer asociadas', ok: packetFiles.length > 0 },
+    ...(assessment.activityCode?.startsWith('MTCS-') ? [{ label: packetFiles.length ? `${packetFiles.length} práctica(s) de Packet Tracer registrada(s)` : 'Sin prácticas de Packet Tracer asociadas', ok: packetFiles.length > 0 }] : []),
   ] }
 }
 
 function StudentRecord({ student, assessments, onBack, onRefresh }) {
   const [scores, setScores] = useState({})
+  const [documentAnalyses, setDocumentAnalyses] = useState({})
   const [busy, setBusy] = useState('')
   const [message, setMessage] = useState('')
   const records = assessments.map(assessment => ({ assessment, submission: assessment.submissionDetails.find(item => item.student_id === student.id || item.student?.email === student.email) }))
@@ -706,7 +725,22 @@ function StudentRecord({ student, assessments, onBack, onRefresh }) {
     else window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
   }
 
-  return <section className="student-record-page"><button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver al directorio</button><div className="student-record-hero"><div className="record-avatar">{student.name.split(' ').slice(0, 2).map(part => part[0]).join('')}</div><div><span className="eyebrow">EXPEDIENTE INDIVIDUAL · GRUPO {student.group}</span><h1>{student.name}</h1><p>{student.enrollment || 'Sin matrícula'} · {student.email}</p></div><div className="record-average"><strong>{average === null ? '—' : `${average}/60`}</strong><span>Promedio</span></div></div><div className="record-summary"><div><b>{assessments.length}</b><span>Evaluaciones asignadas</span></div><div><b>{delivered.length}</b><span>Entregadas</span></div><div><b>{scored.length}</b><span>Calificadas</span></div><div><b>{assessments.length - delivered.length}</b><span>Pendientes</span></div></div>{message && <div className={message.includes('correctamente') ? 'submission-success' : 'form-error'}>{message}</div>}<div className="student-evaluation-list">{records.map(record => { const review = evidenceReview(record.assessment, record.submission); return <article key={record.assessment.id}><header><div><span className="eyebrow">{record.assessment.activityCode || 'ACTIVIDAD'}</span><h2>{record.assessment.title}</h2><small>Entrega: {record.assessment.due}</small></div><span className={`tag ${record.submission?.submitted_at ? 'active' : ''}`}>{record.submission?.submitted_at ? 'ENTREGADA' : record.submission ? 'EN PROCESO' : 'NO INICIADA'}</span></header><div className="individual-review-grid"><section><h3>Evidencias</h3>{review.checks.map(check => <div className={check.ok ? 'review-check ok' : 'review-check'} key={check.label}>{check.ok ? <CheckCircle2 size={16} /> : <X size={16} />}<span>{check.label}</span></div>)}{record.submission?.file_path && <button className="secondary" onClick={() => download(record.submission.file_path)}><Download size={16} /> Descargar archivo final</button>}{Object.values(record.submission?.answers?.packet_tracer || {}).map(practice => <button className="secondary" key={practice.path} onClick={() => download(practice.path)}><Download size={16} /> {practice.practice}</button>)}</section><section><h3>Apoyo para evaluar</h3><div className="suggested-score"><span>Completitud documental estimada</span><strong>{review.suggested}/60</strong><small>Es una referencia. Revise la calidad y el contenido antes de calificar.</small></div>{record.submission?.answers && Object.keys(record.submission.answers).length > 0 && <details className="individual-answers"><summary><Eye size={16} /> Revisar respuestas</summary><AnswerPreview answers={record.submission.answers} /></details>}</section></div>{record.submission?.submitted_at && <footer><label>Calificación final<input type="number" min="0" max="60" value={scores[record.submission.id] ?? record.submission.score ?? ''} onChange={event => setScores(current => ({ ...current, [record.submission.id]: event.target.value }))} /></label><button className="secondary" onClick={() => setScores(current => ({ ...current, [record.submission.id]: review.suggested }))}>Usar referencia</button><button className="primary" disabled={busy === record.submission.id} onClick={() => saveScore(record)}>{busy === record.submission.id ? 'Guardando…' : 'Guardar calificación'}</button></footer>}</article> })}</div></section>
+  async function analyzeDocument(record) {
+    const submission = record.submission
+    if (!submission?.file_path) return
+    setBusy(`analysis-${submission.id}`); setMessage('')
+    try {
+      const { data, error } = await supabase.storage.from('submissions').createSignedUrl(submission.file_path, 300)
+      if (error) throw error
+      const response = await fetch(data.signedUrl)
+      if (!response.ok) throw new Error('No fue posible descargar el documento para analizarlo.')
+      const analysis = await analyzeMsiiDocument(await response.blob(), submission.assignment || {})
+      setDocumentAnalyses(current => ({ ...current, [submission.id]: analysis }))
+    } catch (error) { setMessage(error.message || 'No fue posible analizar el documento.') }
+    finally { setBusy('') }
+  }
+
+  return <section className="student-record-page"><button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver al directorio</button><div className="student-record-hero"><div className="record-avatar">{student.name.split(' ').slice(0, 2).map(part => part[0]).join('')}</div><div><span className="eyebrow">EXPEDIENTE INDIVIDUAL · GRUPO {student.group}</span><h1>{student.name}</h1><p>{student.enrollment || 'Sin matrícula'} · {student.email}</p></div><div className="record-average"><strong>{average === null ? '—' : `${average}/60`}</strong><span>Promedio</span></div></div><div className="record-summary"><div><b>{assessments.length}</b><span>Evaluaciones asignadas</span></div><div><b>{delivered.length}</b><span>Entregadas</span></div><div><b>{scored.length}</b><span>Calificadas</span></div><div><b>{assessments.length - delivered.length}</b><span>Pendientes</span></div></div>{message && <div className={message.includes('correctamente') ? 'submission-success' : 'form-error'}>{message}</div>}<div className="student-evaluation-list">{records.map(record => { const review = evidenceReview(record.assessment, record.submission); const docAnalysis = record.submission ? documentAnalyses[record.submission.id] : null; const suggested = docAnalysis?.suggested ?? review.suggested; return <article key={record.assessment.id}><header><div><span className="eyebrow">{record.assessment.activityCode || 'ACTIVIDAD'}</span><h2>{record.assessment.title}</h2><small>Entrega: {record.assessment.due}</small></div><span className={`tag ${record.submission?.submitted_at ? 'active' : ''}`}>{record.submission?.submitted_at ? 'ENTREGADA' : record.submission ? 'EN PROCESO' : 'NO INICIADA'}</span></header><div className="individual-review-grid"><section><h3>Evidencias</h3>{review.checks.map(check => <div className={check.ok ? 'review-check ok' : 'review-check'} key={check.label}>{check.ok ? <CheckCircle2 size={16} /> : <X size={16} />}<span>{check.label}</span></div>)}{record.submission?.file_path && <button className="secondary" onClick={() => download(record.submission.file_path)}><Download size={16} /> Descargar archivo final</button>}{record.assessment.activityCode === 'MSII-RA-1.1' && record.submission?.file_path && <button className="secondary analyze-doc" disabled={busy === `analysis-${record.submission.id}`} onClick={() => analyzeDocument(record)}><Search size={16} /> {busy === `analysis-${record.submission.id}` ? 'Analizando…' : 'Analizar contenido DOCX'}</button>}{Object.values(record.submission?.answers?.packet_tracer || {}).map(practice => <button className="secondary" key={practice.path} onClick={() => download(practice.path)}><Download size={16} /> {practice.practice}</button>)}</section><section><h3>Apoyo para evaluar</h3><div className="suggested-score"><span>{docAnalysis ? 'Referencia después de analizar el DOCX' : 'Completitud documental estimada'}</span><strong>{suggested}/60</strong><small>Es una referencia. Revise la calidad y el contenido antes de calificar.</small></div>{docAnalysis && <div className="doc-analysis"><div><b>{docAnalysis.completedFields}/{docAnalysis.initialPlaceholders}</b><span>Campos respondidos</span></div><div><b>{docAnalysis.completionPercent}%</b><span>Formato completado</span></div><div><b>{docAnalysis.wordCount}</b><span>Palabras detectadas</span></div><div><b>{docAnalysis.matchingValues}/{docAnalysis.expectedValues}</b><span>Datos asignados presentes</span></div>{docAnalysis.remainingPlaceholders > 0 && <p>Quedaron {docAnalysis.remainingPlaceholders} espacios con “Escribe aquí”. Conviene revisarlos antes de asignar la calificación.</p>}</div>}{record.submission?.answers && Object.keys(record.submission.answers).length > 0 && <details className="individual-answers"><summary><Eye size={16} /> Revisar respuestas</summary><AnswerPreview answers={record.submission.answers} /></details>}</section></div>{record.submission?.submitted_at && <footer><label>Calificación final<input type="number" min="0" max="60" value={scores[record.submission.id] ?? record.submission.score ?? ''} onChange={event => setScores(current => ({ ...current, [record.submission.id]: event.target.value }))} /></label><button className="secondary" onClick={() => setScores(current => ({ ...current, [record.submission.id]: suggested }))}>Usar referencia</button><button className="primary" disabled={busy === record.submission.id} onClick={() => saveScore(record)}>{busy === record.submission.id ? 'Guardando…' : 'Guardar calificación'}</button></footer>}</article> })}</div></section>
 }
 
 function SettingsPage({ session, groups }) {
