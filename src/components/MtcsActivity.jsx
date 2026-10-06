@@ -16,8 +16,8 @@ export const mtcsContent = {
       ['6. Modelos de comunicación', 'Los modelos organizan las funciones de red por capas. Esto ayuda a explicar el recorrido de la información y a localizar fallas sin revisar todo al mismo tiempo.'],
     ],
     example: 'Ejemplo: en un aula con computadoras fijas, impresora compartida y dispositivos móviles, el diseño puede combinar cableado para los equipos que requieren estabilidad y conexión inalámbrica para movilidad. La justificación debe explicar por qué cada componente y medio es adecuado.',
-    taskTitle: 'Actividad de evaluación: diseña y explica una red funcional',
-    taskIntro: 'Analiza el escenario asignado y responde con tus propias decisiones. Valor máximo: 60 puntos.',
+    taskTitle: 'Actividad de evaluación: crea el diagrama de una red funcional',
+    taskIntro: 'Diseña en Packet Tracer la red del escenario asignado y explica aquí tus decisiones. Valor máximo: 60 puntos.',
     fields: [
       ['networkType', '¿Qué tipo de red implementarías y por qué?'],
       ['devices', 'Lista los dispositivos finales e intermediarios necesarios. Indica la función de cada uno.'],
@@ -42,8 +42,8 @@ export const mtcsContent = {
       ['6. IPv6 y DHCP', 'IPv6 amplía el espacio de direcciones y mejora la escalabilidad. DHCP asigna automáticamente parámetros como dirección IP, máscara, puerta de enlace y DNS.'],
     ],
     example: 'Ejemplo: para 192.168.10.0/24, la dirección de red es 192.168.10.0, los hosts válidos van de 192.168.10.1 a 192.168.10.254 y el broadcast es 192.168.10.255. Al crear subredes, esos límites cambian según la nueva máscara.',
-    taskTitle: 'Actividad de evaluación: configura y diagnostica una red segmentada',
-    taskIntro: 'Trabaja únicamente con los datos que te asignó la plataforma. Valor máximo: 60 puntos.',
+    taskTitle: 'Actividad de evaluación: reporte de direccionamiento y enrutamiento',
+    taskIntro: 'Prepara un reporte en PDF con los datos que te asignó la plataforma y explica tus procedimientos. Valor máximo: 60 puntos.',
     fields: [
       ['analysis', 'Explica qué información proporciona la dirección de red y la máscara asignadas.'],
       ['subnetA', 'Calcula para la Subred A: prefijo, máscara, dirección de red, primer host, último host y broadcast.'],
@@ -67,15 +67,17 @@ export const mtcsContent = {
       ['5. Controles de seguridad', 'Los controles preventivos buscan evitar incidentes; los detectivos identifican lo ocurrido; los correctivos ayudan a recuperar la operación y reducir las consecuencias.'],
     ],
     example: 'Ejemplo: compartir una contraseña es una vulnerabilidad de operación; el acceso indebido es la amenaza y la exposición o modificación de datos representa el posible impacto. Cambiar contraseñas, limitar permisos y revisar registros son controles distintos.',
-    taskTitle: 'Práctica inicial: analiza un incidente de seguridad',
-    taskIntro: 'Esta práctica permite comprobar que distingues los conceptos básicos antes de continuar.',
+    taskTitle: 'Actividad de evaluación: presentación sobre fundamentos de ciberseguridad',
+    taskIntro: 'Prepara una presentación electrónica basada en el caso asignado. Puedes entregarla como PPTX o PDF. Valor máximo: 60 puntos.',
     fields: [
-      ['summary', 'Resume el incidente con tus propias palabras.'],
-      ['assets', 'Identifica los recursos o datos que necesitan protección.'],
-      ['threats', 'Identifica las amenazas presentes y clasifícalas como internas o externas.'],
-      ['vulnerabilities', 'Identifica las vulnerabilidades. Explica por qué cada una es una debilidad.'],
-      ['principles', 'Indica qué principios de seguridad pueden resultar afectados y justifica.'],
-      ['controls', 'Propón un control preventivo, uno detectivo y uno correctivo.'],
+      ['cover', 'Diapositiva 1. Escribe el título de tu presentación y los datos que incluirás en la portada.'],
+      ['concept', 'Diapositiva 2. Explica qué es la ciberseguridad con tus propias palabras.'],
+      ['principles', 'Diapositiva 3. Explica confidencialidad, integridad y disponibilidad mediante ejemplos.'],
+      ['case', 'Diapositiva 4. Resume el caso asignado e identifica los recursos que necesitan protección.'],
+      ['threats', 'Diapositiva 5. Identifica amenazas internas, externas y vulnerabilidades presentes.'],
+      ['attacks', 'Diapositiva 6. Explica qué malware, engaño o ataque podría aprovechar esas debilidades.'],
+      ['protection', 'Diapositiva 7. Propón autenticación, permisos, cifrado u otros controles adecuados.'],
+      ['closing', 'Diapositiva 8. Escribe una conclusión y tres recomendaciones concretas.'],
     ],
   },
 }
@@ -113,6 +115,12 @@ function assignmentFor(studentId, assessmentId, code) {
   return { title: `Caso ${String(seed % 997).padStart(3, '0')}`, lines: [cases[seed % cases.length], 'Analiza únicamente la información disponible y señala también qué datos investigarías.'] }
 }
 
+const mtcsDeliverables = {
+  'MTCS-RA-1.1': { label: 'Diagrama final de Packet Tracer', accept: '.pkt,application/octet-stream', extensions: ['pkt'], help: 'Archivo .pkt · máximo 20 MB' },
+  'MTCS-RA-1.2': { label: 'Reporte final', accept: '.pdf,application/pdf', extensions: ['pdf'], help: 'Archivo PDF · máximo 20 MB' },
+  'MTCS-RA-2.1': { label: 'Presentación electrónica', accept: '.pptx,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf', extensions: ['pptx', 'pdf'], help: 'Archivo PPTX o PDF · máximo 20 MB' },
+}
+
 export default function MtcsActivity({ assessment, session, onBack }) {
   const definition = mtcsContent[assessment.activityCode]
   const assignment = useMemo(() => assignmentFor(session.id, assessment.id, assessment.activityCode), [session.id, assessment.id, assessment.activityCode])
@@ -122,15 +130,19 @@ export default function MtcsActivity({ assessment, session, onBack }) {
   const [submitted, setSubmitted] = useState(false)
   const [status, setStatus] = useState('loading')
   const [message, setMessage] = useState('')
+  const [file, setFile] = useState(null)
+  const [storedFile, setStoredFile] = useState({ path: '', name: '' })
+  const deliverable = mtcsDeliverables[assessment.activityCode]
 
   useEffect(() => {
     if (session.preview) { setStatus('ready'); return undefined }
     let active = true
-    supabase.from('submissions').select('answers, submitted_at').eq('assessment_id', assessment.id).maybeSingle().then(({ data, error }) => {
+    supabase.from('submissions').select('answers, submitted_at, file_path, original_filename').eq('assessment_id', assessment.id).maybeSingle().then(({ data, error }) => {
       if (!active) return
       if (error) { setMessage(error.message); setStatus('error'); return }
       setAnswers(data?.answers?.responses || {})
       setPacketTracerFiles(data?.answers?.packet_tracer || {})
+      setStoredFile({ path: data?.file_path || '', name: data?.original_filename || '' })
       setSubmitted(Boolean(data?.submitted_at))
       setStatus('ready')
     })
@@ -142,9 +154,21 @@ export default function MtcsActivity({ assessment, session, onBack }) {
   async function save(deliver = false) {
     if (session.preview) { setMessage('Esta es una vista previa. Las respuestas no se guardan ni generan entregas.'); setStatus('ready'); return }
     if (deliver && !complete) { setMessage('Completa todas las respuestas antes de entregar. Revisa que estén explicadas, no solo contestadas con una palabra.'); setStatus('error'); return }
+    if (deliver && deliverable && !file && !storedFile.path) { setMessage(`Adjunta tu ${deliverable.label.toLowerCase()} antes de entregar.`); setStatus('error'); return }
     setStatus('saving'); setMessage('')
     const { data: authData } = await supabase.auth.getUser()
-    const payload = { assessment_id: assessment.id, student_id: authData.user.id, answers: { activity: assessment.activityCode, assigned_case: assignment, responses: answers, ...(Object.keys(packetTracerFiles).length ? { packet_tracer: packetTracerFiles } : {}) }, submitted_at: deliver ? new Date().toISOString() : null }
+    let uploaded = storedFile
+    if (file) {
+      const extension = file.name.split('.').pop().toLowerCase()
+      if (!deliverable.extensions.includes(extension)) { setMessage(`El archivo debe ser ${deliverable.extensions.map(item => `.${item}`).join(' o ')}.`); setStatus('error'); return }
+      if (file.size > 20 * 1024 * 1024) { setMessage('El archivo supera el límite de 20 MB.'); setStatus('error'); return }
+      const path = `${authData.user.id}/${assessment.id}/final/entrega.${extension}`
+      const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true, contentType: file.type || 'application/octet-stream' })
+      if (uploadError) { setMessage(uploadError.message || 'No fue posible subir el archivo.'); setStatus('error'); return }
+      uploaded = { path, name: file.name }
+      setStoredFile(uploaded)
+    }
+    const payload = { assessment_id: assessment.id, student_id: authData.user.id, answers: { activity: assessment.activityCode, assigned_case: assignment, responses: answers, ...(Object.keys(packetTracerFiles).length ? { packet_tracer: packetTracerFiles } : {}) }, file_path: uploaded.path || null, original_filename: uploaded.name || null, submitted_at: deliver ? new Date().toISOString() : null }
     const { error } = await supabase.from('submissions').upsert(payload, { onConflict: 'assessment_id,student_id' })
     if (error) { setMessage(error.message || 'No fue posible guardar.'); setStatus('error'); return }
     setSubmitted(deliver)
@@ -157,13 +181,14 @@ export default function MtcsActivity({ assessment, session, onBack }) {
 
   return <section className="panel page-panel activity-workspace mtcs-workspace">
     <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button>
-    <div className="activity-hero"><div><span className="eyebrow">{definition.label}</span><h1>{definition.materialTitle}</h1><p>{definition.intro}</p></div><div className="mtcs-value"><strong>{assessment.activityCode === 'MTCS-RA-2.1' ? 'PRÁCTICA' : '60'}</strong><span>{assessment.activityCode === 'MTCS-RA-2.1' ? 'INICIAL' : 'PUNTOS MÁX.'}</span></div></div>
+    <div className="activity-hero"><div><span className="eyebrow">{definition.label}</span><h1>{definition.materialTitle}</h1><p>{definition.intro}</p></div><div className="mtcs-value"><strong>60</strong><span>PUNTOS MÁX.</span></div></div>
     <nav className="mtcs-tabs"><button className={tab === 'material' ? 'active' : ''} onClick={() => setTab('material')}><BookOpen size={17} /> Material y ejemplo</button><button className={tab === 'activity' ? 'active' : ''} onClick={() => setTab('activity')}><ShieldCheck size={17} /> Actividad</button></nav>
 
     {tab === 'material' ? <div className="mtcs-material"><div className="lesson-grid">{definition.lessons.map(([title, text]) => <article key={title}><span>{title.split('.')[0]}</span><div><h3>{title.replace(/^\d+\.\s*/, '')}</h3><p>{text}</p></div></article>)}</div><div className="worked-example"><strong>Ejemplo para comprender</strong><p>{definition.example}</p></div><button className="primary mtcs-continue" onClick={() => { setTab('activity'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Continuar a la actividad</button></div> : <div className="mtcs-activity">
       <div className="assigned-case"><span className="eyebrow">DATOS ASIGNADOS</span><h2>{assignment.title}</h2><ul>{assignment.lines.map(line => <li key={line}>{line}</li>)}</ul></div>
       <div className="stage-heading"><h2>{definition.taskTitle}</h2><p>{definition.taskIntro}</p></div>
       <fieldset disabled={submitted || status === 'saving'} className="mtcs-form">{definition.fields.map(([key, label], index) => <label key={key}><span><b>{index + 1}</b>{label}</span><textarea rows="4" value={answers[key] || ''} onChange={event => setAnswers(current => ({ ...current, [key]: event.target.value }))} placeholder="Escribe y explica tu respuesta…" /></label>)}</fieldset>
+      {deliverable && <label className="mtcs-final-upload"><Upload size={22} /><span><strong>{file?.name || storedFile.name || deliverable.label}</strong><small>{deliverable.help}</small></span><input type="file" accept={deliverable.accept} disabled={submitted || status === 'saving'} onChange={event => setFile(event.target.files?.[0] || null)} /></label>}
       {message && <div className={status === 'error' ? 'form-error asin-message' : 'submission-success asin-message'}>{message}</div>}
       <footer className="activity-footer"><span className="mtcs-progress">{definition.fields.filter(([key]) => String(answers[key] || '').trim().length >= 12).length} de {definition.fields.length} respuestas completas</span><div className="activity-footer-actions">{!submitted && <button className="secondary" onClick={() => save(false)} disabled={status === 'saving'}><Save size={17} /> Guardar avance</button>}<button className="primary" onClick={() => save(true)} disabled={submitted || status === 'saving'}>{submitted ? <CheckCircle2 size={17} /> : <Send size={17} />}{submitted ? 'Actividad entregada' : 'Entregar actividad'}</button></div></footer>
     </div>}
@@ -316,7 +341,7 @@ export function MtcsMaterialView({ code, session, onBack, onProgressUpdate }) {
   const definition = mtcsContent[code]
   if (!definition) return null
   if (code === 'MTCS-RA-1.1') return <Ra11LearningPath definition={definition} session={session} onBack={onBack} onProgressUpdate={onProgressUpdate} />
-  return <GuidedMaterial definition={definition} code={code} onBack={onBack} />
+  return <GuidedMaterial definition={definition} code={code} session={session} onProgressUpdate={onProgressUpdate} onBack={onBack} />
 }
 
 const guidedExamples = {
@@ -355,16 +380,60 @@ const guidedExercises = {
   ],
 }
 
-function GuidedMaterial({ definition, code, onBack }) {
+function GuidedMaterial({ definition, code, session, onProgressUpdate, onBack }) {
   const examples = guidedExamples[code] || []
   const exercises = guidedExercises[code] || []
+  const reviewExercises = code === 'MTCS-RA-1.2' ? [
+    'En la red 192.168.50.0/24 identifica dirección de red, primer host, último host y broadcast.',
+    'Explica qué cambia cuando el destino está en otra red.',
+    'Escribe un orden lógico para revisar un equipo que no puede salir de su red.',
+  ] : [
+    'Escribe un ejemplo propio de amenaza, vulnerabilidad y riesgo.',
+    'Explica una afectación a confidencialidad, integridad y disponibilidad.',
+    'Propón un control preventivo, uno detectivo y uno correctivo.',
+  ]
+  const [completed, setCompleted] = useState([])
+  const [responses, setResponses] = useState({})
+  const [reviewChecks, setReviewChecks] = useState([])
+  const [message, setMessage] = useState('')
+  const totalSteps = definition.lessons.length + 1
+
+  useEffect(() => {
+    if (session?.preview) return undefined
+    let active = true
+    supabase.from('learning_progress').select('completed_steps').eq('material_code', code).maybeSingle().then(({ data }) => {
+      if (active) setCompleted(Array.isArray(data?.completed_steps) ? data.completed_steps : [])
+    })
+    return () => { active = false }
+  }, [code, session?.id])
+
+  async function completeStep(step) {
+    if (completed.includes(step)) return
+    const next = [...completed, step]
+    setCompleted(next)
+    const progress = { material_code: code, completed_steps: next, completed_at: next.length >= totalSteps ? new Date().toISOString() : null }
+    if (session?.preview) { onProgressUpdate?.(progress); return }
+    const { error } = await supabase.from('learning_progress').upsert({ student_id: session.id, ...progress, updated_at: new Date().toISOString() }, { onConflict: 'student_id,material_code' })
+    if (error) setMessage('No fue posible guardar el avance. Revisa la conexión e inténtalo otra vez.')
+    else onProgressUpdate?.(progress)
+  }
+
+  function completeTopic(index) {
+    if (String(responses[index] || '').trim().length < 20) { setMessage('Explica tu respuesta con al menos una oración completa antes de continuar.'); return }
+    setMessage('')
+    completeStep(`tema-${index + 1}`)
+  }
+
+  const percent = Math.round(completed.length / totalSteps * 100)
   return <section className="panel page-panel activity-workspace mtcs-workspace">
     <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a materiales</button>
-    <div className="activity-hero"><div><span className="eyebrow">{definition.label} · MATERIAL DIDÁCTICO</span><h1>{definition.materialTitle}</h1><p>{definition.intro}</p></div><div className="mtcs-value"><BookOpen size={25} /><span>APRENDE Y PRACTICA</span></div></div>
+    <div className="activity-hero"><div><span className="eyebrow">{definition.label} · MATERIAL DIDÁCTICO</span><h1>{definition.materialTitle}</h1><p>{definition.intro}</p></div><div className="mtcs-progress-ring"><strong>{percent}%</strong><span>COMPLETADO</span></div></div>
+    <div className="learning-progress-bar"><i style={{ width: `${percent}%` }} /></div>
     <div className="mtcs-learning-route"><b>Ruta de aprendizaje</b><span>1. Lee cada tema</span><span>2. Analiza el ejemplo</span><span>3. Resuelve los ejercicios</span><span>4. Después abre la evaluación</span></div>
-    <div className="guided-topic-list">{definition.lessons.map(([title, text], index) => <article key={title}><header><span>{index + 1}</span><h2>{title.replace(/^\d+\.\s*/, '')}</h2></header><section><small>PRIMERO: APRENDE</small><h3>Conceptos clave</h3><p>{text}</p></section><section className="guided-example"><small>DESPUÉS: OBSERVA</small><h3>Ejemplo práctico</h3><p>{examples[index]}</p></section><section className="guided-exercise"><small>AHORA: APLICA</small><h3>Ejercicio de refuerzo</h3><p>{exercises[index]}</p></section></article>)}</div>
-    <PracticeExercises code={code} />
-    <div className="info-note mtcs-ready-note"><CheckCircle2 size={18} /><span>Cuando puedas explicar estos conceptos y resolver los ejercicios sin copiar el ejemplo, continúa en <b>Evaluaciones</b>.</span></div>
+    <div className="guided-topic-list">{definition.lessons.map(([title, text], index) => { const done = completed.includes(`tema-${index + 1}`); return <article className={done ? 'guided-complete' : ''} key={title}><header><span>{done ? <CheckCircle2 size={17} /> : index + 1}</span><h2>{title.replace(/^\d+\.\s*/, '')}</h2></header><section><small>PRIMERO: APRENDE</small><h3>Conceptos clave</h3><p>{text}</p></section><section className="guided-example"><small>DESPUÉS: OBSERVA</small><h3>Ejemplo práctico</h3><p>{examples[index]}</p></section><section className="guided-exercise"><small>AHORA: APLICA</small><h3>Ejercicio de refuerzo</h3><p>{exercises[index]}</p><textarea rows="3" disabled={done} value={responses[index] || ''} onChange={event => setResponses(current => ({ ...current, [index]: event.target.value }))} placeholder="Escribe aquí tu explicación con tus propias palabras" /><button className="secondary" disabled={done} onClick={() => completeTopic(index)}>{done ? 'Tema completado' : 'Guardar y completar tema'}</button></section></article> })}</div>
+    <section className={`mtcs-practice ${completed.includes('repaso-final') ? 'guided-complete' : ''}`}><div className="stage-heading"><span>REPASO FINAL</span><h2>Comprueba que puedes hacerlo</h2><p>Realiza estos ejercicios antes de abrir la evaluación.</p></div><div className="review-checks">{reviewExercises.map((item, index) => <label key={item}><input type="checkbox" checked={reviewChecks.includes(index)} disabled={completed.includes('repaso-final')} onChange={() => setReviewChecks(current => current.includes(index) ? current.filter(value => value !== index) : [...current, index])} /><span>{item}</span></label>)}</div><button className="primary" disabled={reviewChecks.length !== reviewExercises.length || completed.includes('repaso-final')} onClick={() => completeStep('repaso-final')}>{completed.includes('repaso-final') ? 'Repaso completado' : 'Terminé los ejercicios de repaso'}</button></section>
+    {message && <div className="form-error">{message}</div>}
+    <div className={`unlock-status ${percent === 100 ? 'unlocked' : ''}`}><ShieldCheck size={24} /><div><strong>{percent === 100 ? 'Actividad de evaluación desbloqueada' : 'Actividad de evaluación bloqueada'}</strong><p>{percent === 100 ? 'Ya puedes ir a Evaluaciones y comenzar la actividad de este R.A.' : `Completa los ${totalSteps - completed.length} pasos pendientes.`}</p></div></div>
   </section>
 }
 

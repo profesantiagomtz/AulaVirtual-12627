@@ -350,7 +350,7 @@ function Assessments({ items, session, isTeacher, learningProgress = [], onAdd, 
     if (selected.activityCode?.startsWith('MTCS-')) return <MtcsActivity assessment={selected} session={session} onBack={clearSelected} />
     return <GenericActivity assessment={selected} onBack={clearSelected} />
   }
-  const visibleItems = items.map(item => ({ ...item, locked: !isTeacher && item.activityCode === 'MTCS-RA-1.1' && !learningProgress.some(progress => progress.material_code === 'MTCS-RA-1.1' && progress.completed_at) }))
+  const visibleItems = items.map(item => ({ ...item, locked: !isTeacher && item.activityCode?.startsWith('MTCS-RA-') && !learningProgress.some(progress => progress.material_code === item.activityCode && progress.completed_at) }))
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={visibleItems} student={!isTeacher} onOpen={setSelected} onToggle={onToggle} /></section>
 }
 
