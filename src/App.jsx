@@ -232,7 +232,7 @@ function Dashboard({ session, onLogout }) {
         {view === 'modulos' && (isTeacher ? <TeacherModules courses={assignedCourses} students={studentList} materials={materialList} assessments={assessmentList} setView={setView} /> : <Modules courses={assignedCourses} session={session} setView={setView} />)}
         {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} onAdd={() => setModal('material')} onToggle={toggleMaterial} onProgressUpdate={progress => setLearningProgress(current => [...current.filter(item => item.material_code !== progress.material_code), progress])} />}
         {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} learningProgress={learningProgress} onAdd={() => setModal('assessment')} onRefresh={loadData} onToggle={toggleAssessment} initialSelected={selectedAssessment} onClearSelected={() => setSelectedAssessment(null)} />}
-        {view === 'alumnos' && isTeacher && <Students students={studentList} groups={groupList} assessments={assessmentList} />}
+        {view === 'alumnos' && isTeacher && <Students students={studentList} groups={groupList} assessments={assessmentList} onRefresh={loadData} />}
         {view === 'configuracion' && isTeacher && <SettingsPage session={session} groups={groupList} />}
         </>}
       </main>
@@ -641,9 +641,10 @@ function buildPearAssignment(seedText, activityCode) {
   return [{ label: 'Ingreso mensual', value: `$${income.toLocaleString('es-MX')}` }, { label: 'Integrantes del hogar', value: pick(3, 6, 6) }, { label: 'Compra de higiene', value: `Cada ${pick(12, 20, 10)} días` }, { label: 'Compra de alimentos base', value: `Cada ${pick(5, 9, 14)} días` }]
 }
 
-function Students({ students, groups, assessments }) {
+function Students({ students, groups, assessments, onRefresh }) {
   const [query, setQuery] = useState('')
   const [group, setGroup] = useState('Todos')
+  const [selectedStudent, setSelectedStudent] = useState(null)
   const rows = useMemo(() => students.filter(s => (group === 'Todos' || s.group === group) && `${s.name} ${s.email}`.toLowerCase().includes(query.toLowerCase())), [query, group])
   function progressFor(student) {
     const submissions = assessments.filter(item => item.group === student.group).flatMap(item => item.submissionDetails).filter(item => item.student?.email === student.email)
@@ -651,7 +652,61 @@ function Students({ students, groups, assessments }) {
     const scores = delivered.filter(item => item.score !== null).map(item => Number(item.score))
     return { label: delivered.length ? `${delivered.length} entregada${delivered.length === 1 ? '' : 's'}` : submissions.length ? 'En proceso' : '—', average: scores.length ? `${Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length)} / 60` : '—' }
   }
-  return <section className="panel page-panel"><div className="list-toolbar"><div><h1>Alumnos registrados</h1><p>Cuentas reales creadas en Aula Virtual, organizadas por grupo.</p></div></div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar alumno…" /></div><select value={group} onChange={e => setGroup(e.target.value)}><option>Todos</option>{groups.map(item => <option key={item.id}>{item.code}</option>)}</select></div><div className="table-wrap"><table><thead><tr><th>Alumno</th><th>Grupo</th><th>Matrícula</th><th>Cuenta</th><th>Progreso</th><th>Promedio</th></tr></thead><tbody>{rows.map(student => { const progress = progressFor(student); return <tr key={student.id}><td><div className="student-cell"><div className="avatar small">{student.name.split(' ').slice(0,2).map(part => part[0]).join('')}</div><div><strong>{student.name}</strong><span>{student.email}</span></div></div></td><td>{student.group}</td><td>{student.enrollment || 'Sin matrícula'}</td><td><span className="tag active">Registrada</span></td><td>{progress.label}</td><td>{progress.average}</td></tr> })}</tbody></table></div></section>
+  if (selectedStudent) return <StudentRecord student={selectedStudent} assessments={assessments.filter(item => item.group === selectedStudent.group)} onBack={() => setSelectedStudent(null)} onRefresh={onRefresh} />
+  return <section className="panel page-panel"><div className="list-toolbar"><div><h1>Alumnos registrados</h1><p>Cuentas reales creadas en Aula Virtual, organizadas por grupo.</p></div></div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar alumno…" /></div><select value={group} onChange={e => setGroup(e.target.value)}><option>Todos</option>{groups.map(item => <option key={item.id}>{item.code}</option>)}</select></div><div className="table-wrap"><table><thead><tr><th>Alumno</th><th>Grupo</th><th>Matrícula</th><th>Cuenta</th><th>Progreso</th><th>Promedio</th><th /></tr></thead><tbody>{rows.map(student => { const progress = progressFor(student); return <tr key={student.id}><td><div className="student-cell"><div className="avatar small">{student.name.split(' ').slice(0,2).map(part => part[0]).join('')}</div><div><strong>{student.name}</strong><span>{student.email}</span></div></div></td><td>{student.group}</td><td>{student.enrollment || 'Sin matrícula'}</td><td><span className="tag active">Registrada</span></td><td>{progress.label}</td><td>{progress.average}</td><td><button className="text-btn" onClick={() => setSelectedStudent(student)}>Ver expediente <ChevronRight size={15} /></button></td></tr> })}</tbody></table></div></section>
+}
+
+function evidenceReview(assessment, submission) {
+  if (!submission) return { suggested: 0, checks: [{ label: 'El alumno todavía no inicia la actividad', ok: false }] }
+  const answers = submission.answers || {}
+  const responses = Object.values(answers.responses || {}).filter(value => String(value).trim().length >= 12)
+  const risks = (answers.risks || []).filter(item => item.risk && item.description && item.probability && item.impact)
+  const equipment = Object.values(answers.equipment || {}).filter(Boolean)
+  const questions = [...(answers.questionnaires?.users || []), ...(answers.questionnaires?.administrators || [])].filter(item => item.text)
+  const packetFiles = Object.values(answers.packet_tracer || {})
+  const hasStructured = responses.length || risks.length || equipment.length || questions.length
+  let suggested = submission.submitted_at ? 10 : 4
+  if (submission.file_path) suggested += 20
+  if (responses.length) suggested += Math.min(30, responses.length * 4)
+  if (risks.length) suggested += Math.min(15, risks.length * 5)
+  if (equipment.length) suggested += Math.min(10, equipment.length)
+  if (questions.length) suggested += Math.min(15, questions.length)
+  if (packetFiles.length && !submission.file_path) suggested += Math.min(20, packetFiles.length * 7)
+  if (!hasStructured && submission.file_path) suggested = submission.submitted_at ? 40 : 25
+  return { suggested: Math.min(60, suggested), checks: [
+    { label: submission.submitted_at ? 'Actividad entregada formalmente' : 'La actividad permanece en proceso', ok: Boolean(submission.submitted_at) },
+    { label: submission.file_path ? `Archivo adjunto: ${submission.original_filename || 'evidencia'}` : 'No contiene archivo final', ok: Boolean(submission.file_path) },
+    { label: hasStructured ? 'Contiene respuestas o evidencias capturadas' : 'Sin respuestas capturadas en la plataforma', ok: Boolean(hasStructured) },
+    { label: packetFiles.length ? `${packetFiles.length} práctica(s) de Packet Tracer registrada(s)` : 'Sin prácticas de Packet Tracer asociadas', ok: packetFiles.length > 0 },
+  ] }
+}
+
+function StudentRecord({ student, assessments, onBack, onRefresh }) {
+  const [scores, setScores] = useState({})
+  const [busy, setBusy] = useState('')
+  const [message, setMessage] = useState('')
+  const records = assessments.map(assessment => ({ assessment, submission: assessment.submissionDetails.find(item => item.student_id === student.id || item.student?.email === student.email) }))
+  const delivered = records.filter(item => item.submission?.submitted_at)
+  const scored = delivered.filter(item => item.submission.score !== null)
+  const average = scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.submission.score), 0) / scored.length) : null
+
+  async function saveScore(record) {
+    const value = Number(scores[record.submission.id] ?? record.submission.score)
+    if (!Number.isFinite(value) || value < 0 || value > 60) { setMessage('La calificación debe estar entre 0 y 60 puntos.'); return }
+    setBusy(record.submission.id); setMessage('')
+    const { error } = await supabase.from('submissions').update({ score: value }).eq('id', record.submission.id)
+    if (error) setMessage(error.message || 'No fue posible guardar la calificación.')
+    else { record.submission.score = value; setMessage('Calificación guardada correctamente.'); await onRefresh?.() }
+    setBusy('')
+  }
+
+  async function download(path) {
+    const { data, error } = await supabase.storage.from('submissions').createSignedUrl(path, 300)
+    if (error) setMessage(error.message || 'No fue posible abrir el archivo.')
+    else window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
+  }
+
+  return <section className="student-record-page"><button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver al directorio</button><div className="student-record-hero"><div className="record-avatar">{student.name.split(' ').slice(0, 2).map(part => part[0]).join('')}</div><div><span className="eyebrow">EXPEDIENTE INDIVIDUAL · GRUPO {student.group}</span><h1>{student.name}</h1><p>{student.enrollment || 'Sin matrícula'} · {student.email}</p></div><div className="record-average"><strong>{average === null ? '—' : `${average}/60`}</strong><span>Promedio</span></div></div><div className="record-summary"><div><b>{assessments.length}</b><span>Evaluaciones asignadas</span></div><div><b>{delivered.length}</b><span>Entregadas</span></div><div><b>{scored.length}</b><span>Calificadas</span></div><div><b>{assessments.length - delivered.length}</b><span>Pendientes</span></div></div>{message && <div className={message.includes('correctamente') ? 'submission-success' : 'form-error'}>{message}</div>}<div className="student-evaluation-list">{records.map(record => { const review = evidenceReview(record.assessment, record.submission); return <article key={record.assessment.id}><header><div><span className="eyebrow">{record.assessment.activityCode || 'ACTIVIDAD'}</span><h2>{record.assessment.title}</h2><small>Entrega: {record.assessment.due}</small></div><span className={`tag ${record.submission?.submitted_at ? 'active' : ''}`}>{record.submission?.submitted_at ? 'ENTREGADA' : record.submission ? 'EN PROCESO' : 'NO INICIADA'}</span></header><div className="individual-review-grid"><section><h3>Evidencias</h3>{review.checks.map(check => <div className={check.ok ? 'review-check ok' : 'review-check'} key={check.label}>{check.ok ? <CheckCircle2 size={16} /> : <X size={16} />}<span>{check.label}</span></div>)}{record.submission?.file_path && <button className="secondary" onClick={() => download(record.submission.file_path)}><Download size={16} /> Descargar archivo final</button>}{Object.values(record.submission?.answers?.packet_tracer || {}).map(practice => <button className="secondary" key={practice.path} onClick={() => download(practice.path)}><Download size={16} /> {practice.practice}</button>)}</section><section><h3>Apoyo para evaluar</h3><div className="suggested-score"><span>Completitud documental estimada</span><strong>{review.suggested}/60</strong><small>Es una referencia. Revise la calidad y el contenido antes de calificar.</small></div>{record.submission?.answers && Object.keys(record.submission.answers).length > 0 && <details className="individual-answers"><summary><Eye size={16} /> Revisar respuestas</summary><AnswerPreview answers={record.submission.answers} /></details>}</section></div>{record.submission?.submitted_at && <footer><label>Calificación final<input type="number" min="0" max="60" value={scores[record.submission.id] ?? record.submission.score ?? ''} onChange={event => setScores(current => ({ ...current, [record.submission.id]: event.target.value }))} /></label><button className="secondary" onClick={() => setScores(current => ({ ...current, [record.submission.id]: review.suggested }))}>Usar referencia</button><button className="primary" disabled={busy === record.submission.id} onClick={() => saveScore(record)}>{busy === record.submission.id ? 'Guardando…' : 'Guardar calificación'}</button></footer>}</article> })}</div></section>
 }
 
 function SettingsPage({ session, groups }) {
