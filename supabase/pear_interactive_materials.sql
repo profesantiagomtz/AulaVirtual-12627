@@ -12,7 +12,7 @@ with teacher as (
     ('PEAR · Propósito 1.4 · Fracciones, proporciones y porcentajes', 'Explicaciones y práctica aplicada a equivalencias, proporciones y porcentajes.', 'Propósito 1.4', 'pear://PEAR-1.4')
 )
 insert into public.materials(teacher_id, group_id, title, description, unit, resource_type, resource_url, published)
-select teacher.id, target_group.id, resources.title, resources.description, resources.unit, 'interactive', resources.resource_url, true
+select teacher.id, target_group.id, resources.title, resources.description, resources.unit, 'link', resources.resource_url, true
 from teacher cross join target_group cross join resources
 where not exists (
   select 1 from public.materials current_material
