@@ -167,6 +167,9 @@ function Dashboard({ session, onLogout }) {
   async function loadData() {
     setLoading(true); setDataError('')
     try {
+      const { data: authState, error: authError } = await supabase.auth.getSession()
+      if (authError) throw authError
+      if (!authState.session) throw new Error('Tu sesión no terminó de cargar. Cierra sesión e ingresa nuevamente.')
       const materialsQuery = supabase.from('materials').select('id, title, description, unit, resource_type, resource_url, published, created_at, groups(code)').order('created_at', { ascending: false })
       const [groupResult, studentResult, materialResult, assessmentResult, progressResult] = await Promise.all([
         supabase.from('groups').select('id, code, semester, career').eq('active', true).order('code'),
@@ -191,7 +194,7 @@ function Dashboard({ session, onLogout }) {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { if (isSupabaseReady) loadData() }, [])
+  useEffect(() => { if (isSupabaseReady) loadData() }, [session.id, session.group, session.role])
 
   function saved(message) { setModal(null); setToast(message); setTimeout(() => setToast(''), 2600) }
   async function toggleMaterial(item) {
