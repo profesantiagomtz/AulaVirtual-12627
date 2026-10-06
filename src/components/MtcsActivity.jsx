@@ -222,13 +222,20 @@ const packetTracerPractices = [
     related: 'Temas 2 y 3: componentes, conexiones, clientes y servidores',
     goal: 'Construir una red local sencilla, asignar direcciones y comprobar la comunicación entre sus equipos.',
     steps: [
-      'Abre Packet Tracer y crea un archivo nuevo.',
-      'Agrega un switch 2960, tres computadoras y un servidor.',
-      'Conecta cada equipo al switch con cable de cobre directo.',
-      'Configura las cuatro direcciones indicadas en tus datos asignados con máscara 255.255.255.0.',
-      'Cambia al modo Simulation y envía una PDU simple entre dos computadoras.',
-      'Desde una computadora ejecuta ping hacia las otras dos y hacia el servidor.',
-      'Guarda el archivo con el formato: Grupo_Apellido_Practica1.pkt.',
+      { title: 'Abre un trabajo nuevo', detail: 'Inicia Packet Tracer. Arriba, haz clic en File y después en New. Si aparece una pregunta para guardar otro trabajo, pide apoyo antes de cerrarlo.', check: 'Debes ver un espacio grande y vacío.' },
+      { title: 'Coloca el switch', detail: 'En la parte inferior izquierda, haz clic en Network Devices. Después elige Switches. Busca el modelo 2960, haz clic sobre él y luego haz clic en el centro del espacio blanco.', check: 'Debe aparecer un switch con un nombre parecido a Switch0.' },
+      { title: 'Coloca tres computadoras', detail: 'Abajo a la izquierda, haz clic en End Devices. Elige PC y haz clic tres veces en lugares separados del espacio blanco.', check: 'Debes tener PC0, PC1 y PC2.' },
+      { title: 'Coloca el servidor', detail: 'Sin salir de End Devices, busca Server. Haz clic en él y colócalo cerca de las computadoras.', check: 'Ahora debes ver cuatro equipos finales y un switch.' },
+      { title: 'Elige el cable', detail: 'Abajo, haz clic en Connections, identificado con un rayo. Selecciona Copper Straight-Through; normalmente aparece como una línea negra continua.', check: 'El puntero debe quedar listo para conectar.' },
+      { title: 'Conecta la primera computadora', detail: 'Haz clic en PC0 y elige FastEthernet0. Después haz clic en el switch y elige FastEthernet0/1.', check: 'Aparecerá una línea entre PC0 y el switch.' },
+      { title: 'Conecta los demás equipos', detail: 'Repite lo anterior: PC1 con FastEthernet0/2, PC2 con FastEthernet0/3 y Server0 con FastEthernet0/4. En cada equipo elige FastEthernet0.', check: 'Espera unos segundos: los puntos de cada cable deben ponerse verdes.' },
+      { title: 'Configura la dirección de PC0', detail: 'Haz clic en PC0. Abre la pestaña Desktop y luego IP Configuration. Marca Static. En IPv4 Address escribe el primer host asignado y en Subnet Mask escribe 255.255.255.0. Cierra la ventana con la X.', check: 'La dirección debe quedar completa y sin espacios.' },
+      { title: 'Configura PC1, PC2 y Server0', detail: 'Repite Desktop > IP Configuration > Static en cada equipo. Usa un host diferente de los cuatro que te asignó la plataforma. La máscara es 255.255.255.0 en todos.', check: 'Ningún equipo debe tener la misma dirección.' },
+      { title: 'Comprueba la configuración', detail: 'Abre PC0 > Desktop > Command Prompt. Escribe ipconfig y presiona Enter.', check: 'La dirección mostrada debe ser la misma que escribiste en PC0.' },
+      { title: 'Prueba la comunicación', detail: 'En la misma ventana negra escribe ping, deja un espacio y agrega la dirección de PC1. Presiona Enter. Repite con PC2 y Server0.', check: 'Cada prueba debe mostrar Reply from o Respuesta desde. Si falla la primera vez, repítela una vez.' },
+      { title: 'Observa el recorrido', detail: 'Cierra la ventana de PC0. Abajo a la derecha cambia de Realtime a Simulation. En la barra derecha, haz clic en el sobre cerrado Add Simple PDU. Haz clic primero en PC0 y después en Server0. Usa Auto Capture/Play para ver el sobre avanzar.', check: 'La prueba debe terminar correctamente y mostrar una marca verde.' },
+      { title: 'Agrega tu identificación', detail: 'Busca Place Note en la barra de herramientas, haz clic en un espacio vacío y escribe exactamente el código que te asignó la plataforma.', check: 'El código debe quedar visible dentro del área de trabajo.' },
+      { title: 'Guarda el archivo', detail: 'Arriba haz clic en File > Save As. Elige una carpeta que puedas encontrar y escribe Grupo_Apellido_Practica1. Packet Tracer agregará la terminación .pkt.', check: 'Revisa arriba de la ventana que aparezca el nombre nuevo.' },
     ],
     checks: ['Los cuatro equipos muestran enlace activo.', 'No existen direcciones IP repetidas.', 'Los cuatro destinos responden correctamente.'],
   },
@@ -238,13 +245,22 @@ const packetTracerPractices = [
     related: 'Temas 4 y 5: redes inalámbricas, red doméstica y medios',
     goal: 'Integrar dispositivos cableados e inalámbricos y observar cómo cambia el medio de conexión.',
     steps: [
-      'Crea una topología con un router inalámbrico, una computadora cableada, una laptop y un teléfono.',
-      'Conecta la computadora por cable al router inalámbrico.',
-      'Configura el nombre de red que te asignó la plataforma y protege el acceso con WPA2-PSK.',
-      'Conecta la laptop y el teléfono a la red inalámbrica usando la clave configurada.',
-      'Comprueba que todos los dispositivos reciban una dirección válida.',
-      'Ejecuta ping desde la computadora hacia la laptop y observa el recorrido en modo Simulation.',
-      'Guarda el archivo con el formato: Grupo_Apellido_Practica2.pkt.',
+      { title: 'Crea un archivo nuevo', detail: 'Abre Packet Tracer y haz clic en File > New. Trabaja en el espacio blanco.', check: 'El área de trabajo debe estar vacía.' },
+      { title: 'Coloca el router inalámbrico', detail: 'Abajo a la izquierda abre Network Devices y después Wireless Devices. Busca Wireless Router o WRT300N, selecciónalo y colócalo en el centro.', check: 'Debe verse un equipo con antenas.' },
+      { title: 'Coloca los equipos', detail: 'Abre End Devices. Coloca una PC, una Laptop y un Smartphone. Déjalos separados para distinguir sus conexiones.', check: 'Debes tener cuatro dispositivos en total contando el router.' },
+      { title: 'Conecta la computadora por cable', detail: 'Abre Connections con el icono del rayo. Elige Copper Straight-Through. Haz clic en PC0 > FastEthernet0 y después en el router inalámbrico > Ethernet 1.', check: 'La línea debe terminar con puntos verdes después de esperar unos segundos.' },
+      { title: 'Abre la configuración del router', detail: 'Haz clic en el router inalámbrico y abre la pestaña GUI. Dentro de la pantalla del router, busca Wireless y luego Basic Wireless Settings.', check: 'Debes encontrar un campo llamado Network Name o SSID.' },
+      { title: 'Configura la red local', detail: 'Dentro de GUI abre Setup > Basic Setup. En Local IP Address escribe la dirección de la red asignada terminada en .1. Deja la máscara 255.255.255.0, activa DHCP Server y coloca 100 en Starting IP Address. Haz clic en Save Settings.', check: 'El router debe usar .1 y repartir direcciones a partir de .100.' },
+      { title: 'Escribe el nombre de la red', detail: 'En Network Name (SSID) borra el nombre anterior y escribe exactamente el nombre asignado por la plataforma. Guarda con Save Settings.', check: 'El nombre debe coincidir letra por letra.' },
+      { title: 'Protege la red', detail: 'En la misma pantalla entra a Wireless > Wireless Security. Elige WPA2 Personal o WPA2-PSK. En Passphrase escribe una clave de al menos ocho caracteres que puedas recordar. Haz clic en Save Settings.', check: 'No compartas la clave con otro equipo de trabajo.' },
+      { title: 'Conecta la laptop', detail: 'Haz clic en Laptop0 > Desktop > PC Wireless. Abre la pestaña Connect, pulsa Refresh si hace falta, selecciona el nombre de tu red y haz clic en Connect. Escribe la clave cuando la pida.', check: 'Debe indicar que la laptop está conectada.' },
+      { title: 'Conecta el teléfono', detail: 'Haz clic en Smartphone0 > Config > Wireless0. Busca el nombre de tu red, selecciónalo y escribe la misma clave. Si aparece DHCP, déjalo activado.', check: 'El teléfono debe mostrar conexión inalámbrica.' },
+      { title: 'Pide direcciones automáticamente', detail: 'En PC0 y Laptop0 abre Desktop > IP Configuration y pulsa DHCP. En el teléfono revisa Config > Wireless0 y confirma que recibió una dirección.', check: 'Los tres equipos deben mostrar direcciones de la red asignada.' },
+      { title: 'Comprueba con ipconfig', detail: 'En PC0 abre Desktop > Command Prompt, escribe ipconfig y presiona Enter. Haz lo mismo en Laptop0.', check: 'Las direcciones deben ser diferentes, pero comenzar con los mismos tres números de la red asignada.' },
+      { title: 'Prueba con ping', detail: 'Desde PC0 escribe ping, un espacio y la dirección de Laptop0. Presiona Enter.', check: 'Debe aparecer Reply from o Respuesta desde.' },
+      { title: 'Mira cómo viaja el mensaje', detail: 'Cambia a Simulation abajo a la derecha. Elige Add Simple PDU, el sobre cerrado. Haz clic en PC0 y luego en Laptop0. Pulsa Auto Capture/Play.', check: 'Observa que el mensaje pasa por el router inalámbrico.' },
+      { title: 'Coloca tu código', detail: 'Usa Place Note, haz clic junto al router y escribe el código exacto indicado en tus datos asignados.', check: 'El código debe quedar visible en la topología.' },
+      { title: 'Guarda tu práctica', detail: 'Haz clic en File > Save As y nombra el archivo Grupo_Apellido_Practica2.', check: 'Confirma que el archivo termina en .pkt.' },
     ],
     checks: ['El equipo cableado y los inalámbricos pertenecen a la misma red.', 'La red tiene seguridad configurada.', 'La prueba de comunicación es satisfactoria.'],
   },
@@ -254,14 +270,18 @@ const packetTracerPractices = [
     related: 'Tema 6: modelos de comunicación y diagnóstico por capas',
     goal: 'Aplicar un orden de diagnóstico, localizar errores de configuración y comprobar la solución.',
     steps: [
-      'Construye una red con un switch y cuatro computadoras.',
-      'Configura los equipos en la red correcta indicada en tus datos asignados.',
-      'En el equipo señalado por la plataforma coloca intencionalmente una dirección de otra red.',
-      'Usa ipconfig y ping para identificar cuál equipo no se comunica y explica mentalmente la causa.',
-      'Corrige la dirección sin cambiar el cableado ni los demás equipos.',
-      'Repite las pruebas hasta obtener respuesta de los cuatro equipos.',
-      'Agrega una nota dentro de la topología indicando el error encontrado y la corrección aplicada.',
-      'Guarda el archivo con el formato: Grupo_Apellido_Practica3.pkt.',
+      { title: 'Prepara la red', detail: 'Crea un archivo nuevo. En Network Devices > Switches coloca un 2960. En End Devices coloca cuatro PC.', check: 'Debes ver Switch0 y las computadoras PC0, PC1, PC2 y PC3.' },
+      { title: 'Conecta las cuatro computadoras', detail: 'En Connections elige Copper Straight-Through. Conecta FastEthernet0 de cada PC a los puertos FastEthernet0/1, 0/2, 0/3 y 0/4 del switch.', check: 'Espera hasta que todos los puntos de conexión estén verdes.' },
+      { title: 'Configura tres equipos correctamente', detail: 'En cada PC abre Desktop > IP Configuration > Static. Usa la red que te asignó la plataforma y coloca hosts .10, .11, .12 y .13 con máscara 255.255.255.0.', check: 'Cada PC debe tener una dirección diferente.' },
+      { title: 'Crea el error solicitado', detail: 'Busca en tus datos cuál PC debe iniciar con error. Solo en esa PC cambia el tercer número de su dirección por uno diferente. No cambies la máscara ni desconectes cables.', check: 'El error debe estar únicamente en la PC indicada.' },
+      { title: 'Revisa PC0', detail: 'Haz clic en PC0 > Desktop > Command Prompt. Escribe ipconfig y presiona Enter. Anota mentalmente la dirección que muestra.', check: 'Comprueba si coincide con la red asignada.' },
+      { title: 'Prueba una PC a la vez', detail: 'Desde PC0 escribe ping seguido de la dirección de PC1. Repite hacia PC2 y PC3.', check: 'Una de las pruebas debe fallar con Request timed out o Tiempo de espera agotado.' },
+      { title: 'Localiza la causa', detail: 'Abre la PC que no respondió. En Desktop > Command Prompt escribe ipconfig. Compara el tercer número de su dirección con las demás.', check: 'Debes reconocer que está en una red distinta.' },
+      { title: 'Corrige sin mover nada más', detail: 'En esa misma PC entra a Desktop > IP Configuration. Cambia únicamente la dirección para que use la red correcta y conserve su número final.', check: 'No cambies cables, puertos ni direcciones de otros equipos.' },
+      { title: 'Comprueba la reparación', detail: 'Regresa a PC0 > Desktop > Command Prompt y repite el ping hacia la PC corregida.', check: 'Ahora debe aparecer Reply from o Respuesta desde.' },
+      { title: 'Revisa toda la red', detail: 'Haz ping desde PC0 hacia las otras tres computadoras. Si una falla, compara nuevamente su dirección y máscara.', check: 'Las tres pruebas deben responder.' },
+      { title: 'Escribe lo que encontraste', detail: 'Usa Place Note y haz clic en un espacio vacío. Escribe el código asignado, el nombre de la PC con falla, la dirección incorrecta y la dirección corregida.', check: 'La explicación debe quedar visible dentro del archivo.' },
+      { title: 'Guarda el resultado', detail: 'Haz clic en File > Save As y usa el nombre Grupo_Apellido_Practica3.', check: 'Confirma que guardaste el archivo .pkt después de hacer la corrección.' },
     ],
     checks: ['El archivo conserva la nota del diagnóstico.', 'Las cuatro computadoras quedan en la misma red.', 'Todos los equipos responden después de la corrección.'],
   },
@@ -271,7 +291,7 @@ function packetAssignmentsFor(studentId = '') {
   const seed = hash(`packet-tracer-${studentId}`)
   const networkA = 30 + (seed % 50)
   const networkB = 100 + ((seed >>> 4) % 50)
-  const station = 2 + ((seed >>> 8) % 3)
+  const station = (seed >>> 8) % 4
   const code = String(1000 + (seed % 9000))
   return {
     'pt-componentes': {
@@ -286,7 +306,7 @@ function packetAssignmentsFor(studentId = '') {
     },
     'pt-diagnostico': {
       code: `PT3-${code}`,
-      values: [`Red correcta: 192.168.${networkA + 80}.0/24`, `Equipo que debe iniciar con error: PC-${station}`, `Código de identificación: PT3-${code}`],
+      values: [`Red correcta: 192.168.${networkA + 80}.0/24`, `Equipo que debe iniciar con error: PC${station}`, `Código de identificación: PT3-${code}`],
       note: `La nota final debe incluir el código PT3-${code}, el error encontrado y la corrección.`,
     },
   }
@@ -467,7 +487,7 @@ function Ra11LearningPath({ definition, session, onBack, onProgressUpdate }) {
 }
 
 function PacketTracerPractices({ completed, uploads, uploading, messages, assignments, preview, onUpload }) {
-  return <section className="packet-tracer-section"><div className="stage-heading"><span>PRÁCTICAS EN PACKET TRACER</span><h2>Construye, prueba y entrega tus redes</h2><p>Realiza únicamente estas prácticas en Cisco Packet Tracer. Sigue el orden, comprueba el funcionamiento y sube el mismo archivo <b>.pkt</b> que terminaste.</p></div><div className="packet-practice-list">{packetTracerPractices.map((practice, index) => { const delivered = Boolean(uploads[practice.id]) || completed.includes(practice.id); const assignment = assignments[practice.id]; return <article className={delivered ? 'practice-delivered' : ''} key={practice.id}><header><span>{delivered ? <CheckCircle2 size={20} /> : index + 1}</span><div><small>{practice.related}</small><h3>{practice.title}</h3></div></header><div className="packet-practice-body"><div className="practice-goal"><b>Meta</b><p>{practice.goal}</p></div><div className="packet-assignment"><b>Datos asignados para tu práctica</b>{assignment.values.map(value => <span key={value}>{value}</span>)}<p>{assignment.note}</p></div><div className="practice-columns"><div><h4>Pasos</h4><ol>{practice.steps.map(step => <li key={step}>{step}</li>)}</ol></div><div><h4>Antes de entregar, comprueba</h4><ul>{practice.checks.map(check => <li key={check}>{check}</li>)}<li>{assignment.note}</li></ul></div></div><label className="packet-upload"><Upload size={20} /><span><strong>{uploads[practice.id]?.filename || 'Selecciona tu archivo de Packet Tracer'}</strong><small>Formato permitido: .pkt · máximo 20 MB</small></span><input type="file" accept=".pkt,application/octet-stream" disabled={uploading === practice.id || preview} onChange={event => onUpload(practice, event.target.files?.[0])} /></label>{uploading === practice.id && <div className="upload-status">Subiendo y vinculando tu práctica…</div>}{messages[practice.id] && <div className={delivered ? 'submission-success' : 'form-error'}>{messages[practice.id]}</div>}{delivered && !messages[practice.id] && <div className="submission-success"><CheckCircle2 size={17} /> Archivo entregado. Puedes reemplazarlo mientras no hayas enviado la evaluación final.</div>}</div></article> })}</div></section>
+  return <section className="packet-tracer-section"><div className="stage-heading"><span>PRÁCTICAS EN PACKET TRACER</span><h2>Construye, prueba y entrega tus redes</h2><p>Realiza únicamente estas prácticas en Cisco Packet Tracer. Sigue un paso a la vez y no avances hasta obtener el resultado indicado en <b>“Vas bien si…”</b>.</p></div><div className="packet-first-help"><b>Antes de comenzar</b><span><strong>Parte inferior izquierda:</strong> aquí se encuentran los equipos y los cables.</span><span><strong>Espacio blanco:</strong> aquí vas a construir la red.</span><span><strong>Doble clic o un clic sobre un equipo:</strong> abre su ventana de configuración.</span><span><strong>Realtime / Simulation:</strong> está abajo a la derecha y permite observar el recorrido de los mensajes.</span></div><div className="packet-practice-list">{packetTracerPractices.map((practice, index) => { const delivered = Boolean(uploads[practice.id]) || completed.includes(practice.id); const assignment = assignments[practice.id]; return <article className={delivered ? 'practice-delivered' : ''} key={practice.id}><header><span>{delivered ? <CheckCircle2 size={20} /> : index + 1}</span><div><small>{practice.related}</small><h3>{practice.title}</h3></div></header><div className="packet-practice-body"><div className="practice-goal"><b>Meta</b><p>{practice.goal}</p></div><div className="packet-assignment"><b>Datos asignados para tu práctica</b>{assignment.values.map(value => <span key={value}>{value}</span>)}<p>{assignment.note}</p></div><div className="practice-columns"><div><h4>Hazlo paso a paso</h4><ol className="handheld-steps">{practice.steps.map(step => <li key={step.title}><b>{step.title}</b><p>{step.detail}</p><small><CheckCircle2 size={13} /> Vas bien si: {step.check}</small></li>)}</ol></div><div><h4>Antes de entregar, comprueba</h4><ul>{practice.checks.map(check => <li key={check}>{check}</li>)}<li>{assignment.note}</li></ul><div className="stuck-note"><b>¿Algo no aparece?</b><p>Detente en ese paso. Revisa que elegiste el equipo, puerto o pestaña indicados antes de cambiar otras cosas.</p></div></div></div><label className="packet-upload"><Upload size={20} /><span><strong>{uploads[practice.id]?.filename || 'Selecciona tu archivo de Packet Tracer'}</strong><small>Formato permitido: .pkt · máximo 20 MB</small></span><input type="file" accept=".pkt,application/octet-stream" disabled={uploading === practice.id || preview} onChange={event => onUpload(practice, event.target.files?.[0])} /></label>{uploading === practice.id && <div className="upload-status">Subiendo y vinculando tu práctica…</div>}{messages[practice.id] && <div className={delivered ? 'submission-success' : 'form-error'}>{messages[practice.id]}</div>}{delivered && !messages[practice.id] && <div className="submission-success"><CheckCircle2 size={17} /> Archivo entregado. Puedes reemplazarlo mientras no hayas enviado la evaluación final.</div>}</div></article> })}</div></section>
 }
 
 function TopicDiagram({ index }) {
