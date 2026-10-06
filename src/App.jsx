@@ -7,6 +7,7 @@ import {
 import { courses } from './data/academic'
 import AsinActivity from './components/AsinActivity'
 import MtcsActivity, { MtcsMaterialView } from './components/MtcsActivity'
+import { PearMaterialView } from './components/PearMaterial'
 import { analyzeMsiiDocument, buildMsiiDocument, downloadBlob, readAssignmentId } from './lib/msii-docx'
 import { isSupabaseReady, supabase } from './lib/supabase'
 
@@ -372,6 +373,7 @@ function Materials({ items, groups, courses, session, isTeacher, onAdd, onToggle
   const filtered = items.filter(m => (group === 'Todos' || m.group === group) && m.title.toLowerCase().includes(query.toLowerCase()))
   async function openMaterial(material) {
     if (material.url?.startsWith('mtcs://')) { setSelectedMaterial(material); return }
+    if (material.url?.startsWith('pear://')) { setSelectedMaterial(material); return }
     if (material.type !== 'Archivo') return window.open(material.url, '_blank', 'noopener,noreferrer')
     const preview = window.open('about:blank', '_blank')
     const { data, error } = await supabase.storage.from('materials').createSignedUrl(material.url, 300)
@@ -379,6 +381,7 @@ function Materials({ items, groups, courses, session, isTeacher, onAdd, onToggle
     if (preview) preview.location.href = data.signedUrl
     else window.location.href = data.signedUrl
   }
+  if (selectedMaterial?.url?.startsWith('pear://')) return <PearMaterialView code={selectedMaterial.url.replace('pear://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} />
   if (selectedMaterial) return <MtcsMaterialView code={selectedMaterial.url.replace('mtcs://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} />
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Material didáctico' : 'Mis materiales'}</h1><p>{isTeacher ? 'Recursos organizados por grupo y unidad.' : `Recursos de ${courses.map(course => course.name).join(' y ')}.`}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar material…" /></div>{isTeacher ? <select value={group} onChange={e => setGroup(e.target.value)}><option value="Todos">Todos los grupos</option>{groups.map(item => <option key={item.id} value={item.code}>Grupo {item.code}</option>)}</select> : <div className="group-chip">Grupo {session.group}</div>}</div>{filtered.length ? <div className="card-grid">{filtered.map(m => <article className={`material-card ${!m.published ? 'locked-card' : ''}`} key={m.id}><div className="material-icon"><FileText /></div><span className={`tag ${m.published ? 'active' : ''}`}>{isTeacher ? (m.published ? 'PUBLICADO' : 'BLOQUEADO') : m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group} · {m.unit}</p><footer><span>{m.published ? 'Visible para alumnos' : 'Oculto para alumnos'}</span><div className="card-actions"><button className="text-btn" onClick={() => openMaterial(m)}>Abrir <ChevronRight size={15} /></button>{isTeacher && <button className="lock-btn" onClick={() => onToggle?.(m)}>{m.published ? <Lock size={15} /> : <Unlock size={15} />}{m.published ? 'Bloquear' : 'Publicar'}</button>}</div></footer></article>)}</div> : <EmptyState text={isTeacher ? 'No hay materiales con estos filtros.' : 'Todavía no hay materiales publicados para tu grupo.'} />}</section>
 }
@@ -394,7 +397,8 @@ function Assessments({ items, session, isTeacher, learningProgress = [], onAdd, 
     if (selected.activityCode?.startsWith('MTCS-')) return <MtcsActivity assessment={selected} session={session} onBack={clearSelected} />
     return <GenericActivity assessment={selected} onBack={clearSelected} />
   }
-  const visibleItems = items.map(item => ({ ...item, locked: !isTeacher && item.activityCode?.startsWith('MTCS-RA-') && !learningProgress.some(progress => progress.material_code === item.activityCode && progress.completed_at) }))
+  const materialCodeFor = activityCode => activityCode?.startsWith('PEAR-') ? activityCode.replace(/\.1$/, '') : activityCode
+  const visibleItems = items.map(item => ({ ...item, locked: !isTeacher && (item.activityCode?.startsWith('MTCS-RA-') || item.activityCode?.startsWith('PEAR-')) && !learningProgress.some(progress => progress.material_code === materialCodeFor(item.activityCode) && progress.completed_at) }))
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={visibleItems} student={!isTeacher} onOpen={setSelected} onToggle={onToggle} /></section>
 }
 
@@ -609,7 +613,7 @@ function PearActivity({ assessment, session, onBack }) {
 
   return <section className="panel page-panel activity-workspace pear-workspace">
     <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button>
-    <div className="activity-hero"><div><span className="eyebrow">PEAR · {assessment.activityCode.includes('1.2') ? 'PROPÓSITO 1.2' : 'PROPÓSITO 1.3'}</span><h1>{assessment.title}</h1><p>{assessment.instructions}</p></div></div>
+    <div className="activity-hero"><div><span className="eyebrow">PEAR · PROPÓSITO {assessment.activityCode.match(/\d+\.\d+/)?.[0] || ''}</span><h1>{assessment.title}</h1><p>{assessment.instructions}</p></div></div>
     <div className="assigned-case"><h2>Datos asignados para tu trabajo</h2><p>Utiliza estos datos en el reporte que entregarás.</p><div className="assigned-grid">{assignment.map(item => <AssignedValue key={item.label} label={item.label} value={item.value} />)}</div></div>
     <form className="pear-submit" onSubmit={submit}><label>Entrega tu archivo PDF<input type="file" accept=".pdf,application/pdf" disabled={status === 'submitted' || status === 'working'} required onChange={event => setFile(event.target.files[0] || null)} /></label><button className="primary" disabled={!file || status === 'submitted' || status === 'working'}><Upload size={17} /> {status === 'submitted' ? 'Actividad entregada' : status === 'working' ? 'Subiendo…' : 'Entregar actividad'}</button></form>
     {message && <div className={status === 'submitted' ? 'submission-success' : 'form-error'}>{message}</div>}
@@ -636,6 +640,12 @@ function buildPearAssignment(seedText, activityCode) {
     const second = pick(110, Math.min(390, first - 20), 8)
     const operation = seed % 2 ? 'Suma' : 'Resta'
     return [{ label: 'Operación que debes representar', value: operation }, { label: 'Primera cantidad', value: first }, { label: 'Segunda cantidad', value: second }]
+  }
+  if (activityCode.includes('1.4')) {
+    const price = pick(18, 42) * 5
+    const quantity = pick(3, 8, 6)
+    const discount = [10, 15, 20][pick(0, 2, 10)]
+    return [{ label: 'Producto principal', value: ['Cuadernos', 'Memorias USB', 'Audífonos', 'Mochilas'][seed % 4] }, { label: 'Precio unitario', value: `$${price.toLocaleString('es-MX')}` }, { label: 'Cantidad inicial', value: quantity }, { label: 'Descuento por aplicar', value: `${discount}%` }, { label: 'Relación para analizar', value: seed % 2 ? 'Directamente proporcional' : 'Inversamente proporcional' }]
   }
   const income = pick(680, 980) * 10
   return [{ label: 'Ingreso mensual', value: `$${income.toLocaleString('es-MX')}` }, { label: 'Integrantes del hogar', value: pick(3, 6, 6) }, { label: 'Compra de higiene', value: `Cada ${pick(12, 20, 10)} días` }, { label: 'Compra de alimentos base', value: `Cada ${pick(5, 9, 14)} días` }]
