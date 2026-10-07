@@ -178,6 +178,7 @@ function Dashboard({ session, onLogout }) {
   const [materialList, setMaterialList] = useState([])
   const [assessmentList, setAssessmentList] = useState([])
   const [learningProgress, setLearningProgress] = useState([])
+  const [teacherNotes, setTeacherNotes] = useState([])
   const [selectedAssessment, setSelectedAssessment] = useState(null)
   const [studentPreview, setStudentPreview] = useState(false)
   const [previewGroup, setPreviewGroup] = useState('511')
@@ -191,14 +192,15 @@ function Dashboard({ session, onLogout }) {
       if (authError) throw authError
       if (!authState.session) throw new Error('Tu sesión no terminó de cargar. Cierra sesión e ingresa nuevamente.')
       const materialsQuery = supabase.from('materials').select('id, title, description, unit, resource_type, resource_url, published, created_at, groups(code)').order('created_at', { ascending: false })
-      const [groupResult, studentResult, materialResult, assessmentResult, progressResult] = await Promise.all([
+      const [groupResult, studentResult, materialResult, assessmentResult, progressResult, notesResult] = await Promise.all([
         supabase.from('groups').select('id, code, semester, career').eq('active', true).order('code'),
         isTeacher ? supabase.from('profiles').select('id, full_name, email, enrollment_number, group_id, groups(code)').eq('role', 'student').order('full_name') : Promise.resolve({ data: [] }),
         isTeacher ? materialsQuery : materialsQuery.eq('published', true),
         supabase.from('assessments').select('id, title, instructions, activity_code, status, due_at, group_id, groups(code), submissions(id, student_id, score, started_at, submitted_at, answers, file_path, original_filename, assessment_assignments(variant), profiles!submissions_student_id_fkey(full_name, email, enrollment_number))').order('created_at', { ascending: false }),
-        isTeacher ? Promise.resolve({ data: [] }) : supabase.from('learning_progress').select('material_code, completed_steps, completed_at'),
+        supabase.from('learning_progress').select('student_id, material_code, completed_steps, completed_at, updated_at'),
+        isTeacher ? supabase.from('teacher_student_notes').select('id, student_id, course_code, note, updated_at') : Promise.resolve({ data: [] }),
       ])
-      const firstError = [groupResult, studentResult, materialResult, assessmentResult, progressResult].find(result => result.error)?.error
+      const firstError = [groupResult, studentResult, materialResult, assessmentResult, progressResult, notesResult].find(result => result.error)?.error
       if (firstError) throw firstError
       const directory = (studentResult.data || []).map(student => ({ ...student, group_code: student.groups?.code || 'Sin asignar', active: true }))
       setGroupList((groupResult.data || []).map(group => ({ ...group, students: directory.filter(student => student.group_code === group.code).length })))
@@ -210,6 +212,7 @@ function Dashboard({ session, onLogout }) {
         return { id: assessment.id, title: assessment.title, instructions: assessment.instructions, activityCode: assessment.activity_code, group: assessment.groups?.code || '—', groupId: assessment.group_id, due: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha límite', dueAt: assessment.due_at, overdue: Boolean(assessment.due_at && new Date(assessment.due_at) < new Date() && assessment.status === 'published'), submissions: submissions.filter(item => item.submitted_at).length, drafts: submissions.filter(item => !item.submitted_at).length, submissionDetails: submissions.map(item => ({ ...item, assignment: item.assessment_assignments?.variant || null, student: item.profiles ? { name: formatPersonName(item.profiles.full_name), email: item.profiles.email, enrollment: item.profiles.enrollment_number } : null })), total: directory.filter(student => student.group_code === assessment.groups?.code).length, average: scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.score), 0) / scored.length) : null, status: assessment.status === 'published' ? 'Activa' : assessment.status === 'closed' ? 'Cerrada' : 'Borrador' }
       }).sort((a, b) => a.group.localeCompare(b.group, 'es', { numeric: true }) || learningSequence(a) - learningSequence(b) || a.title.localeCompare(b.title, 'es')))
       setLearningProgress(progressResult.data || [])
+      setTeacherNotes(notesResult.data || [])
     } catch (err) { setDataError(err.message || 'No fue posible cargar la información') }
     finally { setLoading(false) }
   }
@@ -253,7 +256,7 @@ function Dashboard({ session, onLogout }) {
       <main className="content">
         {dataError && <div className="form-error data-error">{dataError} <button className="text-btn" onClick={loadData}>Reintentar</button></div>}
         {loading ? <div className="loading-state">Cargando información real…</div> : studentPreview ? <StudentPreview session={previewSession} courses={courses.filter(course => course.group === previewGroup)} materials={materialList.filter(item => item.group === previewGroup && item.published)} assessments={assessmentList.filter(item => item.group === previewGroup && item.status === 'Activa')} /> : <>
-        {view === 'inicio' && (isTeacher ? <TeacherHome setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} setView={setView} />)}
+        {view === 'inicio' && (isTeacher ? <TeacherHome session={session} setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} teacherNotes={teacherNotes} onRefresh={loadData} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} setView={setView} />)}
         {view === 'modulos' && (isTeacher ? <TeacherModules courses={assignedCourses} students={studentList} materials={materialList} assessments={assessmentList} setView={setView} /> : <Modules courses={assignedCourses} session={session} setView={setView} />)}
         {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} onAdd={() => setModal('material')} onToggle={toggleMaterial} onProgressUpdate={progress => setLearningProgress(current => [...current.filter(item => item.material_code !== progress.material_code), progress])} />}
         {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} learningProgress={learningProgress} onAdd={() => setModal('assessment')} onRefresh={loadData} onToggle={toggleAssessment} initialSelected={selectedAssessment} onClearSelected={() => setSelectedAssessment(null)} />}
@@ -284,8 +287,9 @@ function Dashboard({ session, onLogout }) {
   </div>
 }
 
-function TeacherHome({ setView, groups, students, materials, assessments, onOpenAssessment }) {
+function TeacherHome({ session, setView, groups, students, materials, assessments, learningProgress, teacherNotes, onRefresh, onOpenAssessment }) {
   const [moduleFilter, setModuleFilter] = useState('Todos')
+  const [selectedCourse, setSelectedCourse] = useState(null)
   const activeAssessments = assessments.filter(item => item.status === 'Activa')
   const submitted = assessments.reduce((sum, item) => sum + item.submissions, 0)
   const drafts = assessments.reduce((sum, item) => sum + item.drafts, 0)
@@ -301,6 +305,7 @@ function TeacherHome({ setView, groups, students, materials, assessments, onOpen
     ungraded: item.submissionDetails.filter(submission => submission.submitted_at && submission.score === null).length,
     pending: Math.max(0, item.total - item.submissions),
   })).sort((a, b) => b.ungraded - a.ungraded || Number(b.overdue) - Number(a.overdue) || b.drafts - a.drafts || learningSequence(a) - learningSequence(b))
+  if (selectedCourse) return <ModuleStudentTracker session={session} course={selectedCourse} students={students.filter(student => student.group === selectedCourse.group)} assessments={assessments} learningProgress={learningProgress} teacherNotes={teacherNotes} onRefresh={onRefresh} onBack={() => setSelectedCourse(null)} />
   return <>
     <section className="teacher-command-hero command-center"><div><span className="eyebrow">{today}</span><h1>Buenos días, profe</h1><p>Este es el trabajo que requiere su atención. Los indicadores se actualizan automáticamente.</p><div className="command-context"><span><b>{students.length}</b> alumnos</span><span><b>{groups.length}</b> grupos</span><span><b>{materials.filter(item => item.published).length}</b> materiales visibles</span></div></div><div className="command-actions"><button onClick={() => setView('alumnos')}><Users size={17} />Directorio</button><button onClick={() => setView('materiales')}><BookOpen size={17} />Gestionar materiales</button><button onClick={() => setView('evaluaciones')}><ClipboardCheck size={17} />Revisar evaluaciones</button></div></section>
     <section className="teacher-action-grid">
@@ -314,12 +319,44 @@ function TeacherHome({ setView, groups, students, materials, assessments, onOpen
       <div className="panel chart-panel"><PanelTitle title="Ritmo de entrega" /><p className="section-intro">Porcentaje entregado por módulo respecto a lo asignado.</p><ModuleBarChart metrics={metrics} field="completion" suffix="%" /><div className="chart-summary"><span><b>{activeAssessments.length}</b> evaluaciones activas</span><span><b>{submitted}</b> entregas recibidas</span></div></div>
     </section>
     <section className="dashboard-toolbar"><div><strong>Panorama por módulo</strong><span>Las gráficas se calculan con alumnos, actividades y calificaciones reales.</span></div><select value={moduleFilter} onChange={event => setModuleFilter(event.target.value)}><option value="Todos">Todos los módulos</option>{metrics.map(item => <option key={item.key} value={item.code}>{item.code} · Grupo {item.group}</option>)}</select></section>
-    <section className="module-insight-grid">{filteredMetrics.map(metric => <ModuleInsight key={metric.key} metric={metric} onMaterials={() => setView('materiales')} onAssessments={() => setView('evaluaciones')} />)}</section>
+    <section className="module-insight-grid">{filteredMetrics.map(metric => <ModuleInsight key={metric.key} metric={metric} onOpen={() => setSelectedCourse(metric)} onMaterials={() => setView('materiales')} onAssessments={() => setView('evaluaciones')} />)}</section>
     <section className="two-cols teacher-lower-grid">
       <div className="panel"><PanelTitle title="Actividad reciente" action="Ver alumnos" onClick={() => setView('alumnos')} />{recent.length ? <div className="recent-list">{recent.map(item => <Activity key={item.id} initials={(item.student?.name || 'Alumno').split(' ').slice(0, 2).map(part => part[0]).join('')} title={item.student?.name || 'Alumno'} meta={`${item.submitted_at ? 'Entregó' : 'Guardó avance'} · ${item.assessment} · Grupo ${item.group}`} color={item.submitted_at ? 'green' : 'blue'} />)}</div> : <EmptyState text="Todavía no hay actividad de alumnos registrada." />}</div>
       <div className="panel"><PanelTitle title="Avance por grupo" /><div className="group-progress">{groups.map(group => { const activeStudents = new Set(assessments.filter(item => item.group === group.code).flatMap(item => item.submissionDetails.map(submission => submission.student_id))).size; const progress = group.students ? Math.round(activeStudents / group.students * 100) : 0; return <div className="progress-row" key={group.id}><div><strong>Grupo {group.code}</strong><span>{group.students} {group.students === 1 ? 'alumno' : 'alumnos'} · {group.semester}º semestre</span></div><div className="progress-meta"><b>{activeStudents ? `${activeStudents} con actividad` : 'Sin actividad'}</b><div className="bar"><i style={{ width: `${progress}%` }} /></div></div></div> })}</div></div>
     </section>
   </>
+}
+
+function ModuleStudentTracker({ session, course, students, assessments, learningProgress, teacherNotes, onRefresh, onBack }) {
+  const [selectedStudent, setSelectedStudent] = useState(null)
+  const [note, setNote] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
+  const moduleAssessments = assessments.filter(item => itemBelongsToCourse(item, course, courses.filter(candidate => candidate.group === course.group)))
+  const studentProgress = student => learningProgress.filter(item => item.student_id === student.id && item.material_code.startsWith(`${course.code}-`))
+  const studentSubmissions = student => moduleAssessments.flatMap(assessment => assessment.submissionDetails.filter(submission => submission.student_id === student.id).map(submission => ({ ...submission, assessment })))
+  const summaryFor = student => {
+    const progress = studentProgress(student)
+    const submissions = studentSubmissions(student)
+    return { progress, submissions, completed: progress.filter(item => item.completed_at).length, steps: progress.reduce((sum, item) => sum + (item.completed_steps?.length || 0), 0), delivered: submissions.filter(item => item.submitted_at).length, drafts: submissions.filter(item => !item.submitted_at).length }
+  }
+  function openStudent(student) {
+    setSelectedStudent(student)
+    setNote(teacherNotes.find(item => item.student_id === student.id && item.course_code === course.code)?.note || '')
+    setMessage('')
+  }
+  async function saveNote() {
+    setSaving(true); setMessage('')
+    const { error } = await supabase.from('teacher_student_notes').upsert({ teacher_id: session.id, student_id: selectedStudent.id, course_code: course.code, note: note.trim(), updated_at: new Date().toISOString() }, { onConflict: 'teacher_id,student_id,course_code' })
+    if (error) setMessage(error.message || 'No fue posible guardar la nota.')
+    else { setMessage('Nota privada guardada.'); await onRefresh?.() }
+    setSaving(false)
+  }
+  if (selectedStudent) {
+    const summary = summaryFor(selectedStudent)
+    return <section className="module-student-detail"><button className="text-btn back-action" onClick={() => setSelectedStudent(null)}><ArrowLeft size={16} /> Volver a alumnos de {course.code}</button><div className="student-detail-hero"><div className="avatar large">{selectedStudent.name.split(' ').slice(0, 2).map(part => part[0]).join('')}</div><div><span className="eyebrow">{course.code} · GRUPO {course.group}</span><h1>{selectedStudent.name}</h1><p>{selectedStudent.enrollment || 'Matrícula pendiente'} · {selectedStudent.email}</p></div><div className="live-badge"><i /> ESTATUS EN TIEMPO REAL</div></div><div className="student-detail-stats"><div><strong>{summary.steps}</strong><span>Pasos completados</span></div><div><strong>{summary.completed}</strong><span>R.A. terminados</span></div><div><strong>{summary.delivered}</strong><span>Evaluaciones entregadas</span></div><div><strong>{summary.drafts}</strong><span>Avances guardados</span></div></div><div className="student-detail-grid"><section className="panel"><PanelTitle title="Progreso por resultado de aprendizaje" />{summary.progress.length ? <div className="progress-detail-list">{summary.progress.map(progress => <article key={progress.material_code}><div><b>{progress.material_code.replace(`${course.code}-`, '').replaceAll('-', ' ')}</b><span>{progress.completed_at ? 'Contenido completo' : 'En proceso'}</span></div><strong>{progress.completed_steps?.length || 0} pasos</strong><div className="completed-step-list">{(progress.completed_steps || []).map(step => <span key={step}><CheckCircle2 size={12} />{step.replace('tema-', 'Tema ').replace('practica-final', 'Práctica final').replaceAll('-', ' ')}</span>)}</div><small>Última actividad: {progress.updated_at ? new Date(progress.updated_at).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : 'Sin registro'}</small></article>)}</div> : <EmptyState text="Este alumno todavía no ha comenzado los contenidos del módulo." />}</section><section className="panel"><PanelTitle title="Evaluaciones y evidencias" />{moduleAssessments.length ? <div className="student-evidence-list">{moduleAssessments.map(assessment => { const submission = assessment.submissionDetails.find(item => item.student_id === selectedStudent.id); return <article key={assessment.id}><div><b>{assessment.title}</b><span>{submission?.submitted_at ? 'Entregada' : submission ? 'Avance guardado' : 'Sin iniciar'}</span></div><strong>{submission?.score !== null && submission?.score !== undefined ? `${submission.score}/60` : '—'}</strong></article> })}</div> : <EmptyState text="No hay evaluaciones en este módulo." />}</section><section className="panel private-note-panel"><div className="private-note-heading"><div><span className="eyebrow">SÓLO PARA EL DOCENTE</span><h3>Nota privada</h3></div><Lock size={19} /></div><p>Registre acuerdos, observaciones o seguimiento personal. El alumno no puede ver esta información.</p><textarea rows="7" value={note} onChange={event => setNote(event.target.value)} placeholder="Escriba aquí una observación privada sobre este alumno…" /><button className="primary" onClick={saveNote} disabled={saving}>{saving ? 'Guardando…' : 'Guardar nota privada'}</button>{message && <small className={message.startsWith('Nota') ? 'correct-feedback' : 'wrong-feedback'}>{message}</small>}</section></div></section>
+  }
+  return <section className="module-roster-page"><button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver al centro de control</button><div className="module-roster-hero"><div className="module-code large">{course.code}</div><div><span className="eyebrow">SEGUIMIENTO DEL MÓDULO</span><h1>{course.name}</h1><p>Grupo {course.group} · {students.length} {students.length === 1 ? 'alumno' : 'alumnos'} · Información actualizada al ingresar</p></div></div><div className="panel"><div className="roster-heading"><div><h2>Alumnos del módulo</h2><p>Seleccione un alumno para consultar su expediente académico en tiempo real.</p></div><span>{students.length} inscritos</span></div><div className="module-student-list">{students.map(student => { const summary = summaryFor(student); const hasNote = teacherNotes.some(item => item.student_id === student.id && item.course_code === course.code && item.note); return <button key={student.id} onClick={() => openStudent(student)}><div className="avatar">{student.name.split(' ').slice(0, 2).map(part => part[0]).join('')}</div><div><strong>{student.name}</strong><span>{student.enrollment || 'Matrícula pendiente'}</span></div><div className="student-live-summary"><span><b>{summary.steps}</b> pasos</span><span><b>{summary.delivered}</b> entregas</span><span className={summary.drafts ? 'has-draft' : ''}><b>{summary.drafts}</b> avances</span>{hasNote && <span className="has-note"><Lock size={12} /> Nota privada</span>}</div><ChevronRight size={18} /></button>})}</div></div></section>
 }
 
 function itemBelongsToCourse(item, course, sameGroupCourses) {
@@ -343,8 +380,8 @@ function buildModuleMetrics(courseList, students, materials, assessments) {
   })
 }
 
-function ModuleInsight({ metric, onMaterials, onAssessments }) {
-  return <article className="module-insight"><header><div className="module-code">{metric.code}</div><div><strong>{metric.name}</strong><span>Grupo {metric.group} · {metric.students} {metric.students === 1 ? 'alumno' : 'alumnos'}</span></div><div className="completion-donut" style={{ '--progress': `${metric.completion * 3.6}deg` }}><i>{metric.completion}%</i></div></header><div className="module-metric-row"><div><b>{metric.publishedMaterials}/{metric.materials}</b><span>Materiales visibles</span></div><div><b>{metric.activeAssessments}/{metric.assessments}</b><span>Evaluaciones activas</span></div><div><b>{metric.delivered}/{metric.possible || 0}</b><span>Entregas</span></div><div><b>{metric.hasScores ? `${metric.average}/60` : '—'}</b><span>Promedio</span></div></div><footer><button onClick={onMaterials}>Administrar materiales</button><button onClick={onAssessments}>Ver evaluaciones</button></footer></article>
+function ModuleInsight({ metric, onOpen, onMaterials, onAssessments }) {
+  return <article className="module-insight"><button className="module-insight-open" onClick={onOpen}><header><div className="module-code">{metric.code}</div><div><strong>{metric.name}</strong><span>Grupo {metric.group} · {metric.students} {metric.students === 1 ? 'alumno' : 'alumnos'}</span></div><div className="completion-donut" style={{ '--progress': `${metric.completion * 3.6}deg` }}><i>{metric.completion}%</i></div></header><span className="open-module-label">Abrir seguimiento de alumnos <ChevronRight size={15} /></span></button><div className="module-metric-row"><div><b>{metric.publishedMaterials}/{metric.materials}</b><span>Materiales visibles</span></div><div><b>{metric.activeAssessments}/{metric.assessments}</b><span>Evaluaciones activas</span></div><div><b>{metric.delivered}/{metric.possible || 0}</b><span>Entregas</span></div><div><b>{metric.hasScores ? `${metric.average}/60` : '—'}</b><span>Promedio</span></div></div><footer><button onClick={onMaterials}>Administrar materiales</button><button onClick={onAssessments}>Ver evaluaciones</button></footer></article>
 }
 
 function ModuleBarChart({ metrics, field, suffix }) {
