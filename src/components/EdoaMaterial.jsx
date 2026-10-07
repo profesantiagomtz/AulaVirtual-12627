@@ -22,6 +22,42 @@ const practices = [
   { code: 'practice-5', title: 'Práctica 5  Integradora del R.A. 1.1', file: 'EDOA_RA11_Practica_5_Integradora.docx', description: 'Entrega un documento completo con diseño, formato, estilos y respaldo.', rule: 'integradora' },
 ]
 
+const interfaceParts = [
+  ['Barra de título', 'Nombre del documento'], ['Acceso rápido', 'Guardar, deshacer y rehacer'],
+  ['Pestañas', 'Agrupan los comandos'], ['Cinta de opciones', 'Botones de la pestaña activa'],
+  ['Regla', 'Márgenes y sangrías'], ['Área de trabajo', 'La hoja donde escribes'],
+  ['Barra de estado', 'Página, palabras y zoom'],
+]
+
+function NumberBadge({ children }) { return <span className="word-number">{children}</span> }
+
+function WordInterfaceGraphic() {
+  return <div className="word-interface-visual" role="img" aria-label="Ventana de Word 2019 con siete partes numeradas">
+    <div className="word-title"><NumberBadge>1</NumberBadge><span><NumberBadge>2</NumberBadge> 💾 ↶ ↷ &nbsp; Documento1 - Word</span><span>— ▢ ✕</span></div>
+    <div className="word-tabs"><NumberBadge>3</NumberBadge><b>Inicio</b><span>Insertar</span><span>Diseño</span><span>Disposición</span><span>Revisar</span></div>
+    <div className="word-ribbon"><NumberBadge>4</NumberBadge><span>📋<small>Portapapeles</small></span><span><b>N</b> <i>K</i> <u>S</u><small>Fuente</small></span><span>☰<small>Párrafo</small></span></div>
+    <div className="word-ruler"><NumberBadge>5</NumberBadge><span>1 · 2 · 3 · 4 · 5 · 6 · 7 · 8 · 9 · 10</span></div>
+    <div className="word-canvas"><NumberBadge>6</NumberBadge><div><strong>Aquí escribes tu texto</strong><i></i><i></i><i></i></div></div>
+    <div className="word-status"><NumberBadge>7</NumberBadge><span>Página 1 de 1 · 0 palabras</span><span>− &nbsp; 100% &nbsp; +</span></div>
+  </div>
+}
+
+function AlignmentLines({ type }) {
+  const widths = type === 'Justificada' ? [100, 100, 100, 100] : [100, 72, 88, 58]
+  return <div className={`alignment-lines ${type.toLowerCase()}`}>{widths.map((width, index) => <i style={{ width: `${width}%` }} key={index} />)}</div>
+}
+
+function TopicVisual({ page }) {
+  if (page === 0) return <div className="edoa-visual"><WordInterfaceGraphic /><div className="word-legend">{interfaceParts.map(([name, description], index) => <div key={name}><NumberBadge>{index + 1}</NumberBadge><span><b>{name}</b><small>{description}</small></span></div>)}</div><p className="visual-tip">💡 Las pestañas agrupan los comandos y la cinta muestra sus botones.</p></div>
+  if (page === 1) return <div className="edoa-visual visual-grid three"><div><span className="paper vertical"><i /></span><b>Márgenes</b><small>Espacio alrededor</small></div><div><span className="paper-pair"><i /><i /></span><b>Orientación</b><small>Vertical u horizontal</small></div><div><span className="paper-pair sizes"><i /><i /></span><b>Tamaño</b><small>Carta, A4 u Oficio</small></div></div>
+  if (page === 2) return <div className="edoa-visual visual-grid four">{['Izquierda', 'Centrada', 'Derecha', 'Justificada'].map(type => <div key={type}><AlignmentLines type={type} /><b>{type}</b></div>)}</div>
+  if (page === 3) return <div className="edoa-visual shortcut-visual">{[['Ctrl+C', 'Copiar'], ['Ctrl+X', 'Cortar'], ['Ctrl+V', 'Pegar'], ['Ctrl+Z', 'Deshacer'], ['Ctrl+G', 'Guardar'], ['Ctrl+E', 'Seleccionar todo']].map(([key, action]) => <div key={key}><kbd>{key}</kbd><span>{action}</span></div>)}</div>
+  if (page === 4) return <div className="edoa-visual visual-grid file-types">{[['.docx', 'Documento'], ['.dotx', 'Plantilla'], ['.pdf', 'Compartir'], ['.doc', 'Word antiguo'], ['.txt', 'Texto simple']].map(([extension, use]) => <div key={extension}><strong>{extension}</strong><small>{use}</small></div>)}</div>
+  if (page === 5) return <div className="edoa-visual apa-visual"><div className="apa-page"><span>2.54 cm</span><div><b>Título del trabajo</b><i /><i /><i /><i /></div></div><div className="apa-labels"><span>↔ Márgenes 2.54 cm</span><span>🔤 Fuente legible</span><span>☰ Interlineado doble</span><span>↳ Sangría 1.27 cm</span></div></div>
+  if (page === 6) return <div className="edoa-visual reference-visual"><p><span className="author">Cuartero, J.</span> <span className="year">(2016).</span> <span className="title"><i>Word 2016 manual práctico paso a paso.</i></span> <span className="publisher">Alfaomega.</span></p><div><span className="author">Autor</span><span className="year">Año</span><span className="title">Título</span><span className="publisher">Editorial</span></div></div>
+  return <div className="edoa-visual workflow-visual">{['Configura', 'Escribe', 'Da formato', 'Revisa', 'Guarda'].map((step, index) => <div key={step}><NumberBadge>{index + 1}</NumberBadge><b>{step}</b>{index < 4 && <span>→</span>}</div>)}</div>
+}
+
 async function analyzePractice(file, practice) {
   if (!file.name.toLowerCase().endsWith('.docx')) throw new Error('Selecciona el archivo DOCX que trabajaste en Word.')
   const zip = await JSZip.loadAsync(file)
@@ -108,6 +144,7 @@ export default function EdoaMaterial({ session, onBack, onProgressUpdate }) {
     <article className="edoa-card">
       <header><div className="edoa-card-icon">{current.icon}</div><div><small>FICHA {page + 1} DE {cards.length}</small><h2>{current.title}</h2></div></header>
       <p className="edoa-intro">{current.intro}</p>
+      <TopicVisual page={page} />
       <div className="edoa-notes">{current.notes.map(([title, text]) => <div key={title}><strong>{title}</strong><p>{text}</p></div>)}</div>
       <section className="edoa-check"><span>COMPRUEBA LO APRENDIDO</span><h3>{current.question}</h3><div>{current.options.map(option => <label key={option}><input type="radio" name={`edoa-${page}`} checked={answer === option} disabled={done} onChange={() => setAnswer(option)} />{option}</label>)}</div><button className="primary" disabled={done || !answer} onClick={completeCard}>{done ? 'Ficha completada' : 'Revisar respuesta'}</button>{message && <p className={message.startsWith('¡') ? 'correct-feedback' : 'wrong-feedback'}>{message}</p>}</section>
     </article>
