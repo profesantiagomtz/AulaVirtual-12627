@@ -412,8 +412,12 @@ function Assessments({ items, session, isTeacher, learningProgress = [], onAdd, 
     if (selected.activityCode?.startsWith('MTCS-')) return <MtcsActivity assessment={selected} session={session} onBack={clearSelected} />
     return <GenericActivity assessment={selected} onBack={clearSelected} />
   }
-  const materialCodeFor = activityCode => activityCode?.startsWith('PEAR-') ? activityCode.replace(/\.1$/, '') : activityCode
-  const visibleItems = items.map(item => ({ ...item, locked: !isTeacher && (item.activityCode?.startsWith('MTCS-RA-') || item.activityCode?.startsWith('PEAR-')) && !learningProgress.some(progress => progress.material_code === materialCodeFor(item.activityCode) && progress.completed_at) }))
+  const materialCodeFor = activityCode => {
+    if (activityCode?.startsWith('PEAR-')) return activityCode.replace(/\.1$/, '')
+    if (activityCode === 'EDOA-RA-1.1' || activityCode === 'EDOA-1.1.1') return 'EDOA-WORD-U1'
+    return activityCode
+  }
+  const visibleItems = items.map(item => ({ ...item, locked: !isTeacher && (item.activityCode?.startsWith('MTCS-RA-') || item.activityCode?.startsWith('PEAR-') || item.activityCode?.startsWith('EDOA-')) && !learningProgress.some(progress => progress.material_code === materialCodeFor(item.activityCode) && progress.completed_at) }))
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Mis evaluaciones'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Evaluaciones asignadas a tus módulos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div><AssessmentTable items={visibleItems} student={!isTeacher} onOpen={setSelected} onToggle={onToggle} /></section>
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Monitor, ShieldCheck } from 'lucide-react'
+import JSZip from 'jszip'
+import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Download, ShieldCheck, Upload } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 const cards = [
@@ -8,13 +9,41 @@ const cards = [
   { icon: '🔤', title: 'Formato de texto y párrafo', intro: 'La pestaña Inicio contiene los grupos Fuente y Párrafo.', notes: [['Fuente', 'Negrita, cursiva, subrayado, tamaño y color.'], ['Alineación izquierda', 'Los renglones comienzan en el margen izquierdo.'], ['Centrada', 'El texto queda equilibrado respecto al centro.'], ['Derecha', 'Los renglones terminan en el margen derecho.'], ['Justificada', 'El texto se alinea en ambos márgenes.'], ['Interlineado y sangría', 'Controlan el espacio entre renglones y la entrada del párrafo.']], question: '¿Qué alineación deja rectos ambos márgenes?', options: ['Justificada', 'Centrada', 'Derecha'], answer: 'Justificada' },
   { icon: '🖱️', title: 'Iconos y atajos esenciales', intro: 'Reconocer los botones y atajos te permite trabajar con mayor rapidez.', notes: [['Ctrl+C', 'Copia el contenido seleccionado.'], ['Ctrl+X', 'Corta: quita el contenido y lo guarda temporalmente.'], ['Ctrl+V', 'Pega lo copiado o cortado.'], ['Ctrl+Z', 'Deshace el último cambio.'], ['Ctrl+G', 'Guarda el documento.'], ['Ctrl+E', 'Selecciona todo el documento.']], question: '¿Qué diferencia principal existe entre copiar y cortar?', options: ['Cortar quita el original', 'Copiar elimina el original', 'No existe diferencia'], answer: 'Cortar quita el original' },
   { icon: '💾', title: 'Plantillas, respaldo y tipos de archivo', intro: 'El tipo de archivo determina cómo podrás reutilizar o compartir el documento.', notes: [['.docx', 'Documento actual y editable de Word.'], ['.dotx', 'Plantilla reutilizable.'], ['.pdf', 'Formato para compartir sin facilitar la edición.'], ['.doc', 'Documento de versiones antiguas de Word.'], ['.txt', 'Texto sin formato.'], ['Respaldo', 'Guarda una copia adicional antes de hacer cambios importantes.']], question: '¿Qué extensión corresponde a una plantilla reutilizable?', options: ['.dotx', '.docx', '.txt'], answer: '.dotx' },
-  { icon: '📊', title: 'Insertar tablas e imágenes', intro: 'Los objetos permiten organizar información y comunicar ideas visualmente.', notes: [['Tabla', 'Organiza datos en filas y columnas.'], ['Imagen', 'Puede insertarse desde el equipo o desde una fuente en línea.'], ['Diseño de tabla', 'Permite aplicar estilos, bordes, combinar celdas y agregar filas.'], ['Formato de imagen', 'Permite recortar, aplicar estilos y cambiar el ajuste del texto.']], question: '¿Qué objeto organiza datos en filas y columnas?', options: ['Tabla', 'Imagen', 'Nota al pie'], answer: 'Tabla' },
-  { icon: '📚', title: 'Objetos de referencia', intro: 'Word ayuda a documentar las fuentes y organizar trabajos extensos.', notes: [['Hipervínculo', 'Ctrl+K enlaza una palabra con una web, archivo o correo.'], ['Tabla de contenido', 'Se genera utilizando títulos con estilo.'], ['Nota al pie', 'Amplía una idea en la parte inferior de la página.'], ['Cita y bibliografía', 'Registra las fuentes y genera la lista de referencias.'], ['Objeto', 'Permite insertar documentos, hojas de cálculo o presentaciones.']], question: '¿En qué pestaña se inserta una nota al pie?', options: ['Referencias', 'Inicio', 'Disposición'], answer: 'Referencias' },
-  { icon: '🎯', title: 'Formato y ajuste de objetos', intro: 'Selecciona el objeto para mostrar sus herramientas de formato.', notes: [['Tamaño', 'Arrastra desde una esquina para conservar la proporción.'], ['Relleno y contorno', 'Cambian el fondo y borde de una forma.'], ['En línea', 'El objeto se comporta como una letra dentro del texto.'], ['Cuadrado', 'El texto rodea el objeto.'], ['Detrás o delante', 'Coloca el objeto por debajo o encima del texto.']], question: '¿Desde dónde debes redimensionar una imagen para no deformarla?', options: ['Desde una esquina', 'Desde un lado', 'Desde el centro'], answer: 'Desde una esquina' },
   { icon: '📄', title: 'Formato APA del documento', intro: 'Estos ajustes corresponden a APA 7.ª edición.', notes: [['Márgenes', '2.54 cm en cada lado.'], ['Fuente', 'Times New Roman 12 o Calibri 11.'], ['Interlineado', 'Doble en el documento.'], ['Sangría', 'Primera línea de cada párrafo a 1.27 cm.'], ['Número de página', 'En la parte superior derecha.']], question: '¿Cuál es el margen indicado por APA?', options: ['2.54 cm', '1 cm', '5 cm'], answer: '2.54 cm' },
   { icon: '🔎', title: 'Cita y referencia', intro: 'Una fuente se reconoce dentro del texto y también en la lista final.', notes: [['Cita parentética', '(Cuartero, 2016).'], ['Cita narrativa', 'Cuartero (2016).'], ['Dos autores', '(Alfie & Veloso, 2011).'], ['Tres o más', '(Gómez et al., 2020).'], ['Referencia de libro', 'Autor. (Año). Título. Editorial.'], ['Lista final', 'Orden alfabético y sangría francesa.']], question: '¿Cuál cita corresponde a tres o más autores?', options: ['(Gómez et al., 2020)', '(Gómez, 2020)', 'Gómez y todos (2020)'], answer: '(Gómez et al., 2020)' },
-  { icon: '🛠️', title: 'Práctica guiada en Word', intro: 'Aplica lo aprendido en un documento nuevo.', notes: [['1. Configura la página', 'Carta, orientación vertical y márgenes de 2.54 cm.'], ['2. Escribe un título', 'Aplica estilo Título 1.'], ['3. Agrega contenido', 'Escribe dos párrafos y usa alineación justificada.'], ['4. Inserta objetos', 'Crea una tabla 3×3 y agrega una imagen con ajuste cuadrado.'], ['5. Registra fuentes', 'Agrega tres fuentes, inserta sus citas y genera la bibliografía.'], ['6. Guarda', 'Conserva una copia .docx y exporta otra en PDF.']], question: '¿Qué debes hacer antes de generar automáticamente la tabla de contenido?', options: ['Aplicar estilos de título', 'Cambiar el color de página', 'Insertar una imagen'], answer: 'Aplicar estilos de título' },
+  { icon: '🛠️', title: 'Antes de comenzar las prácticas', intro: 'Repasa el orden correcto para preparar un documento del R.A. 1.1.', notes: [['1. Configura la página', 'Define tamaño, orientación y márgenes antes de capturar el contenido.'], ['2. Escribe y organiza', 'Captura el texto y separa las ideas en párrafos.'], ['3. Aplica formato', 'Utiliza fuente, estilos, alineación, interlineado y sangría según las instrucciones.'], ['4. Revisa', 'Corrige ortografía y confirma que el documento sea fácil de leer.'], ['5. Guarda y respalda', 'Conserva el archivo .docx y crea una copia de seguridad.']], question: '¿Qué conviene hacer antes de empezar a capturar el contenido?', options: ['Configurar la página', 'Imprimir el documento', 'Cerrar Word'], answer: 'Configurar la página' },
 ]
+
+const practices = [
+  { code: 'practice-1', title: 'Práctica 1  Reconocimiento de la interfaz', file: 'EDOA_RA11_Practica_1_Interfaz.docx', description: 'Identifica dónde se encuentra y para qué sirve cada elemento de Word.', rule: 'interfaz' },
+  { code: 'practice-2', title: 'Práctica 2  Diseño de página', file: 'EDOA_RA11_Practica_2_Diseno_pagina.docx', description: 'Configura tamaño, orientación, márgenes, encabezado y pie de página.', rule: 'pagina' },
+  { code: 'practice-3', title: 'Práctica 3  Texto y párrafo', file: 'EDOA_RA11_Practica_3_Texto_parrafo.docx', description: 'Aplica fuente, estilos, color, alineación, interlineado y sangría.', rule: 'formato' },
+  { code: 'practice-4', title: 'Práctica 4  Edición y listas', file: 'EDOA_RA11_Practica_4_Edicion_listas.docx', description: 'Ordena información, crea listas y utiliza Buscar y reemplazar.', rule: 'listas' },
+  { code: 'practice-5', title: 'Práctica 5  Integradora del R.A. 1.1', file: 'EDOA_RA11_Practica_5_Integradora.docx', description: 'Entrega un documento completo con diseño, formato, estilos y respaldo.', rule: 'integradora' },
+]
+
+async function analyzePractice(file, practice) {
+  if (!file.name.toLowerCase().endsWith('.docx')) throw new Error('Selecciona el archivo DOCX que trabajaste en Word.')
+  const zip = await JSZip.loadAsync(file)
+  const documentXml = await zip.file('word/document.xml')?.async('text')
+  if (!documentXml) throw new Error('El archivo no parece ser un documento válido de Word.')
+  const headerFiles = Object.keys(zip.files).filter(name => /^word\/header\d+\.xml$/.test(name))
+  const footerFiles = Object.keys(zip.files).filter(name => /^word\/footer\d+\.xml$/.test(name))
+  const plain = documentXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
+  const placeholderCount = (plain.match(/Escribe aquí/gi) || []).length
+  const checks = []
+  if (practice.rule === 'interfaz') checks.push({ label: 'Completó las 18 explicaciones de la interfaz', ok: placeholderCount === 0 })
+  if (practice.rule === 'pagina') {
+    checks.push({ label: 'Agregó encabezado', ok: headerFiles.length > 0 }, { label: 'Agregó pie de página', ok: footerFiles.length > 0 }, { label: 'Configuró márgenes cercanos a 2.54 cm', ok: /w:top="1(?:3|4|5)\d{2}"/.test(documentXml) && /w:left="1(?:3|4|5)\d{2}"/.test(documentXml) }, { label: 'Escribió la evidencia solicitada', ok: placeholderCount === 0 })
+  }
+  if (practice.rule === 'formato') checks.push({ label: 'Aplicó negrita', ok: /<w:b\/?/.test(documentXml) }, { label: 'Aplicó cursiva', ok: /<w:i\/?/.test(documentXml) }, { label: 'Utilizó alineación centrada', ok: /w:val="center"/.test(documentXml) }, { label: 'Utilizó texto justificado', ok: /w:val="both"/.test(documentXml) }, { label: 'Aplicó sangría o interlineado', ok: /w:firstLine=|w:line=/.test(documentXml) })
+  if (practice.rule === 'listas') {
+    const numberingXml = await zip.file('word/numbering.xml')?.async('text') || ''
+    checks.push({ label: 'Creó listas reales de Word', ok: numberingXml.length > 0 && (documentXml.match(/<w:numPr>/g) || []).length >= 2 }, { label: 'Realizó la edición solicitada', ok: (plain.match(/\barchivo\b/gi) || []).length <= 2 })
+  }
+  if (practice.rule === 'integradora') checks.push({ label: 'Agregó encabezado', ok: headerFiles.length > 0 }, { label: 'Aplicó estilos de título', ok: /w:val="(?:Title|Heading1|Heading2|T.tulo|T.tulo1|T.tulo2)"/i.test(documentXml) }, { label: 'Aplicó texto justificado', ok: /w:val="both"/.test(documentXml) }, { label: 'Completó la conclusión', ok: placeholderCount === 0 })
+  return { checks, passed: checks.length > 0 && checks.every(check => check.ok) }
+}
 
 export default function EdoaMaterial({ session, onBack, onProgressUpdate }) {
   const code = 'EDOA-WORD-U1'
@@ -22,27 +51,56 @@ export default function EdoaMaterial({ session, onBack, onProgressUpdate }) {
   const [completed, setCompleted] = useState([])
   const [answer, setAnswer] = useState('')
   const [message, setMessage] = useState('')
+  const [practiceReviews, setPracticeReviews] = useState({})
+  const [busy, setBusy] = useState('')
   const current = cards[page]
-  const percent = Math.round(completed.length / cards.length * 100)
-  const done = completed.includes(page)
+  const totalSteps = cards.length + practices.length
+  const percent = Math.round(completed.length / totalSteps * 100)
+  const done = completed.includes(`card-${page}`)
 
   useEffect(() => {
     if (session.preview) return
-    supabase.from('learning_progress').select('completed_steps').eq('material_code', code).maybeSingle().then(({ data }) => setCompleted(data?.completed_steps || []))
+    supabase.from('learning_progress').select('completed_steps').eq('material_code', code).maybeSingle().then(({ data }) => {
+      const stored = data?.completed_steps || []
+      setCompleted(stored.map(step => Number.isInteger(step) ? `card-${step}` : step))
+    })
   }, [session.preview])
 
   useEffect(() => { setAnswer(''); setMessage('') }, [page])
 
-  async function completeCard() {
-    if (answer !== current.answer) { setMessage('Todavía no es correcto. Revisa la ficha y vuelve a intentarlo.'); return }
-    const next = [...new Set([...completed, page])].sort((a, b) => a - b)
-    setCompleted(next); setMessage('¡Correcto! Ficha completada.')
-    const progress = { material_code: code, completed_steps: next, completed_at: next.length === cards.length ? new Date().toISOString() : null }
-    onProgressUpdate?.(progress)
+  async function saveProgress(next) {
+    const progress = { material_code: code, completed_steps: next, completed_at: next.length === totalSteps ? new Date().toISOString() : null }
+    setCompleted(next); onProgressUpdate?.(progress)
     if (!session.preview) await supabase.from('learning_progress').upsert({ student_id: session.id, ...progress }, { onConflict: 'student_id,material_code' })
   }
 
-  const status = useMemo(() => cards.map((_, index) => completed.includes(index)), [completed])
+  async function completeCard() {
+    if (answer !== current.answer) { setMessage('Todavía no es correcto. Revisa la ficha y vuelve a intentarlo.'); return }
+    const next = [...new Set([...completed, `card-${page}`])]
+    setMessage('¡Correcto! Ficha completada.'); await saveProgress(next)
+  }
+
+  async function submitPractice(practice, file) {
+    if (!file) return
+    setBusy(practice.code); setMessage('')
+    try {
+      const review = await analyzePractice(file, practice)
+      setPracticeReviews(currentReviews => ({ ...currentReviews, [practice.code]: review }))
+      if (!review.passed) throw new Error('El documento todavía no cumple todos los puntos. Corrígelo en Word y vuelve a subirlo.')
+      if (!session.preview) {
+        const path = `${session.id}/edoa/${practice.code}/${file.name}`
+        const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true, contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+        if (uploadError) throw uploadError
+        const { error } = await supabase.from('edoa_practice_submissions').upsert({ student_id: session.id, practice_code: practice.code, file_path: path, original_filename: file.name, analysis: review, submitted_at: new Date().toISOString() }, { onConflict: 'student_id,practice_code' })
+        if (error) throw error
+      }
+      await saveProgress([...new Set([...completed, practice.code])])
+      setMessage('¡Práctica revisada y entregada correctamente!')
+    } catch (error) { setMessage(error.message || 'No fue posible revisar la práctica.') }
+    finally { setBusy('') }
+  }
+
+  const status = useMemo(() => cards.map((_, index) => completed.includes(`card-${index}`)), [completed])
   return <section className="panel page-panel edoa-workspace">
     <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a materiales</button>
     <div className="edoa-hero"><div><span className="eyebrow">EDOA · WORD 2019 · UNIDAD 1</span><h1>Diseño y formato del documento</h1><p>Aprende, practica y aplica cada herramienta paso a paso.</p></div><div className="edoa-progress"><strong>{percent}%</strong><span>COMPLETADO</span></div></div>
@@ -54,6 +112,7 @@ export default function EdoaMaterial({ session, onBack, onProgressUpdate }) {
       <section className="edoa-check"><span>COMPRUEBA LO APRENDIDO</span><h3>{current.question}</h3><div>{current.options.map(option => <label key={option}><input type="radio" name={`edoa-${page}`} checked={answer === option} disabled={done} onChange={() => setAnswer(option)} />{option}</label>)}</div><button className="primary" disabled={done || !answer} onClick={completeCard}>{done ? 'Ficha completada' : 'Revisar respuesta'}</button>{message && <p className={message.startsWith('¡') ? 'correct-feedback' : 'wrong-feedback'}>{message}</p>}</section>
     </article>
     <div className="edoa-nav"><button className="secondary" disabled={page === 0} onClick={() => setPage(page - 1)}><ChevronLeft size={17} />Anterior</button><span>{page + 1} / {cards.length}</span><button className="secondary" disabled={page === cards.length - 1} onClick={() => setPage(page + 1)}>Siguiente<ChevronRight size={17} /></button></div>
-    <div className={`unlock-status ${percent === 100 ? 'unlocked' : ''}`}><ShieldCheck size={24} /><div><strong>{percent === 100 ? 'Unidad completada' : 'Continúa con las fichas'}</strong><p>{percent === 100 ? 'Terminaste el recorrido de Word 2019.' : `Te faltan ${cards.length - completed.length} fichas por completar.`}</p></div></div>
+    <section className="edoa-practices"><div className="section-heading"><span className="eyebrow">R.A. 1.1 · EJERCICIOS PRÁCTICOS</span><h2>Ahora trabaja directamente en Word</h2><p>Descarga cada documento, sigue las instrucciones y sube el mismo archivo terminado.</p></div>{practices.map((practice, index) => { const requiredCards = index === 4 ? cards.length : Math.min(cards.length, index * 2 + 2); const available = session.preview || status.slice(0, requiredCards).every(Boolean); const delivered = completed.includes(practice.code); const review = practiceReviews[practice.code]; return <article className={delivered ? 'practice-complete' : !available ? 'practice-locked' : ''} key={practice.code}><header><span>{delivered ? <CheckCircle2 size={18} /> : index + 1}</span><div><h3>{practice.title}</h3><p>{practice.description}</p></div></header><div className="edoa-practice-actions"><a className="secondary" href={`${import.meta.env.BASE_URL}materials/edoa/${practice.file}`} download><Download size={16} />Descargar DOCX</a><label className={!available || delivered ? 'disabled' : ''}><Upload size={16} /><span>{delivered ? 'Entregada' : busy === practice.code ? 'Revisando…' : 'Subir documento terminado'}</span><input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={!available || delivered || busy === practice.code} onChange={event => submitPractice(practice, event.target.files?.[0])} /></label></div>{!available && <small>Completa primero las fichas anteriores.</small>}{review && <div className="edoa-review">{review.checks.map(check => <span className={check.ok ? 'ok' : 'bad'} key={check.label}>{check.ok ? '✓' : '×'} {check.label}</span>)}</div>}</article> })}</section>
+    <div className={`unlock-status ${percent === 100 ? 'unlocked' : ''}`}><ShieldCheck size={24} /><div><strong>{percent === 100 ? 'Actividad de evaluación 1.1 desbloqueada' : 'Actividad de evaluación 1.1 bloqueada'}</strong><p>{percent === 100 ? 'Terminaste las fichas y todas las prácticas del R.A. 1.1.' : `Completa los ${totalSteps - completed.length} pasos pendientes.`}</p></div></div>
   </section>
 }
