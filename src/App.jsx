@@ -42,6 +42,11 @@ function assessmentIsLocked(assessment, learningProgress = []) {
   return assessmentRequiresProgress(assessment.activityCode) && !learningProgress.some(progress => progress.material_code === materialCodeForActivity(assessment.activityCode) && progress.completed_at)
 }
 
+function learningSequence(item) {
+  const match = `${item.activityCode || ''} ${item.title || ''}`.match(/(?:R\.A\.|RA|PROPÓSITO|PROPOSITO|P)[\s.-]*(\d+)\.(\d+)/i)
+  return match ? Number(match[1]) * 100 + Number(match[2]) : Number.MAX_SAFE_INTEGER
+}
+
 function App() {
   const [session, setSession] = useState(() => JSON.parse(localStorage.getItem('aula-session') || 'null'))
   useEffect(() => {
@@ -95,7 +100,7 @@ function Login({ onLogin }) {
         const { data, error: authError } = result
         if (authError) throw authError
         if (authMode === 'register' && !data.session) {
-          setError('Cuenta creada. Revisa tu correo institucional para confirmarla y después inicia sesión.')
+          setError('Cuenta creada. Ya puedes iniciar sesión con los datos que registraste.')
           setAuthMode('login'); setBusy(false); return
         }
         const { data: profile, error: profileError } = await supabase
@@ -139,7 +144,7 @@ function Login({ onLogin }) {
         <div className="mobile-brand"><GraduationCap size={25} /> Aula Virtual</div>
         <span className="eyebrow">{authMode === 'register' ? 'NUEVO ALUMNO' : 'BIENVENIDO'}</span>
         <h2>{authMode === 'register' ? 'Crea tu cuenta' : 'Ingresa a tu aula'}</h2>
-        <p className="muted">{authMode === 'register' ? 'Tu grupo se asignará con la matrícula institucional.' : 'Selecciona tu perfil y escribe tus datos.'}</p>
+        <p className="muted">{authMode === 'register' ? 'Selecciona tu grupo y utiliza tus datos institucionales.' : 'Selecciona tu perfil y escribe tus datos.'}</p>
         <div className="role-switch" aria-label="Tipo de usuario">
           <button type="button" className={mode === 'student' ? 'active' : ''} onClick={() => setMode('student')}>Alumno</button>
           <button type="button" className={mode === 'teacher' ? 'active' : ''} onClick={() => { setMode('teacher'); setAuthMode('login') }}>Docente</button>
@@ -203,7 +208,7 @@ function Dashboard({ session, onLogout }) {
         const submissions = assessment.submissions || []
         const scored = submissions.filter(item => item.score !== null)
         return { id: assessment.id, title: assessment.title, instructions: assessment.instructions, activityCode: assessment.activity_code, group: assessment.groups?.code || '—', groupId: assessment.group_id, due: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha límite', dueAt: assessment.due_at, overdue: Boolean(assessment.due_at && new Date(assessment.due_at) < new Date() && assessment.status === 'published'), submissions: submissions.filter(item => item.submitted_at).length, drafts: submissions.filter(item => !item.submitted_at).length, submissionDetails: submissions.map(item => ({ ...item, assignment: item.assessment_assignments?.variant || null, student: item.profiles ? { name: formatPersonName(item.profiles.full_name), email: item.profiles.email, enrollment: item.profiles.enrollment_number } : null })), total: directory.filter(student => student.group_code === assessment.groups?.code).length, average: scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.score), 0) / scored.length) : null, status: assessment.status === 'published' ? 'Activa' : assessment.status === 'closed' ? 'Cerrada' : 'Borrador' }
-      }))
+      }).sort((a, b) => a.group.localeCompare(b.group, 'es', { numeric: true }) || learningSequence(a) - learningSequence(b) || a.title.localeCompare(b.title, 'es')))
       setLearningProgress(progressResult.data || [])
     } catch (err) { setDataError(err.message || 'No fue posible cargar la información') }
     finally { setLoading(false) }
@@ -310,7 +315,7 @@ function TeacherHome({ setView, groups, students, materials, assessments, onOpen
     </section>
     <section className="two-cols teacher-lower-grid">
       <div className="panel"><PanelTitle title="Actividad reciente" action="Ver alumnos" onClick={() => setView('alumnos')} />{recent.length ? <div className="recent-list">{recent.map(item => <Activity key={item.id} initials={(item.student?.name || 'Alumno').split(' ').slice(0, 2).map(part => part[0]).join('')} title={item.student?.name || 'Alumno'} meta={`${item.submitted_at ? 'Entregó' : 'Guardó avance'} · ${item.assessment} · Grupo ${item.group}`} color={item.submitted_at ? 'green' : 'blue'} />)}</div> : <EmptyState text="Todavía no hay actividad de alumnos registrada." />}</div>
-      <div className="panel"><PanelTitle title="Avance por grupo" /><div className="group-progress">{groups.map(group => { const activeStudents = new Set(assessments.filter(item => item.group === group.code).flatMap(item => item.submissionDetails.map(submission => submission.student_id))).size; const progress = group.students ? Math.round(activeStudents / group.students * 100) : 0; return <div className="progress-row" key={group.id}><div><strong>Grupo {group.code}</strong><span>{group.students} alumnos · {group.semester}º semestre</span></div><div className="progress-meta"><b>{activeStudents ? `${activeStudents} con actividad` : 'Sin actividad'}</b><div className="bar"><i style={{ width: `${progress}%` }} /></div></div></div> })}</div></div>
+      <div className="panel"><PanelTitle title="Avance por grupo" /><div className="group-progress">{groups.map(group => { const activeStudents = new Set(assessments.filter(item => item.group === group.code).flatMap(item => item.submissionDetails.map(submission => submission.student_id))).size; const progress = group.students ? Math.round(activeStudents / group.students * 100) : 0; return <div className="progress-row" key={group.id}><div><strong>Grupo {group.code}</strong><span>{group.students} {group.students === 1 ? 'alumno' : 'alumnos'} · {group.semester}º semestre</span></div><div className="progress-meta"><b>{activeStudents ? `${activeStudents} con actividad` : 'Sin actividad'}</b><div className="bar"><i style={{ width: `${progress}%` }} /></div></div></div> })}</div></div>
     </section>
     <section className="panel"><PanelTitle title="Evaluaciones activas" action="Ver todas" onClick={() => setView('evaluaciones')} /><AssessmentTable items={activeAssessments} onOpen={onOpenAssessment} /></section>
   </>
@@ -338,7 +343,7 @@ function buildModuleMetrics(courseList, students, materials, assessments) {
 }
 
 function ModuleInsight({ metric, onMaterials, onAssessments }) {
-  return <article className="module-insight"><header><div className="module-code">{metric.code}</div><div><strong>{metric.name}</strong><span>Grupo {metric.group} · {metric.students} alumnos</span></div><div className="completion-donut" style={{ '--progress': `${metric.completion * 3.6}deg` }}><i>{metric.completion}%</i></div></header><div className="module-metric-row"><div><b>{metric.publishedMaterials}/{metric.materials}</b><span>Materiales visibles</span></div><div><b>{metric.activeAssessments}/{metric.assessments}</b><span>Evaluaciones activas</span></div><div><b>{metric.delivered}/{metric.possible || 0}</b><span>Entregas</span></div><div><b>{metric.hasScores ? `${metric.average}/60` : '—'}</b><span>Promedio</span></div></div><footer><button onClick={onMaterials}>Administrar materiales</button><button onClick={onAssessments}>Ver evaluaciones</button></footer></article>
+  return <article className="module-insight"><header><div className="module-code">{metric.code}</div><div><strong>{metric.name}</strong><span>Grupo {metric.group} · {metric.students} {metric.students === 1 ? 'alumno' : 'alumnos'}</span></div><div className="completion-donut" style={{ '--progress': `${metric.completion * 3.6}deg` }}><i>{metric.completion}%</i></div></header><div className="module-metric-row"><div><b>{metric.publishedMaterials}/{metric.materials}</b><span>Materiales visibles</span></div><div><b>{metric.activeAssessments}/{metric.assessments}</b><span>Evaluaciones activas</span></div><div><b>{metric.delivered}/{metric.possible || 0}</b><span>Entregas</span></div><div><b>{metric.hasScores ? `${metric.average}/60` : '—'}</b><span>Promedio</span></div></div><footer><button onClick={onMaterials}>Administrar materiales</button><button onClick={onAssessments}>Ver evaluaciones</button></footer></article>
 }
 
 function ModuleBarChart({ metrics, field, suffix }) {
@@ -347,7 +352,7 @@ function ModuleBarChart({ metrics, field, suffix }) {
 }
 
 function StudentHome({ session, courses, materials, assessments, learningProgress = [], setView }) {
-  const assignedAssessments = assessments.filter(item => item.status === 'Activa').map(item => ({ ...item, locked: assessmentIsLocked(item, learningProgress) }))
+  const assignedAssessments = assessments.filter(item => item.status === 'Activa').map(item => ({ ...item, locked: assessmentIsLocked(item, learningProgress) })).sort((a, b) => learningSequence(a) - learningSequence(b) || a.title.localeCompare(b.title, 'es'))
   const nextAssessment = assignedAssessments.find(item => !item.locked)
   const nextLockedAssessment = assignedAssessments.find(item => item.locked)
   const latestMaterial = materials[0]
