@@ -141,11 +141,12 @@ function Login({ onLogin }) {
         <h1>Aprende, practica<br />y avanza.</h1>
         <p>Materiales, evaluaciones y seguimiento académico en un solo lugar.</p>
       </div>
-      <div className="brand-foot">Ciclo escolar 2026–2027</div>
+      <div className="brand-foot"><span>Ciclo escolar 2026–2027</span><span className="author-signature">Recurso educativo de<br /><strong>Ing. Santiago Martínez González</strong></span></div>
     </section>
     <section className="login-panel">
       <form className="login-card" onSubmit={submit}>
         <div className="mobile-brand"><GraduationCap size={25} /> Aula Virtual</div>
+        <div className="mobile-author-signature">Recurso educativo de <strong>Ing. Santiago Martínez González</strong></div>
         <span className="eyebrow">{authMode === 'register' ? 'NUEVO ALUMNO' : 'BIENVENIDO'}</span>
         <h2>{authMode === 'register' ? 'Crea tu cuenta' : 'Ingresa a tu aula'}</h2>
         <p className="muted">{authMode === 'register' ? 'Selecciona tu grupo y utiliza tus datos institucionales.' : 'Selecciona tu perfil y escribe tus datos.'}</p>
@@ -249,6 +250,7 @@ function Dashboard({ session, onLogout }) {
       <div className="side-bottom">
         {isTeacher && <button className={view === 'configuracion' ? 'active' : ''} onClick={() => { setView('configuracion'); setMobileMenu(false) }}><Settings size={19} />Configuración</button>}
         <div className="profile-mini"><div className="avatar">{session.name.slice(0, 2).toUpperCase()}</div><div><strong>{session.name}</strong><small>{profileLabel}</small></div><button className="logout" onClick={onLogout} title="Cerrar sesión"><LogOut size={18} /></button></div>
+        <div className="sidebar-signature"><span>RECURSO EDUCATIVO DE</span><strong>Ing. Santiago Martínez González</strong></div>
       </div>
     </aside>
     <div className="main-area">
