@@ -22,6 +22,9 @@ const practices = [
   { code: 'practice-5', title: 'Práctica 5  Integradora del R.A. 1.1', file: 'EDOA_RA11_Practica_5_Integradora.docx', description: 'Entrega un documento completo con diseño, formato, estilos y respaldo.', rule: 'integradora' },
 ]
 
+const archivedCardIndexes = [0]
+const archivedPracticeCodes = ['practice-1']
+
 const interfaceParts = [
   ['Barra de título', 'Nombre del documento'], ['Acceso rápido', 'Guardar, deshacer y rehacer'],
   ['Pestañas', 'Agrupan los comandos'], ['Cinta de opciones', 'Botones de la pestaña activa'],
@@ -83,7 +86,9 @@ async function analyzePractice(file, practice) {
 
 export default function EdoaMaterial({ session, onBack, onProgressUpdate }) {
   const code = 'EDOA-WORD-U1'
-  const [page, setPage] = useState(0)
+  const activeCardIndexes = cards.map((_, index) => index).filter(index => !archivedCardIndexes.includes(index))
+  const activePractices = practices.filter(practice => !archivedPracticeCodes.includes(practice.code))
+  const [page, setPage] = useState(activeCardIndexes[0])
   const [completed, setCompleted] = useState([])
   const [answer, setAnswer] = useState('')
   const [message, setMessage] = useState('')
@@ -91,8 +96,9 @@ export default function EdoaMaterial({ session, onBack, onProgressUpdate }) {
   const [busy, setBusy] = useState('')
   const [view, setView] = useState('learn')
   const current = cards[page]
-  const totalSteps = cards.length + practices.length
-  const percent = Math.round(completed.length / totalSteps * 100)
+  const completedActiveSteps = completed.filter(step => step !== 'card-0' && !archivedPracticeCodes.includes(step))
+  const totalSteps = activeCardIndexes.length + activePractices.length
+  const percent = Math.round(completedActiveSteps.length / totalSteps * 100)
   const done = completed.includes(`card-${page}`)
 
   useEffect(() => {
@@ -106,7 +112,8 @@ export default function EdoaMaterial({ session, onBack, onProgressUpdate }) {
   useEffect(() => { setAnswer(''); setMessage('') }, [page])
 
   async function saveProgress(next) {
-    const progress = { material_code: code, completed_steps: next, completed_at: next.length === totalSteps ? new Date().toISOString() : null }
+    const activeCompletedCount = next.filter(step => step !== 'card-0' && !archivedPracticeCodes.includes(step)).length
+    const progress = { material_code: code, completed_steps: next, completed_at: activeCompletedCount >= totalSteps ? new Date().toISOString() : null }
     setCompleted(next); onProgressUpdate?.(progress)
     if (!session.preview) await supabase.from('learning_progress').upsert({ student_id: session.id, ...progress }, { onConflict: 'student_id,material_code' })
   }
@@ -138,23 +145,26 @@ export default function EdoaMaterial({ session, onBack, onProgressUpdate }) {
   }
 
   const status = useMemo(() => cards.map((_, index) => completed.includes(`card-${index}`)), [completed])
-  const completedLessons = status.filter(Boolean).length
-  const completedPractices = practices.filter(practice => completed.includes(practice.code)).length
+  const activeStatus = activeCardIndexes.map(index => status[index])
+  const completedLessons = activeStatus.filter(Boolean).length
+  const completedPractices = activePractices.filter(practice => completed.includes(practice.code)).length
+  const pagePosition = activeCardIndexes.indexOf(page)
   return <section className="panel page-panel edoa-workspace">
     <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a materiales</button>
-    <div className="edoa-hero"><div><span className="eyebrow">EDOA · UNIDAD 1 · R.A. 1.1</span><h1>Diseño y formato de documentos</h1><p>Domina Word 2019 con explicaciones visuales y prácticas guiadas.</p><div className="edoa-hero-meta"><span><BookOpen size={15} /> {completedLessons} de {cards.length} temas</span><span><FileText size={15} /> {completedPractices} de {practices.length} prácticas</span></div></div><div className="edoa-progress"><strong>{percent}%</strong><span>AVANCE GENERAL</span><i><b style={{ width: `${percent}%` }} /></i></div></div>
+    <div className="edoa-hero"><div><span className="eyebrow">EDOA · UNIDAD 1 · R.A. 1.1</span><h1>Diseño y formato de documentos</h1><p>Domina Word 2019 con explicaciones visuales y prácticas guiadas.</p><div className="edoa-hero-meta"><span><BookOpen size={15} /> {completedLessons} de {activeCardIndexes.length} temas</span><span><FileText size={15} /> {completedPractices} de {activePractices.length} prácticas</span></div></div><div className="edoa-progress"><strong>{percent}%</strong><span>AVANCE GENERAL</span><i><b style={{ width: `${percent}%` }} /></i></div></div>
+    <div className="edoa-archived-section"><LockKeyhole size={18} /><div><strong>A) Identificación de los elementos del procesador de textos</strong><span>Contenido concluido y cerrado por el docente.</span></div><b>FINALIZADO</b></div>
     <nav className="edoa-view-tabs" aria-label="Secciones del material"><button className={view === 'learn' ? 'active' : ''} onClick={() => setView('learn')}><BookOpen size={18} /><span><b>1. Aprende</b><small>Teoría y ejemplos visuales</small></span></button><button className={view === 'practice' ? 'active' : ''} onClick={() => setView('practice')}><FileText size={18} /><span><b>2. Practica</b><small>Documentos para trabajar en Word</small></span></button></nav>
-    {view === 'learn' && <div className="edoa-learning-layout"><aside className="edoa-topic-nav"><div><span>CONTENIDO DEL R.A. 1.1</span><strong>{completedLessons}/{cards.length} temas completados</strong></div>{cards.map((card, index) => <button className={index === page ? 'active' : status[index] ? 'done' : ''} key={card.title} onClick={() => setPage(index)}><span>{status[index] ? <CheckCircle2 size={17} /> : index + 1}</span><div><small>TEMA {index + 1}</small><b>{card.title}</b></div></button>)}</aside><main className="edoa-lesson">
+    {view === 'learn' && <div className="edoa-learning-layout"><aside className="edoa-topic-nav"><div><span>CONTENIDO DISPONIBLE</span><strong>{completedLessons}/{activeCardIndexes.length} temas completados</strong></div>{activeCardIndexes.map((cardIndex, position) => { const card = cards[cardIndex]; return <button className={cardIndex === page ? 'active' : status[cardIndex] ? 'done' : ''} key={card.title} onClick={() => setPage(cardIndex)}><span>{status[cardIndex] ? <CheckCircle2 size={17} /> : position + 1}</span><div><small>TEMA {position + 1}</small><b>{card.title}</b></div></button> })}</aside><main className="edoa-lesson">
     <article className="edoa-card">
-      <header><div className="edoa-card-icon">{current.icon}</div><div><small>FICHA {page + 1} DE {cards.length}</small><h2>{current.title}</h2></div></header>
+      <header><div className="edoa-card-icon">{current.icon}</div><div><small>FICHA {pagePosition + 1} DE {activeCardIndexes.length}</small><h2>{current.title}</h2></div></header>
       <p className="edoa-intro">{current.intro}</p>
       <TopicVisual page={page} />
       <div className="edoa-notes">{current.notes.map(([title, text]) => <div key={title}><strong>{title}</strong><p>{text}</p></div>)}</div>
       <section className="edoa-check"><span>COMPRUEBA LO APRENDIDO</span><h3>{current.question}</h3><div>{current.options.map(option => <label key={option}><input type="radio" name={`edoa-${page}`} checked={answer === option} disabled={done} onChange={() => setAnswer(option)} />{option}</label>)}</div><button className="primary" disabled={done || !answer} onClick={completeCard}>{done ? 'Ficha completada' : 'Revisar respuesta'}</button>{message && <p className={message.startsWith('¡') ? 'correct-feedback' : 'wrong-feedback'}>{message}</p>}</section>
     </article>
-    <div className="edoa-nav"><button className="secondary" disabled={page === 0} onClick={() => setPage(page - 1)}><ChevronLeft size={17} />Anterior</button><span>{page + 1} / {cards.length}</span><button className="secondary" disabled={page === cards.length - 1} onClick={() => setPage(page + 1)}>Siguiente<ChevronRight size={17} /></button></div>
+    <div className="edoa-nav"><button className="secondary" disabled={pagePosition === 0} onClick={() => setPage(activeCardIndexes[pagePosition - 1])}><ChevronLeft size={17} />Anterior</button><span>{pagePosition + 1} / {activeCardIndexes.length}</span><button className="secondary" disabled={pagePosition === activeCardIndexes.length - 1} onClick={() => setPage(activeCardIndexes[pagePosition + 1])}>Siguiente<ChevronRight size={17} /></button></div>
     </main></div>}
-    {view === 'practice' && <section className="edoa-practices"><div className="edoa-practice-heading"><div><span className="eyebrow">R.A. 1.1 · PRÁCTICAS GUIADAS</span><h2>Aplica lo aprendido en Word</h2><p>Trabaja en orden: descarga el documento, completa las instrucciones y sube el mismo archivo.</p></div><div><strong>{completedPractices}/{practices.length}</strong><span>ENTREGADAS</span></div></div>{practices.map((practice, index) => { const requiredCards = index === 4 ? cards.length : Math.min(cards.length, index * 2 + 2); const available = session.preview || status.slice(0, requiredCards).every(Boolean); const delivered = completed.includes(practice.code); const review = practiceReviews[practice.code]; return <article className={delivered ? 'practice-complete' : !available ? 'practice-locked' : ''} key={practice.code}><header><span>{delivered ? <CheckCircle2 size={18} /> : !available ? <LockKeyhole size={16} /> : index + 1}</span><div><small>{delivered ? 'COMPLETADA' : available ? 'DISPONIBLE' : `SE DESBLOQUEA AL TERMINAR ${requiredCards} TEMAS`}</small><h3>{practice.title.replace('  ', ' · ')}</h3><p>{practice.description}</p></div></header><div className="edoa-practice-actions"><a className={`secondary ${!available ? 'disabled' : ''}`} href={available ? `${import.meta.env.BASE_URL}materials/edoa/${practice.file}` : undefined} download><Download size={16} />Descargar DOCX</a><label className={!available || delivered ? 'disabled' : ''}><Upload size={16} /><span>{delivered ? 'Documento entregado' : busy === practice.code ? 'Revisando…' : 'Subir documento terminado'}</span><input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={!available || delivered || busy === practice.code} onChange={event => submitPractice(practice, event.target.files?.[0])} /></label></div>{!available && <small>Continúa en la sección Aprende para desbloquear esta práctica.</small>}{review && <div className="edoa-review">{review.checks.map(check => <span className={check.ok ? 'ok' : 'bad'} key={check.label}>{check.ok ? '✓' : '×'} {check.label}</span>)}</div>}</article> })}</section>}
-    <div className={`unlock-status ${percent === 100 ? 'unlocked' : ''}`}><ShieldCheck size={24} /><div><strong>{percent === 100 ? 'Actividad de evaluación 1.1 desbloqueada' : 'Actividad de evaluación 1.1 bloqueada'}</strong><p>{percent === 100 ? 'Terminaste las fichas y todas las prácticas del R.A. 1.1.' : `Completa los ${totalSteps - completed.length} pasos pendientes.`}</p></div></div>
+    {view === 'practice' && <section className="edoa-practices"><div className="edoa-practice-heading"><div><span className="eyebrow">R.A. 1.1 · PRÁCTICAS GUIADAS</span><h2>Aplica lo aprendido en Word</h2><p>Trabaja en orden: descarga el documento, completa las instrucciones y sube el mismo archivo.</p></div><div><strong>{completedPractices}/{activePractices.length}</strong><span>ENTREGADAS</span></div></div>{activePractices.map((practice, index) => { const requiredCards = index === activePractices.length - 1 ? activeCardIndexes.length : Math.min(activeCardIndexes.length, index * 2 + 3); const available = session.preview || activeStatus.slice(0, requiredCards).every(Boolean); const delivered = completed.includes(practice.code); const review = practiceReviews[practice.code]; return <article className={delivered ? 'practice-complete' : !available ? 'practice-locked' : ''} key={practice.code}><header><span>{delivered ? <CheckCircle2 size={18} /> : !available ? <LockKeyhole size={16} /> : index + 1}</span><div><small>{delivered ? 'COMPLETADA' : available ? 'DISPONIBLE' : `SE DESBLOQUEA AL TERMINAR ${requiredCards} TEMAS`}</small><h3>{practice.title.replace(/^Práctica \d+\s+/, `Práctica ${index + 1} · `)}</h3><p>{practice.description}</p></div></header><div className="edoa-practice-actions"><a className={`secondary ${!available ? 'disabled' : ''}`} href={available ? `${import.meta.env.BASE_URL}materials/edoa/${practice.file}` : undefined} download><Download size={16} />Descargar DOCX</a><label className={!available || delivered ? 'disabled' : ''}><Upload size={16} /><span>{delivered ? 'Documento entregado' : busy === practice.code ? 'Revisando…' : 'Subir documento terminado'}</span><input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={!available || delivered || busy === practice.code} onChange={event => submitPractice(practice, event.target.files?.[0])} /></label></div>{!available && <small>Continúa en la sección Aprende para desbloquear esta práctica.</small>}{review && <div className="edoa-review">{review.checks.map(check => <span className={check.ok ? 'ok' : 'bad'} key={check.label}>{check.ok ? '✓' : '×'} {check.label}</span>)}</div>}</article> })}</section>}
+    <div className={`unlock-status ${percent === 100 ? 'unlocked' : ''}`}><ShieldCheck size={24} /><div><strong>{percent === 100 ? 'Actividad de evaluación 1.1 desbloqueada' : 'Actividad de evaluación 1.1 bloqueada'}</strong><p>{percent === 100 ? 'Terminaste las fichas y todas las prácticas disponibles del R.A. 1.1.' : `Completa los ${totalSteps - completedActiveSteps.length} pasos pendientes.`}</p></div></div>
   </section>
 }
