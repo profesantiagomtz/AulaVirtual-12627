@@ -84,8 +84,7 @@ async function analyzePractice(file, practice) {
   return { checks, passed: checks.length > 0 && checks.every(check => check.ok) }
 }
 
-export default function EdoaMaterial({ session, onBack, onProgressUpdate }) {
-  const code = 'EDOA-WORD-U1'
+export default function EdoaMaterial({ code = 'EDOA-RA-1.1', session, onBack, onProgressUpdate }) {
   const activeCardIndexes = cards.map((_, index) => index).filter(index => !archivedCardIndexes.includes(index))
   const activePractices = practices.filter(practice => !archivedPracticeCodes.includes(practice.code))
   const [page, setPage] = useState(activeCardIndexes[0])

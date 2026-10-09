@@ -7,6 +7,7 @@ import {
 import { courses } from './data/academic'
 import AsinActivity from './components/AsinActivity'
 import EdoaMaterial from './components/EdoaMaterial'
+import EdoaAdvancedMaterial from './components/EdoaAdvancedMaterial'
 import MtcsActivity, { MtcsMaterialView } from './components/MtcsActivity'
 import { PearMaterialView } from './components/PearMaterial'
 import { analyzeMsiiDocument, buildMsiiDocument, downloadBlob, readAssignmentId } from './lib/msii-docx'
@@ -30,7 +31,9 @@ function formatPersonName(name = '') {
 
 function materialCodeForActivity(activityCode = '') {
   if (activityCode.startsWith('PEAR-')) return activityCode.replace(/\.1$/, '')
-  if (activityCode === 'EDOA-RA-1.1' || activityCode === 'EDOA-1.1.1') return 'EDOA-WORD-U1'
+  if (activityCode === 'EDOA-RA-1.1' || activityCode === 'EDOA-1.1.1') return 'EDOA-RA-1.1'
+  if (activityCode === 'EDOA-RA-1.2') return 'EDOA-RA-1.2'
+  if (activityCode === 'EDOA-RA-1.3') return 'EDOA-RA-1.3'
   return activityCode
 }
 
@@ -39,6 +42,7 @@ function assessmentRequiresProgress(activityCode = '') {
 }
 
 function assessmentIsLocked(assessment, learningProgress = []) {
+  if (assessment.activityCode === 'EDOA-UNIT-1') return !['EDOA-RA-1.1', 'EDOA-RA-1.2', 'EDOA-RA-1.3'].every(code => learningProgress.some(progress => progress.material_code === code && progress.completed_at))
   return assessmentRequiresProgress(assessment.activityCode) && !learningProgress.some(progress => progress.material_code === materialCodeForActivity(assessment.activityCode) && progress.completed_at)
 }
 
@@ -473,7 +477,8 @@ function Materials({ items, groups, courses, session, isTeacher, onAdd, onToggle
     else window.location.href = data.signedUrl
   }
   if (selectedMaterial?.url?.startsWith('pear://')) return <PearMaterialView code={selectedMaterial.url.replace('pear://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} />
-  if (selectedMaterial?.url?.startsWith('edoa://')) return <EdoaMaterial session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} />
+  if (selectedMaterial?.url === 'edoa://EDOA-RA-1.1' || selectedMaterial?.url === 'edoa://EDOA-WORD-U1') return <EdoaMaterial code="EDOA-RA-1.1" session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} />
+  if (selectedMaterial?.url?.startsWith('edoa://')) return <EdoaAdvancedMaterial code={selectedMaterial.url.replace('edoa://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} />
   if (selectedMaterial) return <MtcsMaterialView code={selectedMaterial.url.replace('mtcs://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} />
   const materialCard = m => <article className={`material-card ${!m.published ? 'locked-card' : ''}`} key={m.id}><div className="material-icon"><FileText /></div><span className={`tag ${m.published ? 'active' : ''}`}>{isTeacher ? (m.published ? 'PUBLICADO' : 'BLOQUEADO') : m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group} · {m.unit}</p><footer><span>{isTeacher ? (m.published ? 'Visible para alumnos' : 'Oculto para alumnos') : 'Listo para estudiar'}</span><div className="card-actions"><button className="text-btn" onClick={() => openMaterial(m)}>Abrir <ChevronRight size={15} /></button>{isTeacher && <button className="lock-btn" onClick={() => onToggle?.(m)}>{m.published ? <Lock size={15} /> : <Unlock size={15} />}{m.published ? 'Bloquear' : 'Publicar'}</button>}</div></footer></article>
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Material didáctico' : 'Mis materiales'}</h1><p>{isTeacher ? 'Recursos organizados por módulo y unidad.' : 'Entra a tu módulo y trabaja cada unidad en el orden indicado.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar material…" /></div>{isTeacher ? <select value={group} onChange={e => setGroup(e.target.value)}><option value="Todos">Todos los grupos</option>{groups.map(item => <option key={item.id} value={item.code}>Grupo {item.code}</option>)}</select> : <div className="group-chip">Grupo {session.group}</div>}</div>{filtered.length ? <div className="learning-module-sections">{moduleSections.map(({ course, materials: moduleMaterials }) => <section key={`${course.code}-${course.group}`}><header><div className="module-code">{course.code}</div><div><h2>{course.name}</h2><p>Grupo {course.group} · {moduleMaterials.length} {moduleMaterials.length === 1 ? 'recurso' : 'recursos'} · Organizados por unidad</p></div></header><div className="unit-material-sections">{unitSectionsFor(moduleMaterials).map(({ unit, materials: unitMaterials }, unitIndex) => <section className="unit-material-section" key={`${course.code}-${unit}`}><div className="unit-heading"><span>{String(unitIndex + 1).padStart(2, '0')}</span><div><small>UNIDAD DE TRABAJO</small><h3>{unit}</h3></div><b>{unitMaterials.length} {unitMaterials.length === 1 ? 'recurso' : 'recursos'}</b></div><div className="card-grid">{unitMaterials.map(materialCard)}</div></section>)}</div></section>)}</div> : <EmptyState text={isTeacher ? 'No hay materiales con estos filtros.' : 'Todavía no hay materiales publicados para tu grupo.'} />}</section>
