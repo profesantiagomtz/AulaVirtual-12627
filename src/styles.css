@@ -131,3 +131,30 @@ button{transition:transform .16s ease,box-shadow .16s ease,background .16s ease,
 .sidebar-signature strong{margin-top:3px;color:#b9d0df;font-size:.63rem;font-weight:600}
 @media(max-width:760px){.mobile-author-signature{display:block}.sidebar-signature{margin-bottom:4px}}
 @media(max-width:560px){.brand-foot{align-items:flex-start;flex-direction:column}.author-signature{text-align:left}}
+
+/* Expediente: seguimiento independiente de contenidos, prácticas y evaluaciones */
+.record-summary.learning-summary{grid-template-columns:repeat(5,minmax(0,1fr))}
+.learning-monitor{margin:20px 0 24px;padding:24px}
+.learning-monitor-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding-bottom:18px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.learning-monitor-heading .eyebrow,.student-evaluation-heading .eyebrow{margin-bottom:5px}
+.learning-monitor-heading h2,.student-evaluation-heading h2{margin:0 0 5px;font-size:1.15rem}
+.learning-monitor-heading p,.student-evaluation-heading p{margin:0;color:var(--muted);font-size:.76rem}
+.learning-monitor-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.learning-monitor-grid>div>h3{margin:0 0 12px;font-size:.84rem;color:var(--navy)}
+.learning-progress-cards,.packet-monitor-list{display:flex;flex-direction:column;gap:10px}
+.learning-progress-cards article,.packet-monitor-list article{border:1px solid var(--line);border-radius:10px;background:#f9fbfc;padding:14px}
+.learning-progress-cards article>header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.learning-progress-cards article>header b{font-size:.75rem;color:var(--navy)}
+.learning-progress-cards article>strong{display:block;font-size:.76rem;margin-bottom:9px}
+.learning-progress-cards article>div{display:flex;flex-wrap:wrap;gap:6px}
+.learning-progress-cards article>div span{display:inline-flex;align-items:center;gap:4px;padding:5px 7px;border-radius:6px;background:#e8f5ef;color:#08765a;font-size:.64rem;font-weight:700;text-transform:capitalize}
+.learning-progress-cards article>small{display:block;margin-top:11px;color:var(--muted);font-size:.64rem}
+.packet-monitor-list article{display:flex;align-items:center;justify-content:space-between;gap:12px;border-left:4px solid #159470;background:#fff}
+.packet-monitor-list article b,.packet-monitor-list article span,.packet-monitor-list article small{display:block}
+.packet-monitor-list article b{font-size:.77rem;color:var(--navy)}
+.packet-monitor-list article span{margin-top:4px;color:var(--muted);font-size:.68rem}
+.packet-monitor-list article small{margin-top:5px;color:#4c6b7d;font-size:.63rem}
+.packet-monitor-list article button{white-space:nowrap;font-size:.69rem;padding:8px 10px}
+.student-evaluation-heading{margin:28px 2px 14px}
+@media(max-width:1050px){.record-summary.learning-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.learning-monitor-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.record-summary.learning-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.learning-monitor{padding:17px}.learning-monitor-heading{flex-direction:column}.packet-monitor-list article{align-items:stretch;flex-direction:column}.packet-monitor-list article button{width:100%}}
