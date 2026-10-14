@@ -300,6 +300,7 @@ function Dashboard({ session, onLogout }) {
   const previewSession = { id: `preview-${previewGroup}`, email: 'vista.previa@tam.conalep.edu.mx', role: 'student', name: `Estudiante de prueba ${previewGroup}`, group: previewGroup, semester: previewGroupData?.semester || null, preview: true }
 
   return <div className="app-shell">
+    {(!isTeacher || studentPreview) && studentTheme !== 'clasico' && <ThemeAtmosphere theme={studentTheme} />}
     {themeSurprise && <ThemeSurprise theme={themeSurprise} />}
     <aside className={`sidebar ${mobileMenu ? 'open' : ''}`}>
       <div className="side-brand"><div className="side-brand-symbol"><GraduationCap size={25} /></div><span>Aula <b>Virtual</b><small>{isTeacher ? 'Gestión docente' : 'Espacio del alumno'}</small></span><button className="icon-btn close-menu" onClick={() => setMobileMenu(false)}><X /></button></div>
@@ -1016,6 +1017,17 @@ function ThemeModal({ selected, onSelect, onClose }) {
 function ThemeSurprise({ theme }) {
   const surprise = themeSurprises[theme] || themeSurprises.clasico
   return <div className={`theme-surprise theme-surprise-${theme}`} role="status" aria-live="polite"><span className="surprise-spark spark-one">✦</span><span className="surprise-spark spark-two">✦</span><div className="surprise-character" aria-hidden="true">{surprise.character}</div><div><strong>{surprise.message}</strong><small>Aula Virtual</small></div></div>
+}
+
+function ThemeAtmosphere({ theme }) {
+  const decorations = {
+    rosa: ['🌸', '🦋', '♡', '🌷', '✦', '🌸', '🦋', '♡'],
+    lila: ['✦', '☾', '✨', '💜', '✧', '☁️', '✨', '✦'],
+    oscuro: ['✦', '🪐', '⭐', '🚀', '✧', '🌙', '⭐', '✦'],
+    halloween: ['🦇', '👻', '🎃', '🕸️', '🦇', '🍬', '👻', '🎃'],
+    muertos: ['🏵️', '🦋', '💀', '🕯️', '🏵️', '🦋', '🏵️', '💀'],
+  }
+  return <div className={`theme-atmosphere atmosphere-${theme}`} aria-hidden="true">{(decorations[theme] || []).map((item, index) => <span key={`${item}-${index}`} className={`atmosphere-item atmosphere-item-${index + 1}`}>{item}</span>)}{theme === 'muertos' && <div className="muertos-altar"><span>🕯️</span><div>🏵️　💀　🏵️</div><b>✦ RECUERDA CON ALEGRÍA ✦</b><div>🕯️　🍞　🕯️</div></div>}{theme === 'halloween' && <div className="halloween-moon"><span>🌙</span><i>🦇</i></div>}</div>
 }
 
 function Modal({ title, onClose, children }) { return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><div className="modal"><header><div><span className="eyebrow">AULA VIRTUAL</span><h2>{title}</h2></div><button className="icon-btn" onClick={onClose} aria-label="Cerrar ventana"><X /></button></header>{children}</div></div> }
