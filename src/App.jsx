@@ -702,11 +702,36 @@ function MsiiActivity({ assessment, session, onBack }) {
 
 function AssignedValue({ label, value }) { return <div className="assigned-value"><span>{label}</span><strong>{value}</strong></div> }
 
+const pearEvaluationGuides = {
+  '1.1': {
+    product: 'Un reporte en PDF con las proposiciones asignadas, cuatro tablas de verdad y una conclusión.',
+    steps: ['Copia el tema y las proposiciones p, q y r que aparecen abajo.', 'Escribe con palabras qué significa cada expresión lógica.', 'Construye una tabla para ¬p, otra para p ∧ q, otra para (p ∨ q) → r y otra para p ↔ q.', 'Debajo de cada tabla escribe una oración: “El resultado muestra que…”.', 'Termina con una conclusión sobre el caso y guarda todo en un solo PDF.'],
+    checklist: ['Se ven p, q y r', 'Incluye las cuatro tablas', 'Cada tabla tiene todas sus combinaciones', 'Explica los resultados con sus palabras', 'El archivo final es PDF'],
+  },
+  '1.2': {
+    product: 'Un reporte en PDF con la operación representada en un ábaco, fotografías y explicación.',
+    steps: ['Anota la operación y las dos cantidades asignadas.', 'Separa cada cantidad en centenas, decenas y unidades.', 'Representa la primera cantidad en el ábaco y toma una fotografía.', 'Realiza la suma o resta moviendo las cuentas y toma la fotografía del resultado.', 'Escribe el procedimiento, comprueba la operación y reúne todo en un solo PDF.'],
+    checklist: ['Aparecen las cantidades asignadas', 'La primera representación es correcta', 'Se observa el resultado en el ábaco', 'Incluye fotografías claras', 'Explica y comprueba la operación'],
+  },
+  '1.3': {
+    product: 'Un reporte de presupuesto en PDF con tabla, operaciones y una conclusión.',
+    steps: ['Copia los datos asignados y escribe cuál es el ingreso disponible.', 'Organiza los gastos en una tabla con concepto y cantidad.', 'Convierte las frecuencias de compra a un mismo periodo.', 'Suma los gastos y réstalos al ingreso.', 'Explica si el presupuesto alcanza y propone una decisión para mejorarlo.'],
+    checklist: ['Usa todos los datos asignados', 'Presenta una tabla ordenada', 'Muestra las operaciones', 'Calcula el saldo', 'Incluye una conclusión comprensible'],
+  },
+  '1.4': {
+    product: 'Un reporte de compra en PDF con proporción, porcentaje, operaciones y decisión final.',
+    steps: ['Copia el producto, precio, cantidad y descuento asignados.', 'Calcula el costo antes del descuento.', 'Calcula el porcentaje de descuento mostrando la multiplicación.', 'Resta el descuento y obtiene el precio final.', 'Explica el tipo de relación asignada y escribe una decisión de compra.'],
+    checklist: ['Usa los datos asignados', 'Calcula el costo inicial', 'Muestra el cálculo del descuento', 'Obtiene el precio final', 'Explica la relación y su decisión'],
+  },
+}
+
 function PearActivity({ assessment, session, onBack }) {
   const [file, setFile] = useState(null)
   const [status, setStatus] = useState('loading')
   const [message, setMessage] = useState('')
   const assignment = useMemo(() => buildPearAssignment(`${session.id}-${assessment.id}`, assessment.activityCode), [session.id, assessment.id, assessment.activityCode])
+  const purpose = assessment.activityCode.match(/1\.\d/)?.[0] || '1.1'
+  const guide = pearEvaluationGuides[purpose] || pearEvaluationGuides['1.1']
 
   useEffect(() => {
     let active = true
@@ -737,9 +762,10 @@ function PearActivity({ assessment, session, onBack }) {
 
   return <section className="panel page-panel activity-workspace pear-workspace">
     <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button>
-    <div className="activity-hero"><div><span className="eyebrow">PEAR · PROPÓSITO {assessment.activityCode.match(/\d+\.\d+/)?.[0] || ''}</span><h1>{assessment.title}</h1><p>{assessment.instructions}</p></div></div>
+    <div className="activity-hero"><div><span className="eyebrow">PEAR · PROPÓSITO {assessment.activityCode.match(/\d+\.\d+/)?.[0] || ''}</span><h1>{assessment.title}</h1><p>Trabaja en este orden. No necesitas adivinar qué entregar.</p></div></div>
+    <section className="pear-eval-guide"><div className="pear-eval-product"><span>LO QUE VAS A ENTREGAR</span><strong>{guide.product}</strong></div><div className="pear-eval-columns"><div><h2>Hazlo paso a paso</h2><ol>{guide.steps.map(step => <li key={step}>{step}</li>)}</ol></div><div><h2>Revisa antes de subir</h2>{guide.checklist.map(item => <label key={item}><CheckCircle2 size={16} />{item}</label>)}</div></div></section>
     <div className="assigned-case"><h2>Datos asignados para tu trabajo</h2><p>Utiliza estos datos en el reporte que entregarás.</p><div className="assigned-grid">{assignment.map(item => <AssignedValue key={item.label} label={item.label} value={item.value} />)}</div></div>
-    <form className="pear-submit" onSubmit={submit}><label>Entrega tu archivo PDF<input type="file" accept=".pdf,application/pdf" disabled={status === 'submitted' || status === 'working'} required onChange={event => setFile(event.target.files[0] || null)} /></label><button className="primary" disabled={!file || status === 'submitted' || status === 'working'}><Upload size={17} /> {status === 'submitted' ? 'Actividad entregada' : status === 'working' ? 'Subiendo…' : 'Entregar actividad'}</button></form>
+    <form className="pear-submit" onSubmit={submit}><label>Cuando termines, sube un solo archivo PDF<input type="file" accept=".pdf,application/pdf" disabled={status === 'submitted' || status === 'working'} required onChange={event => setFile(event.target.files[0] || null)} /><small>Antes de entregar, abre el PDF y comprueba que se lea completo.</small></label><button className="primary" disabled={!file || status === 'submitted' || status === 'working'}><Upload size={17} /> {status === 'submitted' ? 'Actividad entregada' : status === 'working' ? 'Subiendo…' : 'Entregar actividad'}</button></form>
     {message && <div className={status === 'submitted' ? 'submission-success' : 'form-error'}>{message}</div>}
   </section>
 }
