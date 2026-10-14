@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, BookOpen, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, FileText, GraduationCap,
-  LayoutDashboard, Lock, LogOut, Menu, Plus, Search, Settings, TrendingUp, Unlock, Upload, Users, X
+  LayoutDashboard, Lock, LogOut, Menu, Palette, Plus, Search, Settings, TrendingUp, Unlock, Upload, Users, X
 } from 'lucide-react'
 import { courses } from './data/academic'
 import AsinActivity from './components/AsinActivity'
@@ -25,6 +25,15 @@ const studentNavItems = [
   { id: 'inicio', label: 'Inicio', icon: LayoutDashboard },
   { id: 'materiales', label: 'Aprender', icon: BookOpen },
   { id: 'evaluaciones', label: 'Entregar', icon: ClipboardCheck },
+]
+
+const studentThemes = [
+  { id: 'clasico', name: 'Aula clásica', description: 'Azul académico y dorado', emoji: '📘', colors: ['#092f58', '#f2b842', '#f3f7f9'] },
+  { id: 'rosa', name: 'Rosa pastel', description: 'Rosa suave, crema y ciruela', emoji: '🌸', colors: ['#7f315e', '#f5b8cf', '#fff5f8'] },
+  { id: 'lila', name: 'Lila', description: 'Lavanda y violeta tranquilo', emoji: '✨', colors: ['#543a78', '#dcbcf2', '#f8f4ff'] },
+  { id: 'oscuro', name: 'Modo oscuro', description: 'Cómodo para trabajar de noche', emoji: '🌙', colors: ['#131a2a', '#5ad7ff', '#0c111d'] },
+  { id: 'halloween', name: 'Halloween', description: 'Morado, negro y naranja', emoji: '🎃', colors: ['#2a143e', '#ff9b2f', '#fff7ee'] },
+  { id: 'muertos', name: 'Día de Muertos', description: 'Cempasúchil, morado y turquesa', emoji: '🏵️', colors: ['#48206b', '#f39b28', '#fff8ef'] },
 ]
 
 const lowercaseNameWords = new Set(['de', 'del', 'la', 'las', 'los', 'y'])
@@ -192,10 +201,26 @@ function Dashboard({ session, onLogout }) {
   const [teacherNotes, setTeacherNotes] = useState([])
   const [selectedAssessment, setSelectedAssessment] = useState(null)
   const [studentCourseFilter, setStudentCourseFilter] = useState('Todos')
+  const themeStorageKey = `aula-virtual-theme:${session.id || session.email}`
+  const [studentTheme, setStudentTheme] = useState(() => localStorage.getItem(themeStorageKey) || 'clasico')
   const [studentPreview, setStudentPreview] = useState(false)
   const [previewGroup, setPreviewGroup] = useState('511')
   const [loading, setLoading] = useState(true)
   const [dataError, setDataError] = useState('')
+
+  useEffect(() => {
+    const activeTheme = isTeacher && !studentPreview ? 'clasico' : studentTheme
+    document.documentElement.dataset.aulaTheme = activeTheme
+    return () => { document.documentElement.dataset.aulaTheme = 'clasico' }
+  }, [isTeacher, studentPreview, studentTheme])
+
+  function chooseTheme(themeId) {
+    setStudentTheme(themeId)
+    localStorage.setItem(themeStorageKey, themeId)
+    setModal(null)
+    setToast(`Tema ${studentThemes.find(item => item.id === themeId)?.name || ''} aplicado`)
+    setTimeout(() => setToast(''), 2600)
+  }
 
   async function loadData() {
     setLoading(true); setDataError('')
@@ -264,7 +289,7 @@ function Dashboard({ session, onLogout }) {
       <header className="topbar">
         <button className="icon-btn menu-btn" onClick={() => setMobileMenu(true)}><Menu /></button>
         <div><span className="breadcrumb">{isTeacher ? 'PANEL DOCENTE' : `GRUPO ${session.group}`}</span><h2>{pageTitle}</h2></div>
-        <div className="top-actions">{isTeacher && studentPreview && <select className="preview-group-select" aria-label="Grupo para vista previa" value={previewGroup} onChange={event => setPreviewGroup(event.target.value)}>{groupList.map(group => <option key={group.id} value={group.code}>Grupo {group.code}</option>)}</select>}{isTeacher && <button className={studentPreview ? 'primary' : 'secondary'} onClick={() => setStudentPreview(current => !current)}>{studentPreview ? <ArrowLeft size={17} /> : <Eye size={17} />}<span>{studentPreview ? 'Volver al panel docente' : 'Vista del alumno'}</span></button>}{isTeacher && !studentPreview && view === 'inicio' && <button className="primary" aria-label="Publicar material" title="Publicar material" onClick={() => setModal('material')}><Plus size={18} /><span>Publicar material</span></button>}</div>
+        <div className="top-actions">{isTeacher && studentPreview && <select className="preview-group-select" aria-label="Grupo para vista previa" value={previewGroup} onChange={event => setPreviewGroup(event.target.value)}>{groupList.map(group => <option key={group.id} value={group.code}>Grupo {group.code}</option>)}</select>}{(!isTeacher || studentPreview) && <button className="theme-button secondary" onClick={() => setModal('theme')} aria-label="Personalizar mi aula" title="Personalizar mi aula"><Palette size={17} /><span>Mi tema</span></button>}{isTeacher && <button className={studentPreview ? 'primary' : 'secondary'} onClick={() => setStudentPreview(current => !current)}>{studentPreview ? <ArrowLeft size={17} /> : <Eye size={17} />}<span>{studentPreview ? 'Volver al panel docente' : 'Vista del alumno'}</span></button>}{isTeacher && !studentPreview && view === 'inicio' && <button className="primary" aria-label="Publicar material" title="Publicar material" onClick={() => setModal('material')}><Plus size={18} /><span>Publicar material</span></button>}</div>
       </header>
       <main className="content">
         {dataError && <div className="form-error data-error">{dataError} <button className="text-btn" onClick={loadData}>Reintentar</button></div>}
@@ -296,6 +321,7 @@ function Dashboard({ session, onLogout }) {
       if (error) throw error
       await loadData(); saved('Evaluación creada correctamente')
     }} />}
+    {modal === 'theme' && <ThemeModal selected={studentTheme} onSelect={chooseTheme} onClose={() => setModal(null)} />}
     {toast && <div className="toast"><CheckCircle2 size={19} />{toast}</div>}
   </div>
 }
@@ -953,6 +979,10 @@ function AssessmentModal({ groups, onClose, onSave }) {
   const [error, setError] = useState(''); const [busy, setBusy] = useState(false)
   async function submit(event) { event.preventDefault(); setBusy(true); setError(''); try { await onSave(data) } catch (err) { setError(err.message || 'No fue posible crear la evaluación') } finally { setBusy(false) } }
   return <Modal title="Nueva evaluación" onClose={onClose}><form onSubmit={submit}><label>Tipo de actividad<select required value={data.activityCode} onChange={e => setData({...data,activityCode:e.target.value})}><option value="ASIN-RA-1.1">ASIN · Actividad en plataforma</option><option value="MSII-RA-1.1">MSII · Documento DOCX</option></select></label><label>Título<input required value={data.title} onChange={e => setData({...data,title:e.target.value})} placeholder="Nombre de la evaluación" /></label><div className="form-row"><label>Grupo<select required value={data.groupId} onChange={e => setData({...data,groupId:e.target.value})}>{groups.map(group=><option key={group.id} value={group.id}>{group.code}</option>)}</select></label><label>Fecha límite<input type="datetime-local" required value={data.dueAt} onChange={e => setData({...data,dueAt:e.target.value})} /></label></div><label>Instrucciones<textarea value={data.instructions} onChange={e => setData({...data,instructions:e.target.value})} placeholder="Indicaciones para los alumnos" rows="4" /></label><div className="info-note compact">Solo se muestran tipos de actividad que ya cuentan con un espacio de trabajo funcional para el alumno.</div>{error && <div className="form-error">{error}</div>}<ModalActions onClose={onClose} label={busy ? 'Creando…' : 'Crear evaluación'} disabled={busy} /></form></Modal>
+}
+
+function ThemeModal({ selected, onSelect, onClose }) {
+  return <Modal title="Personaliza tu aula" onClose={onClose}><p className="theme-intro">Elige el estilo que más te guste. Solo cambiarán los colores de tu pantalla; tu avance y tus trabajos permanecerán iguales.</p><div className="theme-grid">{studentThemes.map(theme => <button type="button" key={theme.id} className={`theme-option ${selected === theme.id ? 'selected' : ''}`} onClick={() => onSelect(theme.id)}><span className="theme-emoji">{theme.emoji}</span><span className="theme-copy"><strong>{theme.name}</strong><small>{theme.description}</small></span><span className="theme-swatches" aria-hidden="true">{theme.colors.map(color => <i key={color} style={{ background: color }} />)}</span>{selected === theme.id && <CheckCircle2 size={19} />}</button>)}</div><div className="theme-note"><Palette size={17} /><span>Podrás cambiar de tema cuando quieras desde el botón <b>Mi tema</b>.</span></div></Modal>
 }
 
 function Modal({ title, onClose, children }) { return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><div className="modal"><header><div><span className="eyebrow">AULA VIRTUAL</span><h2>{title}</h2></div><button className="icon-btn" onClick={onClose} aria-label="Cerrar ventana"><X /></button></header>{children}</div></div> }
