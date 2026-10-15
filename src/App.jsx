@@ -300,7 +300,7 @@ function Dashboard({ session, onLogout }) {
   const previewSession = { id: `preview-${previewGroup}`, email: 'vista.previa@tam.conalep.edu.mx', role: 'student', name: `Estudiante de prueba ${previewGroup}`, group: previewGroup, semester: previewGroupData?.semester || null, preview: true }
 
   return <div className="app-shell">
-    {(!isTeacher || studentPreview) && studentTheme !== 'clasico' && <ThemeAtmosphere theme={studentTheme} />}
+    {(!isTeacher || studentPreview) && <ThemeAtmosphere theme={studentTheme} />}
     {themeSurprise && <ThemeSurprise theme={themeSurprise} />}
     <aside className={`sidebar ${mobileMenu ? 'open' : ''}`}>
       <div className="side-brand"><div className="side-brand-symbol"><GraduationCap size={25} /></div><span>Aula <b>Virtual</b><small>{isTeacher ? 'Gestión docente' : 'Espacio del alumno'}</small></span><button className="icon-btn close-menu" onClick={() => setMobileMenu(false)}><X /></button></div>
@@ -1021,15 +1021,22 @@ function ThemeSurprise({ theme }) {
 
 function ThemeAtmosphere({ theme }) {
   const decorations = {
+    clasico: ['📘', '✦', '🎓', '⭐', '✏️', '📖', '✦', '⭐'],
     rosa: ['🌸', '🦋', '♡', '🌷', '✦', '🌸', '🦋', '♡'],
     lila: ['✦', '☾', '✨', '💜', '✧', '☁️', '✨', '✦'],
     oscuro: ['✦', '🪐', '⭐', '🚀', '✧', '🌙', '⭐', '✦'],
     halloween: ['🦇', '👻', '🎃', '🕸️', '🦇', '🍬', '👻', '🎃'],
     muertos: ['🏵️', '🦋', '💀', '🕯️', '🏵️', '🦋', '🏵️', '💀'],
   }
-  const muertosArtworkUrl = new URL('theme-assets/dia-muertos-fiesta.png', document.baseURI).href
-  const halloweenArtworkUrl = new URL('theme-assets/halloween-fiesta.png', document.baseURI).href
-  const artworkUrl = theme === 'muertos' ? muertosArtworkUrl : theme === 'halloween' ? halloweenArtworkUrl : null
+  const artworkUrls = {
+    clasico: new URL('theme-assets/aula-clasica-fiesta.png', document.baseURI).href,
+    rosa: new URL('theme-assets/rosa-fiesta.png', document.baseURI).href,
+    lila: new URL('theme-assets/lila-fiesta.png', document.baseURI).href,
+    oscuro: new URL('theme-assets/oscuro-fiesta.png', document.baseURI).href,
+    halloween: new URL('theme-assets/halloween-fiesta.png', document.baseURI).href,
+    muertos: new URL('theme-assets/dia-muertos-fiesta.png', document.baseURI).href,
+  }
+  const artworkUrl = artworkUrls[theme]
   const atmosphereStyle = artworkUrl ? { '--theme-art': `url(${artworkUrl})` } : undefined
   return <div className={`theme-atmosphere atmosphere-${theme}`} style={atmosphereStyle} aria-hidden="true">{(decorations[theme] || []).map((item, index) => <span key={`${item}-${index}`} className={`atmosphere-item atmosphere-item-${index + 1}`}>{item}</span>)}{theme === 'muertos' && <div className="muertos-altar"><span>🕯️</span><div>🏵️　💀　🏵️</div><b>✦ RECUERDA CON ALEGRÍA ✦</b><div>🕯️　🍞　🕯️</div></div>}{theme === 'halloween' && <div className="halloween-moon"><span>🌙</span><i>🦇</i></div>}</div>
 }
