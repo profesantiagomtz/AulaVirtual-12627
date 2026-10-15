@@ -1027,7 +1027,8 @@ function ThemeAtmosphere({ theme }) {
     halloween: ['🦇', '👻', '🎃', '🕸️', '🦇', '🍬', '👻', '🎃'],
     muertos: ['🏵️', '🦋', '💀', '🕯️', '🏵️', '🦋', '🏵️', '💀'],
   }
-  return <div className={`theme-atmosphere atmosphere-${theme}`} aria-hidden="true">{(decorations[theme] || []).map((item, index) => <span key={`${item}-${index}`} className={`atmosphere-item atmosphere-item-${index + 1}`}>{item}</span>)}{theme === 'muertos' && <div className="muertos-altar"><span>🕯️</span><div>🏵️　💀　🏵️</div><b>✦ RECUERDA CON ALEGRÍA ✦</b><div>🕯️　🍞　🕯️</div></div>}{theme === 'halloween' && <div className="halloween-moon"><span>🌙</span><i>🦇</i></div>}</div>
+  const atmosphereStyle = theme === 'muertos' ? { '--theme-art': `url(${import.meta.env.BASE_URL}theme-assets/dia-muertos-fiesta.png)` } : undefined
+  return <div className={`theme-atmosphere atmosphere-${theme}`} style={atmosphereStyle} aria-hidden="true">{(decorations[theme] || []).map((item, index) => <span key={`${item}-${index}`} className={`atmosphere-item atmosphere-item-${index + 1}`}>{item}</span>)}{theme === 'muertos' && <div className="muertos-altar"><span>🕯️</span><div>🏵️　💀　🏵️</div><b>✦ RECUERDA CON ALEGRÍA ✦</b><div>🕯️　🍞　🕯️</div></div>}{theme === 'halloween' && <div className="halloween-moon"><span>🌙</span><i>🦇</i></div>}</div>
 }
 
 function Modal({ title, onClose, children }) { return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><div className="modal"><header><div><span className="eyebrow">AULA VIRTUAL</span><h2>{title}</h2></div><button className="icon-btn" onClick={onClose} aria-label="Cerrar ventana"><X /></button></header>{children}</div></div> }
