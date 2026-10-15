@@ -1028,7 +1028,9 @@ function ThemeAtmosphere({ theme }) {
     muertos: ['🏵️', '🦋', '💀', '🕯️', '🏵️', '🦋', '🏵️', '💀'],
   }
   const muertosArtworkUrl = new URL('theme-assets/dia-muertos-fiesta.png', document.baseURI).href
-  const atmosphereStyle = theme === 'muertos' ? { '--theme-art': `url(${muertosArtworkUrl})` } : undefined
+  const halloweenArtworkUrl = new URL('theme-assets/halloween-fiesta.png', document.baseURI).href
+  const artworkUrl = theme === 'muertos' ? muertosArtworkUrl : theme === 'halloween' ? halloweenArtworkUrl : null
+  const atmosphereStyle = artworkUrl ? { '--theme-art': `url(${artworkUrl})` } : undefined
   return <div className={`theme-atmosphere atmosphere-${theme}`} style={atmosphereStyle} aria-hidden="true">{(decorations[theme] || []).map((item, index) => <span key={`${item}-${index}`} className={`atmosphere-item atmosphere-item-${index + 1}`}>{item}</span>)}{theme === 'muertos' && <div className="muertos-altar"><span>🕯️</span><div>🏵️　💀　🏵️</div><b>✦ RECUERDA CON ALEGRÍA ✦</b><div>🕯️　🍞　🕯️</div></div>}{theme === 'halloween' && <div className="halloween-moon"><span>🌙</span><i>🦇</i></div>}</div>
 }
 
