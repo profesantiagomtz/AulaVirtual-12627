@@ -26,7 +26,7 @@ export default function IntegratedCourseMaterial({ code, session, onBack, onProg
   const source = useMemo(() => material ? new URL(`${material.file}?student=${encodeURIComponent(session?.id || 'preview')}`, document.baseURI).href : '', [material, session?.id])
 
   useEffect(() => {
-    if (!material || session?.preview) return undefined
+    if (!material || session?.preview || session?.role === 'teacher') return undefined
     let active = true
     supabase.from('learning_progress').select('completed_steps, completed_at').eq('student_id', session.id).eq('material_code', code).maybeSingle().then(({ data }) => {
       if (!active || !data) return
@@ -51,8 +51,8 @@ export default function IntegratedCourseMaterial({ code, session, onBack, onProg
         completed_at: completed ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       }
-      onProgressUpdate?.(record)
-      if (session?.preview) return
+      if (session?.role !== 'teacher') onProgressUpdate?.(record)
+      if (session?.preview || session?.role === 'teacher') return
       clearTimeout(timer)
       timer = setTimeout(async () => {
         const { error } = await supabase.from('learning_progress').upsert({ student_id: session.id, ...record }, { onConflict: 'student_id,material_code' })
