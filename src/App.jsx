@@ -1,12 +1,13 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, BookOpen, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, FileText, GraduationCap,
+  ArrowLeft, Award, BookOpen, CalendarDays, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, FileText, GraduationCap,
   LayoutDashboard, Lock, LogOut, Menu, Palette, Plus, Search, Settings, TrendingUp, Unlock, Upload, Users, X
 } from 'lucide-react'
 import { courses } from './data/academic'
 import * as demo from './data/demo'
 import { isSupabaseReady, supabase } from './lib/supabase'
+import { CourseChips, RaCourseMap, Schedule, StudentGrades, TeacherGrades, WeekPlan, assessmentState, itemBelongsToCourse, progressCodeFor } from './components/CoursePlan'
 
 // Los contenidos de cada materia se descargan solo cuando el alumno los abre.
 const AsinActivity = lazy(() => import('./components/AsinActivity'))
@@ -25,15 +26,19 @@ function LazyView({ children }) {
 const navItems = [
   { id: 'inicio', label: 'Resumen', icon: LayoutDashboard },
   { id: 'modulos', label: 'Mis módulos', icon: GraduationCap },
-  { id: 'materiales', label: 'Materiales', icon: BookOpen },
-  { id: 'evaluaciones', label: 'Evaluaciones', icon: ClipboardCheck },
+  { id: 'materiales', label: 'Material', icon: BookOpen },
+  { id: 'evaluaciones', label: 'Tareas', icon: ClipboardCheck },
+  { id: 'notas', label: 'Notas', icon: Award },
+  { id: 'cronograma', label: 'Cronograma', icon: CalendarDays },
   { id: 'alumnos', label: 'Alumnos', icon: Users },
 ]
 
 const studentNavItems = [
   { id: 'inicio', label: 'Inicio', icon: LayoutDashboard },
-  { id: 'materiales', label: 'Aprender', icon: BookOpen },
-  { id: 'evaluaciones', label: 'Entregar', icon: ClipboardCheck },
+  { id: 'materiales', label: 'Material', icon: BookOpen },
+  { id: 'evaluaciones', label: 'Tareas', icon: ClipboardCheck },
+  { id: 'notas', label: 'Notas', icon: Award },
+  { id: 'cronograma', label: 'Cronograma', icon: CalendarDays },
 ]
 
 const studentThemes = [
@@ -345,7 +350,7 @@ function Dashboard({ session, onLogout }) {
       <div className="side-brand"><div className="side-brand-symbol"><GraduationCap size={25} /></div><span>Aula <b>Virtual</b><small>{isTeacher ? 'Gestión docente' : 'Espacio del alumno'}</small></span><button className="icon-btn close-menu" onClick={() => setMobileMenu(false)}><X /></button></div>
       <span className="side-section-label">{isTeacher ? 'GESTIÓN ACADÉMICA' : 'MI APRENDIZAJE'}</span>
       <nav>{(isTeacher ? navItems : studentNavItems).map(({ id, label, icon: Icon }) =>
-        <button key={id} className={view === id ? 'active' : ''} aria-current={view === id ? 'page' : undefined} onClick={() => { if (!isTeacher && id === 'materiales') setStudentCourseFilter('Todos'); setView(id); setMobileMenu(false) }}><Icon size={19} /><span>{isTeacher && id === 'modulos' ? 'Módulos' : label}</span>{view === id && <i />}</button>
+        <button key={id} className={view === id ? 'active' : ''} aria-current={view === id ? 'page' : undefined} onClick={() => { if (!isTeacher && id === 'materiales') setStudentCourseFilter('Todos'); setSelectedAssessment(null); setView(id); setMobileMenu(false) }}><Icon size={19} /><span>{isTeacher && id === 'modulos' ? 'Módulos' : label}</span>{view === id && <i />}</button>
       )}</nav>
       <div className="side-bottom">
         {isTeacher && <button className={view === 'configuracion' ? 'active' : ''} onClick={() => { setView('configuracion'); setMobileMenu(false) }}><Settings size={19} />Configuración</button>}
@@ -361,17 +366,19 @@ function Dashboard({ session, onLogout }) {
       </header>
       <main className="content">
         {dataError && <div className="form-error data-error">{dataError} <button className="text-btn" onClick={loadData}>Reintentar</button></div>}
-        {loading ? <div className="loading-state">Cargando información real…</div> : studentPreview ? <StudentPreview session={previewSession} courses={courses.filter(course => course.group === previewGroup)} materials={materialList.filter(item => item.group === previewGroup && item.published)} assessments={assessmentList.filter(item => item.group === previewGroup && item.status === 'Activa')} /> : <>
-        {view === 'inicio' && (isTeacher ? <TeacherHome session={session} setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} teacherNotes={teacherNotes} onRefresh={loadData} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} setView={setView} onOpenCourse={code => { setStudentCourseFilter(code); setView('materiales') }} />)}
+        {loading ? <div className="loading-state">Cargando información real…</div> : studentPreview ? <StudentPreview session={previewSession} courses={courses.filter(course => course.group === previewGroup)} materials={materialList.filter(item => item.group === previewGroup && item.published)} assessments={assessmentList.filter(item => item.group === previewGroup && item.status === 'Activa').map(item => ({ ...item, submissionDetails: [] }))} /> : <>
+        {view === 'inicio' && (isTeacher ? <TeacherHome session={session} setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} teacherNotes={teacherNotes} onRefresh={loadData} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} setView={setView} onOpenCourse={code => { setStudentCourseFilter(code); setView('materiales') }} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} />)}
         {view === 'modulos' && (isTeacher ? <TeacherModules session={session} courses={assignedCourses} students={studentList} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} teacherNotes={teacherNotes} onRefresh={loadData} setView={setView} /> : <Modules courses={assignedCourses} session={session} setView={setView} />)}
-        {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} initialCourse={studentCourseFilter} onAdd={() => setModal('material')} onToggle={toggleMaterial} onProgressUpdate={progress => setLearningProgress(current => [...current.filter(item => item.material_code !== progress.material_code), progress])} />}
+        {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} assessments={isTeacher ? assessmentList : assessmentList.filter(item => item.status === 'Activa')} students={studentList} learningProgress={learningProgress} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} initialCourse={studentCourseFilter} onAdd={() => setModal('material')} onToggle={toggleMaterial} onProgressUpdate={progress => setLearningProgress(current => [...current.filter(item => item.material_code !== progress.material_code), progress])} />}
         {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} learningProgress={learningProgress} setView={setView} onAdd={() => setModal('assessment')} onRefresh={loadData} onToggle={toggleAssessment} initialSelected={selectedAssessment} onClearSelected={() => setSelectedAssessment(null)} />}
+        {view === 'notas' && (isTeacher ? <TeacherGrades courses={assignedCourses} students={studentList} assessments={assessmentList} /> : <StudentGrades courses={assignedCourses} assessments={assessmentList} session={session} />)}
+        {view === 'cronograma' && <Schedule courses={assignedCourses} session={session} isTeacher={isTeacher} />}
         {view === 'alumnos' && isTeacher && <Students students={studentList} groups={groupList} assessments={assessmentList} learningProgress={learningProgress} onRefresh={loadData} />}
         {view === 'configuracion' && isTeacher && <SettingsPage session={session} groups={groupList} />}
         </>}
       </main>
     </div>
-    {!isTeacher && <nav className="student-mobile-nav" aria-label="Navegación del alumno">{studentNavItems.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? 'active' : ''} onClick={() => { if (id === 'materiales') setStudentCourseFilter('Todos'); setView(id); setMobileMenu(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }}><Icon size={20} /><span>{label}</span></button>)}</nav>}
+    {!isTeacher && <nav className="student-mobile-nav" aria-label="Navegación del alumno">{studentNavItems.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? 'active' : ''} onClick={() => { if (id === 'materiales') setStudentCourseFilter('Todos'); setSelectedAssessment(null); setView(id); setMobileMenu(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }}><Icon size={20} /><span>{label}</span></button>)}</nav>}
     {mobileMenu && <div className="overlay mobile" onClick={() => setMobileMenu(false)} />}
     {modal === 'material' && <MaterialModal groups={groupList} onClose={() => setModal(null)} onSave={async (item) => {
       if (demoBlocked()) return
@@ -469,14 +476,6 @@ function ModuleStudentTracker({ session, course, students, assessments, learning
   return <section className="module-roster-page"><button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver al centro de control</button><div className="module-roster-hero"><div className="module-code large">{course.code}</div><div><span className="eyebrow">SEGUIMIENTO DEL MÓDULO</span><h1>{course.name}</h1><p>Grupo {course.group} · {students.length} {students.length === 1 ? 'alumno' : 'alumnos'} · Información actualizada al ingresar</p></div></div><div className="panel"><div className="roster-heading"><div><h2>Alumnos del módulo</h2><p>Seleccione un alumno para consultar su expediente académico en tiempo real.</p></div><span>{students.length} inscritos</span></div><div className="module-student-list">{students.map(student => { const summary = summaryFor(student); const hasNote = teacherNotes.some(item => item.student_id === student.id && item.course_code === course.code && item.note); return <button key={student.id} onClick={() => openStudent(student)}><div className="avatar">{student.name.split(' ').slice(0, 2).map(part => part[0]).join('')}</div><div><strong>{student.name}</strong><span>{student.enrollment || 'Matrícula pendiente'}</span></div><div className="student-live-summary"><span><b>{summary.steps}</b> pasos</span><span><b>{summary.delivered}</b> entregas</span><span className={summary.drafts ? 'has-draft' : ''}><b>{summary.drafts}</b> avances</span>{hasNote && <span className="has-note"><Lock size={12} /> Nota privada</span>}</div><ChevronRight size={18} /></button>})}</div></div></section>
 }
 
-function itemBelongsToCourse(item, course, sameGroupCourses) {
-  if (item.group !== course.group) return false
-  const code = item.activityCode?.split('-')[0]
-  if (code) return code === course.code
-  if (String(item.title || '').toUpperCase().includes(course.code)) return true
-  return sameGroupCourses.length === 1
-}
-
 function buildModuleMetrics(courseList, students, materials, assessments) {
   return courseList.map(course => {
     const sameGroupCourses = courseList.filter(item => item.group === course.group)
@@ -499,18 +498,20 @@ function ModuleBarChart({ metrics, field, suffix }) {
   return <div className="module-bar-chart">{metrics.map(metric => <div className="chart-row" key={metric.key}><span><b>{metric.code}</b><small>Gpo. {metric.group}</small></span><div><i style={{ width: `${Math.min(100, metric[field] / max * 100)}%` }} /></div><strong>{field === 'average' && !metric.hasScores ? '—' : `${metric[field]}${suffix}`}</strong></div>)}</div>
 }
 
-function StudentHome({ session, courses, materials, assessments, learningProgress = [], setView, onOpenCourse }) {
-  const assignedAssessments = assessments.filter(item => item.status === 'Activa').map(item => ({ ...item, locked: assessmentIsLocked(item, learningProgress) })).sort((a, b) => learningSequence(a) - learningSequence(b) || a.title.localeCompare(b.title, 'es'))
-  const nextAssessment = assignedAssessments.find(item => !item.locked)
-  const nextLockedAssessment = assignedAssessments.find(item => item.locked)
-  const latestMaterial = materials[0]
-  const moduleCountLabel = courses.length === 1 ? 'módulo' : 'módulos'
+function StudentHome({ session, courses, materials, assessments, learningProgress = [], setView, onOpenCourse, onOpenAssessment }) {
+  const assignedAssessments = assessments.filter(item => item.status === 'Activa' && courses.some(course => course.group === item.group)).map(item => ({ ...item, locked: assessmentIsLocked(item, learningProgress) })).sort((a, b) => (a.dueAt || '9').localeCompare(b.dueAt || '9') || learningSequence(a) - learningSequence(b))
+  const withState = assignedAssessments.map(item => ({ ...item, state: assessmentState(item, session) }))
+  const toDeliver = withState.filter(item => ['pending', 'late', 'draft', 'locked'].includes(item.state.key))
+  const delivered = withState.filter(item => ['sent', 'graded'].includes(item.state.key))
+  const interactive = materials.filter(item => item.published && progressCodeFor(item) && courses.some(course => course.group === item.group))
+  const finishedMaterials = interactive.filter(item => learningProgress.some(progress => progress.material_code === progressCodeFor(item) && progress.completed_at))
+  const materialProgress = interactive.length ? Math.round(finishedMaterials.length / interactive.length * 100) : 0
+  const nextAssessment = toDeliver.find(item => !item.locked)
   return <>
-    <section className="student-journey-hero"><div className="student-journey-copy"><span className="eyebrow">GRUPO {session.group} · {session.semester}º SEMESTRE</span><h1>Hola, {session.name}. ¿Qué sigue?</h1><p>No necesitas buscar entre varias secciones: entra a <b>Aprender</b>, completa el contenido en orden y después ve a <b>Entregar</b>.</p><div className="student-hero-actions"><button className="primary" onClick={() => setView('materiales')}>Continuar donde me quedé<ChevronRight size={17} /></button>{assignedAssessments.length > 0 && <button className="secondary" onClick={() => setView('evaluaciones')}>Ver mis entregas</button>}</div></div><div className="student-journey-summary"><span>Tu periodo actual</span><strong>{courses.length} {moduleCountLabel}</strong><small>{materials.length} materiales · {assignedAssessments.length} actividades asignadas</small><div><i style={{ width: `${materials.length || assignedAssessments.length ? 35 : 5}%` }} /></div><em>Tu avance se guarda conforme completas cada contenido.</em></div></section>
-    <section className="learning-route" aria-label="Ruta de aprendizaje"><div className="learning-route-title"><span>Tu ruta de trabajo</span><small>Sigue este orden para avanzar sin perderte.</small></div>{[['1', 'Aprende', 'Revisa la explicación y los ejemplos.', BookOpen], ['2', 'Practica', 'Resuelve ejercicios y entrega evidencias.', FileText], ['3', 'Demuestra', 'Realiza la actividad de evaluación.', ClipboardCheck]].map(([number, title, description, Icon]) => <article key={number}><span>{number}</span><Icon size={20} /><div><b>{title}</b><small>{description}</small></div></article>)}</section>
-    <section className="stat-grid student-stats"><Stat icon={GraduationCap} value={courses.length} label={courses.length === 1 ? 'Módulo asignado' : 'Módulos asignados'} note={`Grupo ${session.group}`} color="purple" /><Stat icon={BookOpen} value={materials.length} label="Materiales disponibles" note="Ordenados por módulo" color="blue" /><Stat icon={ClipboardCheck} value={assignedAssessments.length} label="Evaluaciones asignadas" note={`${assignedAssessments.filter(item => !item.locked).length} disponibles ahora`} color="gold" /></section>
-    <section className="panel student-modules-preview"><PanelTitle title="Elige una materia" /><p className="student-section-help">Al abrirla verás únicamente sus contenidos, prácticas y actividades.</p><div className="module-mini-list">{courses.map(course => <button className="module-mini" key={`${course.code}-${course.group}`} onClick={() => onOpenCourse?.(course.code)}><div className="module-code">{course.code}</div><div><strong>{course.name}</strong><span>{course.hoursPerWeek} horas por semana · Continuar</span></div><ChevronRight size={17} /></button>)}</div></section>
-    <section className="two-cols student-focus-grid"><div className="panel focus-panel"><PanelTitle title="Lo siguiente" />{nextAssessment ? <div className="next-task"><div className="focus-symbol assessment"><ClipboardCheck size={22} /></div><div><span className={`tag ${nextAssessment.overdue ? 'overdue' : 'active'}`}>{nextAssessment.overdue ? 'FECHA VENCIDA · AÚN DISPONIBLE' : 'EVALUACIÓN DISPONIBLE'}</span><h3>{nextAssessment.title}</h3><p>Entrega: {nextAssessment.due}</p><button className="text-btn" onClick={() => setView('evaluaciones')}>Abrir evaluación <ChevronRight size={15} /></button></div></div> : nextLockedAssessment ? <div className="next-task"><div className="focus-symbol locked"><Lock size={22} /></div><div><span className="tag">PRIMERO TERMINA EL MATERIAL</span><h3>{nextLockedAssessment.title}</h3><p>La evaluación se habilitará automáticamente al completar el contenido correspondiente.</p><button className="text-btn" onClick={() => setView('materiales')}>Ir a materiales <ChevronRight size={15} /></button></div></div> : <EmptyState text="Por ahora no tienes evaluaciones asignadas." />}</div><div className="panel focus-panel"><PanelTitle title="Material reciente" />{latestMaterial ? <div className="featured-material"><div className="focus-symbol material"><BookOpen size={22} /></div><div><span className="tag">{latestMaterial.unit}</span><h3>{latestMaterial.title}</h3><p>{latestMaterial.type} · Grupo {latestMaterial.group}</p><button className="text-btn" onClick={() => setView('materiales')}>Continuar material <ChevronRight size={15} /></button></div></div> : <EmptyState text="Todavía no hay materiales publicados." />}</div></section>
+    <section className="student-journey-hero"><div className="student-journey-copy"><span className="eyebrow">GRUPO {session.group} · {session.semester}º SEMESTRE</span><h1>Hola, {session.name}. ¿Qué sigue?</h1><p>Entra a <b>Material</b>, abre el R.A. en curso de cada materia, complétalo en orden y entrega su actividad en <b>Tareas</b>.</p><div className="student-hero-actions"><button className="primary" onClick={() => setView('materiales')}>Continuar donde me quedé<ChevronRight size={17} /></button>{nextAssessment && <button className="secondary" onClick={() => onOpenAssessment ? onOpenAssessment(nextAssessment) : setView('evaluaciones')}>Entregar {nextAssessment.activityCode || 'tarea'}</button>}</div></div><div className="student-journey-summary"><span>Avance del material</span><strong>{materialProgress}%</strong><small>{finishedMaterials.length} de {interactive.length} materiales terminados</small><div><i style={{ width: `${Math.max(4, materialProgress)}%` }} /></div><em>Tu avance se guarda conforme completas cada contenido.</em></div></section>
+    <section className="stat-grid student-stats"><Stat icon={ClipboardCheck} value={toDeliver.length} label={toDeliver.length === 1 ? 'Tarea por entregar' : 'Tareas por entregar'} note={`${toDeliver.filter(item => !item.locked).length} disponibles ahora`} color="gold" /><Stat icon={CheckCircle2} value={delivered.length} label={delivered.length === 1 ? 'Tarea entregada' : 'Tareas entregadas'} note={`${delivered.filter(item => item.state.key === 'graded').length} calificadas`} color="green" /><Stat icon={BookOpen} value={`${materialProgress}%`} label="Material terminado" note={`${courses.length} ${courses.length === 1 ? 'módulo' : 'módulos'}`} color="blue" /></section>
+    <WeekPlan courses={courses} onOpenCourse={onOpenCourse} />
+    <section className="panel to-deliver"><PanelTitle title="Por entregar" action={withState.length ? 'Ver todas' : null} onClick={() => setView('evaluaciones')} />{toDeliver.length ? <ul className="to-deliver-list">{toDeliver.slice(0, 5).map(item => <li key={item.id}><div className={`ra-item-icon task ${item.locked ? 'locked' : ''}`}>{item.locked ? <Lock size={17} /> : <ClipboardCheck size={17} />}</div><div><strong>{item.title}</strong><small>Entrega {item.due}{item.locked ? ' · Termina primero el material' : ''}</small></div><span className={`ra-badge ${item.locked ? 'muted' : item.state.key === 'late' ? 'bad' : 'warn'}`}>{item.state.label}</span><button className={item.locked ? 'secondary small' : 'primary small'} onClick={() => item.locked ? setView('materiales') : onOpenAssessment ? onOpenAssessment(item) : setView('evaluaciones')}>{item.locked ? 'Material' : 'Entregar'}<ChevronRight size={15} /></button></li>)}</ul> : <EmptyState text={withState.length ? '¡Vas al día! No tienes tareas pendientes.' : 'Por ahora no tienes tareas asignadas.'} />}</section>
   </>
 }
 
@@ -518,18 +519,17 @@ function StudentPreview({ session, courses, materials, assessments }) {
   const [previewView, setPreviewView] = useState('inicio')
   const [previewProgress, setPreviewProgress] = useState([])
   const [previewCourse, setPreviewCourse] = useState('Todos')
+  const [previewSelected, setPreviewSelected] = useState(null)
   useEffect(() => { setPreviewView('inicio'); setPreviewProgress([]) }, [session.group])
+  const openAssessment = assessment => { setPreviewSelected(assessment); setPreviewView('evaluaciones') }
   return <div className="student-preview-shell">
     <div className="preview-banner"><div><span className="eyebrow">VISTA PREVIA · GRUPO {session.group}</span><strong>Así verá el alumno únicamente el contenido publicado.</strong></div><div className="preview-avatar">AD</div></div>
-    <nav className="preview-nav">
-      <button className={previewView === 'inicio' ? 'active' : ''} onClick={() => setPreviewView('inicio')}><LayoutDashboard size={17} />Inicio</button>
-      <button className={previewView === 'materiales' ? 'active' : ''} onClick={() => setPreviewView('materiales')}><BookOpen size={17} />Aprender</button>
-      <button className={previewView === 'evaluaciones' ? 'active' : ''} onClick={() => setPreviewView('evaluaciones')}><ClipboardCheck size={17} />Entregar</button>
-    </nav>
-    {previewView === 'inicio' && <StudentHome session={session} courses={courses} materials={materials} assessments={assessments} learningProgress={previewProgress} setView={setPreviewView} onOpenCourse={code => { setPreviewCourse(code); setPreviewView('materiales') }} />}
-    {previewView === 'modulos' && <Modules courses={courses} session={session} setView={setPreviewView} />}
-    {previewView === 'materiales' && <Materials items={materials} groups={[]} courses={courses} session={session} isTeacher={false} initialCourse={previewCourse} onProgressUpdate={progress => setPreviewProgress(current => [...current.filter(item => item.material_code !== progress.material_code), progress])} />}
-    {previewView === 'evaluaciones' && <Assessments items={assessments} session={session} isTeacher={false} learningProgress={previewProgress} setView={setPreviewView} />}
+    <nav className="preview-nav">{studentNavItems.map(({ id, label, icon: Icon }) => <button key={id} className={previewView === id ? 'active' : ''} onClick={() => { if (id === 'materiales') setPreviewCourse('Todos'); setPreviewSelected(null); setPreviewView(id) }}><Icon size={17} />{label}</button>)}</nav>
+    {previewView === 'inicio' && <StudentHome session={session} courses={courses} materials={materials} assessments={assessments} learningProgress={previewProgress} setView={setPreviewView} onOpenCourse={code => { setPreviewCourse(code); setPreviewView('materiales') }} onOpenAssessment={openAssessment} />}
+    {previewView === 'materiales' && <Materials items={materials} groups={[]} courses={courses} session={session} isTeacher={false} assessments={assessments} learningProgress={previewProgress} onOpenAssessment={openAssessment} initialCourse={previewCourse} onProgressUpdate={progress => setPreviewProgress(current => [...current.filter(item => item.material_code !== progress.material_code), progress])} />}
+    {previewView === 'evaluaciones' && <Assessments items={assessments} session={session} isTeacher={false} learningProgress={previewProgress} setView={setPreviewView} initialSelected={previewSelected} onClearSelected={() => setPreviewSelected(null)} />}
+    {previewView === 'notas' && <StudentGrades courses={courses} assessments={assessments} session={session} />}
+    {previewView === 'cronograma' && <Schedule courses={courses} session={session} />}
   </div>
 }
 
@@ -544,39 +544,13 @@ function TeacherModules({ session, courses, students, materials, assessments, le
   return <section className="teacher-modules-page"><div className="list-toolbar"><div><span className="eyebrow">CONTROL ACADÉMICO</span><h1>Módulos asignados</h1><p>Abra cualquier módulo para consultar alumnos, progreso, evidencias y notas privadas.</p></div></div><div className="module-insight-grid expanded">{metrics.map(metric => <ModuleInsight key={metric.key} metric={metric} onOpen={() => setSelectedCourse(metric)} onMaterials={() => setView('materiales')} onAssessments={() => setView('evaluaciones')} />)}</div><div className="panel module-comparison"><PanelTitle title="Comparación general" /><div className="comparison-grid"><div><h3>Porcentaje de entregas</h3><ModuleBarChart metrics={metrics} field="completion" suffix="%" /></div><div><h3>Promedio registrado</h3><ModuleBarChart metrics={metrics} field="average" suffix="/60" /></div></div></div></section>
 }
 
-function Materials({ items, groups, courses, session, isTeacher, initialCourse = 'Todos', onAdd, onToggle, onProgressUpdate }) {
-  const [query, setQuery] = useState('')
-  const [group, setGroup] = useState('Todos')
+function Materials({ items, groups, courses, session, isTeacher, assessments = [], students = [], learningProgress = [], onOpenAssessment, initialCourse = 'Todos', onAdd, onToggle, onProgressUpdate }) {
   const [courseFilter, setCourseFilter] = useState(initialCourse)
   const [selectedMaterial, setSelectedMaterial] = useState(null)
-  useEffect(() => { if (!isTeacher) setCourseFilter(initialCourse) }, [initialCourse, isTeacher])
-  const courseOrder = new Map(courses.map((course, index) => [course.code, index]))
-  const sequenceFor = material => {
-    const match = `${material.unit} ${material.title}`.match(/(?:propósito|r\.?a\.?)\s*(\d+)\.(\d+)/i)
-    return match ? Number(match[1]) * 100 + Number(match[2]) : 9999
-  }
-  const filtered = items.filter(m => {
-    const selectedCourse = courses.find(course => course.code === courseFilter)
-    const matchesCourse = courseFilter === 'Todos' || (selectedCourse && itemBelongsToCourse(m, selectedCourse, courses.filter(candidate => candidate.group === selectedCourse.group)))
-    return (group === 'Todos' || m.group === group) && matchesCourse && m.title.toLowerCase().includes(query.toLowerCase())
-  }).sort((a, b) => {
-    const aCode = courses.find(course => a.title.toUpperCase().startsWith(course.code))?.code
-    const bCode = courses.find(course => b.title.toUpperCase().startsWith(course.code))?.code
-    return (courseOrder.get(aCode) ?? 999) - (courseOrder.get(bCode) ?? 999) || sequenceFor(a) - sequenceFor(b) || a.title.localeCompare(b.title, 'es-MX')
-  })
-  const moduleSections = courses.map(course => ({
-    course,
-    materials: filtered.filter(item => itemBelongsToCourse(item, course, courses.filter(candidate => candidate.group === course.group))),
-  })).filter(section => section.materials.length)
-  const unitSectionsFor = moduleMaterials => {
-    const sections = new Map()
-    moduleMaterials.forEach(material => {
-      const label = material.unit?.trim() || 'Recursos generales'
-      if (!sections.has(label)) sections.set(label, [])
-      sections.get(label).push(material)
-    })
-    return [...sections.entries()].sort(([, a], [, b]) => sequenceFor(a[0]) - sequenceFor(b[0])).map(([unit, unitMaterials]) => ({ unit, materials: unitMaterials }))
-  }
+  useEffect(() => { setCourseFilter(initialCourse) }, [initialCourse])
+  const shownCourses = courseFilter === 'Todos' ? courses : courses.filter(course => course.code === courseFilter)
+  const visibleItems = isTeacher ? items : items.filter(item => item.published)
+  const visibleAssessments = assessments.map(item => ({ ...item, locked: !isTeacher && assessmentIsLocked(item, learningProgress) }))
   async function openMaterial(material) {
     if (material.url?.startsWith('mtcs://')) { setSelectedMaterial(material); return }
     if (material.url?.startsWith('pear://')) { setSelectedMaterial(material); return }
@@ -594,8 +568,11 @@ function Materials({ items, groups, courses, session, isTeacher, initialCourse =
   if (selectedMaterial?.url?.startsWith('edoa://')) return <LazyView><EdoaAdvancedMaterial code={selectedMaterial.url.replace('edoa://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
   if (selectedMaterial?.url?.startsWith('courseware://')) return <LazyView><IntegratedCourseMaterial code={selectedMaterial.url.replace('courseware://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
   if (selectedMaterial) return <LazyView><MtcsMaterialView code={selectedMaterial.url.replace('mtcs://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
-  const materialCard = m => <article className={`material-card ${!m.published ? 'locked-card' : ''}`} key={m.id}><div className="material-icon"><FileText /></div><span className={`tag ${m.published ? 'active' : ''}`}>{isTeacher ? (m.system ? 'INTEGRADO' : m.published ? 'PUBLICADO' : 'BLOQUEADO') : m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group} · {m.unit}</p><footer><span>{isTeacher ? (m.system ? 'Contenido interactivo de Aula Virtual' : m.published ? 'Visible para alumnos' : 'Oculto para alumnos') : 'Listo para estudiar'}</span><div className="card-actions"><button className="text-btn" onClick={() => openMaterial(m)}>{isTeacher ? 'Abrir' : 'Continuar'} <ChevronRight size={15} /></button>{isTeacher && !m.system && <button className="lock-btn" onClick={() => onToggle?.(m)}>{m.published ? <Lock size={15} /> : <Unlock size={15} />}{m.published ? 'Bloquear' : 'Publicar'}</button>}</div></footer></article>
-  return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Material didáctico' : 'Aprender'}</h1><p>{isTeacher ? 'Recursos organizados por módulo y unidad.' : 'Elige una materia, abre el primer contenido pendiente y completa sus pasos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div>{!isTeacher && <><div className="student-course-switcher" aria-label="Elegir materia"><button className={courseFilter === 'Todos' ? 'active' : ''} onClick={() => setCourseFilter('Todos')}>Todas</button>{courses.map(course => <button key={`${course.code}-${course.group}`} className={courseFilter === course.code ? 'active' : ''} onClick={() => setCourseFilter(course.code)}><b>{course.code}</b><span>{course.name}</span></button>)}</div><div className="student-page-guide"><span><b>1</b> Elige tu materia</span><ChevronRight size={16} /><span><b>2</b> Completa el contenido</span><ChevronRight size={16} /><span><b>3</b> Ve a Entregar</span></div></>}<div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder={isTeacher ? 'Buscar material…' : 'Buscar dentro de esta materia…'} /></div>{isTeacher ? <select value={group} onChange={e => setGroup(e.target.value)}><option value="Todos">Todos los grupos</option>{groups.map(item => <option key={item.id} value={item.code}>Grupo {item.code}</option>)}</select> : <div className="group-chip">Grupo {session.group}</div>}</div>{filtered.length ? <div className="learning-module-sections">{moduleSections.map(({ course, materials: moduleMaterials }) => <section key={`${course.code}-${course.group}`}><header><div className="module-code">{course.code}</div><div><h2>{course.name}</h2><p>Grupo {course.group} · {moduleMaterials.length} {moduleMaterials.length === 1 ? 'contenido' : 'contenidos'} · Sigue el orden indicado</p></div></header><div className="unit-material-sections">{unitSectionsFor(moduleMaterials).map(({ unit, materials: unitMaterials }, unitIndex) => <section className="unit-material-section" key={`${course.code}-${unit}`}><div className="unit-heading"><span>{String(unitIndex + 1).padStart(2, '0')}</span><div><small>PASO {unitIndex + 1}</small><h3>{unit}</h3></div><b>{unitMaterials.length} {unitMaterials.length === 1 ? 'contenido' : 'contenidos'}</b></div><div className="card-grid">{unitMaterials.map(materialCard)}</div></section>)}</div></section>)}</div> : <EmptyState text={isTeacher ? 'No hay materiales con estos filtros.' : 'Todavía no hay contenidos publicados para esta materia.'} />}</section>
+  return <section className="panel page-panel"><div className="list-toolbar"><div><span className="eyebrow">{isTeacher ? 'MATERIAL DIDÁCTICO' : `GRUPO ${session.group}`}</span><h1>Material</h1><p>{isTeacher ? 'Organizado por resultado de aprendizaje, con horas, ponderación y fechas del programa.' : 'Cada materia está dividida por R.A. Abre el que está en curso, completa el material en orden y al final entrega su actividad.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div>
+    <CourseChips courses={courses} value={courseFilter} onChange={setCourseFilter} allLabel="Todas" showGroup={isTeacher} />
+    {!isTeacher && <div className="student-page-guide"><span><b>1</b> Abre el R.A. en curso</span><ChevronRight size={16} /><span><b>2</b> Completa el material</span><ChevronRight size={16} /><span><b>3</b> Entrega la actividad</span></div>}
+    <div className="learning-module-sections">{shownCourses.map(course => <section key={`${course.code}-${course.group}`}><header><div className="module-code">{course.code}</div><div><h2>{course.name}</h2><p>Grupo {course.group} · {course.hoursPerWeek} horas por semana</p></div></header><RaCourseMap course={course} sameGroupCourses={courses.filter(candidate => candidate.group === course.group)} materials={visibleItems} assessments={visibleAssessments} learningProgress={learningProgress} session={session} isTeacher={isTeacher} students={students} onOpenMaterial={openMaterial} onOpenAssessment={onOpenAssessment} onToggleMaterial={onToggle} /></section>)}</div>
+  </section>
 }
 
 function Assessments({ items, session, isTeacher, learningProgress = [], setView, onAdd, onRefresh, onToggle, initialSelected, onClearSelected }) {
@@ -610,12 +587,12 @@ function Assessments({ items, session, isTeacher, learningProgress = [], setView
     return <GenericActivity assessment={selected} session={session} onBack={clearSelected} />
   }
   const visibleItems = items.map(item => ({ ...item, locked: !isTeacher && assessmentIsLocked(item, learningProgress) }))
-  return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Evaluaciones' : 'Entregar'}</h1><p>{isTeacher ? 'Actividades y resultados de tus grupos.' : 'Aquí están tus actividades finales. Si alguna está bloqueada, primero termina su contenido en Aprender.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div>{!isTeacher && <div className="student-page-guide"><span><b>1</b> Termina Aprender</span><ChevronRight size={16} /><span><b>2</b> Abre tu actividad</span><ChevronRight size={16} /><span><b>3</b> Revisa y entrega</span></div>}{isTeacher ? <AssessmentTable items={visibleItems} onOpen={setSelected} onToggle={onToggle} /> : <StudentAssessmentCards items={visibleItems} onOpen={setSelected} onLearn={() => setView?.('materiales')} />}</section>
+  return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>Tareas</h1><p>{isTeacher ? 'Actividades de evaluación y resultados de tus grupos.' : 'Aquí están las actividades de evaluación de cada R.A. Si alguna está bloqueada, primero termina su material.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Plus size={18} />Nueva evaluación</button>}</div>{!isTeacher && <div className="student-page-guide"><span><b>1</b> Termina el material</span><ChevronRight size={16} /><span><b>2</b> Abre tu actividad</span><ChevronRight size={16} /><span><b>3</b> Revisa y entrega</span></div>}{isTeacher ? <AssessmentTable items={visibleItems} onOpen={setSelected} onToggle={onToggle} /> : <StudentAssessmentCards items={visibleItems} onOpen={setSelected} onLearn={() => setView?.('materiales')} />}</section>
 }
 
 function StudentAssessmentCards({ items, onOpen, onLearn }) {
   if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />
-  return <div className="student-assessment-cards">{items.map(item => <article className={item.locked ? 'locked' : item.overdue ? 'overdue-card' : ''} key={item.id}><div className="assessment-card-icon">{item.locked ? <Lock size={21} /> : <ClipboardCheck size={21} />}</div><div className="assessment-card-main"><div><span className="eyebrow">{item.activityCode || 'ACTIVIDAD'} · GRUPO {item.group}</span><h2>{item.title}</h2><p>{item.locked ? 'Aún no está disponible. Termina primero el contenido del mismo propósito en Aprender.' : item.instructions || 'Actividad disponible para realizar.'}</p></div><div className="assessment-card-meta"><span><b>Entrega</b>{item.due}</span><span><b>Estado</b><i className={`tag ${item.status === 'Activa' && !item.locked && !item.overdue ? 'active' : item.overdue && !item.locked ? 'overdue' : ''}`}>{item.locked ? 'BLOQUEADA' : item.overdue ? 'FECHA VENCIDA' : item.status}</i></span></div></div><button className={item.locked ? 'secondary' : 'primary'} onClick={() => item.locked ? onLearn?.() : onOpen(item)}>{item.locked ? 'Ir a Aprender' : item.overdue ? 'Continuar entrega pendiente' : 'Comenzar entrega'}<ChevronRight size={16} /></button></article>)}</div>
+  return <div className="student-assessment-cards">{items.map(item => <article className={item.locked ? 'locked' : item.overdue ? 'overdue-card' : ''} key={item.id}><div className="assessment-card-icon">{item.locked ? <Lock size={21} /> : <ClipboardCheck size={21} />}</div><div className="assessment-card-main"><div><span className="eyebrow">{item.activityCode || 'ACTIVIDAD'} · GRUPO {item.group}</span><h2>{item.title}</h2><p>{item.locked ? 'Aún no está disponible. Termina primero el material de este R.A.' : item.instructions || 'Actividad disponible para realizar.'}</p></div><div className="assessment-card-meta"><span><b>Entrega</b>{item.due}</span><span><b>Estado</b><i className={`tag ${item.status === 'Activa' && !item.locked && !item.overdue ? 'active' : item.overdue && !item.locked ? 'overdue' : ''}`}>{item.locked ? 'BLOQUEADA' : item.overdue ? 'FECHA VENCIDA' : item.status}</i></span></div></div><button className={item.locked ? 'secondary' : 'primary'} onClick={() => item.locked ? onLearn?.() : onOpen(item)}>{item.locked ? 'Ir al material' : item.overdue ? 'Continuar entrega pendiente' : 'Comenzar entrega'}<ChevronRight size={16} /></button></article>)}</div>
 }
 
 function AssessmentTable({ items, student, onOpen, onToggle }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className={`table-wrap ${student ? 'student-assessment-table' : ''}`}><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Actividad</th>}<th>{student ? 'Estado' : 'Publicación'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id} className={a.locked ? 'locked-assessment' : ''}><td data-label="Evaluación"><div className="title-cell"><div className="mini-icon">{a.locked ? <Lock size={17} /> : <ClipboardCheck size={17} />}</div><strong>{a.title}</strong></div></td><td data-label="Grupo">{a.group}</td><td data-label="Entrega">{a.due}</td>{!student && <td data-label="Actividad"><strong>{a.submissions}</strong> entregas · {a.drafts} avances</td>}<td data-label="Estado"><span className={`tag ${a.status === 'Activa' && !a.locked ? 'active' : ''}`}>{a.locked ? 'BLOQUEADA' : a.status}</span></td><td className="assessment-open"><div className="table-actions"><button className="text-btn" disabled={a.locked} onClick={() => !a.locked && onOpen?.(a)}>{a.locked ? 'Completa los materiales' : student ? 'Abrir actividad' : 'Resultados'} {!a.locked && <ChevronRight size={15} />}</button>{!student && onToggle && <button className="lock-btn" onClick={() => onToggle(a)}>{a.status === 'Activa' ? <Lock size={15} /> : <Unlock size={15} />}{a.status === 'Activa' ? 'Bloquear' : 'Publicar'}</button>}</div></td></tr>)}</tbody></table></div> }
