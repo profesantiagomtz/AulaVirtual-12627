@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, CheckCircle2, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
@@ -23,16 +23,18 @@ export default function IntegratedCourseMaterial({ code, session, onBack, onProg
   const material = courseMaterials[code]
   const [progress, setProgress] = useState({ done: 0, total: 0, completed: false })
   const [message, setMessage] = useState('')
+  const persisted = useRef(Promise.resolve({ done: 0, completed: false }))
   const source = useMemo(() => material ? new URL(`${material.file}?student=${encodeURIComponent(session?.id || 'preview')}`, document.baseURI).href : '', [material, session?.id])
 
   useEffect(() => {
     if (!material || !supabase || session?.preview || session?.role === 'teacher') return undefined
     let active = true
-    supabase.from('learning_progress').select('completed_steps, completed_at').eq('student_id', session.id).eq('material_code', code).maybeSingle().then(({ data }) => {
-      if (!active || !data) return
-      const steps = Array.isArray(data.completed_steps) ? data.completed_steps : []
+    persisted.current = supabase.from('learning_progress').select('completed_steps, completed_at').eq('student_id', session.id).eq('material_code', code).maybeSingle().then(({ data }) => {
+      const steps = Array.isArray(data?.completed_steps) ? data.completed_steps : []
+      const stored = { done: steps.length, completed: Boolean(data?.completed_at) }
       // El total de pasos no se guarda; se conoce hasta que el material envía su avance.
-      setProgress({ done: steps.length, total: 0, completed: Boolean(data.completed_at) })
+      if (active && data) setProgress({ ...stored, total: 0 })
+      return stored
     })
     return () => { active = false }
   }, [code, material, session?.id, session?.preview, session?.role])
@@ -45,17 +47,25 @@ export default function IntegratedCourseMaterial({ code, session, onBack, onProg
       const total = Number(event.data.total) || 0
       const completed = Boolean(event.data.completed)
       const next = { done, total, completed }
-      setProgress(next)
       const record = {
         material_code: code,
         completed_steps: Array.from({ length: done }, (_, index) => `paso-${index + 1}`),
         completed_at: completed ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       }
-      if (session?.role !== 'teacher') onProgressUpdate?.(record)
-      if (!supabase || session?.preview || session?.role === 'teacher') return
+      if (!supabase || session?.preview || session?.role === 'teacher') {
+        setProgress(next)
+        if (session?.role !== 'teacher') onProgressUpdate?.(record)
+        return
+      }
       clearTimeout(timer)
       timer = setTimeout(async () => {
+        // El material guarda su estado en el navegador; en otro equipo inicia vacío y no debe borrar el avance guardado.
+        const stored = await persisted.current
+        if (!completed && (stored.completed || done < stored.done)) return
+        persisted.current = Promise.resolve({ done, completed })
+        setProgress(next)
+        onProgressUpdate?.(record)
         const { error } = await supabase.from('learning_progress').upsert({ student_id: session.id, ...record }, { onConflict: 'student_id,material_code' })
         setMessage(error ? 'El contenido funciona, pero no se pudo sincronizar el avance. Revisa tu conexión.' : completed ? '¡R.A. completado! Ya puedes continuar con la actividad de evaluación.' : 'Avance guardado automáticamente.')
       }, 500)
