@@ -3,6 +3,13 @@ import { ArrowLeft, CheckCircle2, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 const courseMaterials = {
+  'EDOA-RA-3.1': {
+    course: 'EDOA',
+    label: 'R.A. 3.1',
+    title: 'Formato del libro y la hoja de cálculo',
+    description: 'Lecciones, hojas de cálculo simuladas, ejercicios autocorregibles y prácticas con el caso de la cafetería del plantel.',
+    file: 'courses/edoa-ra31-material.html',
+  },
   'ASIN-RA-1.2': {
     course: 'ASIN',
     label: 'R.A. 1.2',

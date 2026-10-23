@@ -8,11 +8,14 @@ set allowed_mime_types = array(
 )
 where id = 'submissions';
 
+-- Si ya existía con el visor anterior, se cambia al material integrado.
+update public.materials set resource_url='courseware://EDOA-RA-3.1' where resource_url='edoa://EDOA-RA-3.1';
+
 insert into public.materials(teacher_id,group_id,title,description,unit,resource_type,resource_url,published)
-select p.id,g.id,'EDOA · Material didáctico R.A. 3.1','Elementos del libro, opciones de la hoja, diseño de página y formato de celdas.','R.A. 3.1','link','edoa://EDOA-RA-3.1',true
+select p.id,g.id,'EDOA · Material didáctico R.A. 3.1','Elementos del libro, opciones de la hoja, diseño de página y formato de celdas.','R.A. 3.1','link','courseware://EDOA-RA-3.1',true
 from public.profiles p cross join public.groups g
 where p.email='santiago.gonzalez@tam.conalep.edu.mx' and g.code='311'
-  and not exists(select 1 from public.materials m where m.group_id=g.id and m.resource_url='edoa://EDOA-RA-3.1');
+  and not exists(select 1 from public.materials m where m.group_id=g.id and m.resource_url='courseware://EDOA-RA-3.1');
 
 insert into public.assessments(teacher_id, group_id, title, instructions, status, activity_code, due_at)
 select teacher.id, groups.id,
