@@ -3,6 +3,13 @@ import { ArrowLeft, CheckCircle2, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 const courseMaterials = {
+  'MTCS-RA-2.2': {
+    course: 'MTCS',
+    label: 'R.A. 2.2',
+    title: 'Integridad, disponibilidad y defensa de sistemas',
+    description: 'Lecciones, laboratorio de hash, ejercicios autocorregibles y prácticas sobre el caso de una clínica dental.',
+    file: 'courses/mtcs-ra22-material.html',
+  },
   'ASIN-RA-1.2': {
     course: 'ASIN',
     label: 'R.A. 1.2',
