@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, BookOpen, CheckCircle2, Network, Save, Send, ShieldCheck, Terminal, Upload } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { uploadSubmissionFile } from '../lib/upload'
 
 export const mtcsContent = {
   'MTCS-RA-1.1': {
@@ -198,8 +199,7 @@ export default function MtcsActivity({ assessment, session, onBack }) {
       if (!deliverable.extensions.includes(extension)) { setMessage(`El archivo debe ser ${deliverable.extensions.map(item => `.${item}`).join(' o ')}.`); setStatus('error'); return }
       if (file.size > 20 * 1024 * 1024) { setMessage('El archivo supera el límite de 20 MB.'); setStatus('error'); return }
       const path = `${authData.user.id}/${assessment.id}/final/entrega.${extension}`
-      const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true, contentType: file.type || 'application/octet-stream' })
-      if (uploadError) { setMessage(uploadError.message || 'No fue posible subir el archivo.'); setStatus('error'); return }
+      try { await uploadSubmissionFile(path, file, extension === 'pkt' ? 'application/octet-stream' : undefined) } catch (uploadError) { setMessage(uploadError.message || 'No fue posible subir el archivo.'); setStatus('error'); return }
       uploaded = { path, name: file.name }
       setStoredFile(uploaded)
     }
@@ -576,10 +576,9 @@ function Ra11LearningPath({ definition, session, onBack, onProgressUpdate }) {
       if (authError || !authData.user) throw authError || new Error('La sesión ya no está disponible.')
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
       const path = `${authData.user.id}/${assessmentId}/packet-tracer/${practice.id}-${safeName}`
-      const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+      const { bytes } = await uploadSubmissionFile(path, file, 'application/octet-stream')
+      const digest = await crypto.subtle.digest('SHA-256', bytes)
       const checksum = Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('')
-      const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true, contentType: file.type || 'application/octet-stream' })
-      if (uploadError) throw uploadError
       const { data: existing, error: readError } = await supabase.from('submissions').select('id, answers, submitted_at').eq('assessment_id', assessmentId).maybeSingle()
       if (readError) throw readError
       if (existing?.submitted_at) throw new Error('La evaluación final ya fue entregada y no admite cambios.')
