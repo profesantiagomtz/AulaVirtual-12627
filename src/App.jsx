@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Lock, LogOut, Menu, Palette, Plus, Search, Settings, TrendingUp, Unlock, Upload, Users, X
 } from 'lucide-react'
 import { courses } from './data/academic'
+import * as demo from './data/demo'
 import { isSupabaseReady, supabase } from './lib/supabase'
 
 // Los contenidos de cada materia se descargan solo cuando el alumno los abre.
@@ -70,7 +71,7 @@ function materialCodeForActivity(activityCode = '') {
 }
 
 function assessmentRequiresProgress(activityCode = '') {
-  return activityCode.startsWith('MTCS-RA-') || activityCode.startsWith('PEAR-') || activityCode.startsWith('EDOA-')
+  return activityCode.startsWith('MTCS-RA-') || activityCode.startsWith('PEAR-') || activityCode.startsWith('EDOA-') || ['ASIN-RA-1.2', 'MSII-RA-1.2', 'ASIN-RA-2.1', 'MSII-RA-2.1'].includes(activityCode)
 }
 
 function assessmentIsLocked(assessment, learningProgress = []) {
@@ -81,6 +82,18 @@ function assessmentIsLocked(assessment, learningProgress = []) {
 function learningSequence(item) {
   const match = `${item.activityCode || ''} ${item.title || ''}`.match(/(?:R\.A\.|RA|PROPÓSITO|PROPOSITO|P)[\s.-]*(\d+)\.(\d+)/i)
   return match ? Number(match[1]) * 100 + Number(match[2]) : Number.MAX_SAFE_INTEGER
+}
+
+const integratedMaterials = [
+    { id: 'integrated-asin-ra12', title: 'ASIN · Material didáctico R.A. 1.2', description: 'Plan de seguridad en cómputo', unit: 'R.A. 1.2', type: 'Interactivo', url: 'courseware://ASIN-RA-1.2', published: true, group: '310', date: 'Integrado', system: true },
+    { id: 'integrated-msii-ra12', title: 'MSII · Material didáctico R.A. 1.2', description: 'Gestión de recursos del sistema operativo', unit: 'R.A. 1.2', type: 'Interactivo', url: 'courseware://MSII-RA-1.2', published: true, group: '310', date: 'Integrado', system: true },
+    { id: 'integrated-asin-ra21', title: 'ASIN · Material didáctico R.A. 2.1', description: 'Instala y configura herramientas de seguridad', unit: 'R.A. 2.1', type: 'Interactivo', url: 'courseware://ASIN-RA-2.1', published: true, group: '310', date: 'Integrado', system: true },
+    { id: 'integrated-msii-ra21', title: 'MSII · Material didáctico R.A. 2.1', description: 'Opera el sistema operativo con comandos', unit: 'R.A. 2.1', type: 'Interactivo', url: 'courseware://MSII-RA-2.1', published: true, group: '310', date: 'Integrado', system: true },
+]
+
+// Sin Supabase, la sesión de demostración se comporta como vista previa: nada se guarda.
+function demoSession(session) {
+  return session && !isSupabaseReady ? { id: `demo-${session.role}`, ...session, preview: true } : session
 }
 
 function App() {
@@ -101,7 +114,7 @@ function App() {
   }, [session?.id, session?.group])
   return <Routes>
     <Route path="/acceso" element={session ? <Navigate to="/panel" /> : <Login onLogin={setSession} />} />
-    <Route path="/panel/*" element={session ? <Dashboard session={session} onLogout={() => { localStorage.removeItem('aula-session'); setSession(null) }} /> : <Navigate to="/acceso" />} />
+    <Route path="/panel/*" element={session ? <Dashboard session={demoSession(session)} onLogout={() => { localStorage.removeItem('aula-session'); setSession(null) }} /> : <Navigate to="/acceso" />} />
     <Route path="*" element={<Navigate to={session ? '/panel' : '/acceso'} />} />
   </Routes>
 }
@@ -258,6 +271,7 @@ function Dashboard({ session, onLogout }) {
   }
 
   async function loadData() {
+    if (!isSupabaseReady) { loadDemoData(); return }
     setLoading(true); setDataError('')
     try {
       const { data: authState, error: authError } = await supabase.auth.getSession()
@@ -278,10 +292,6 @@ function Dashboard({ session, onLogout }) {
       setGroupList((groupResult.data || []).map(group => ({ ...group, students: directory.filter(student => student.group_code === group.code).length })))
       setStudentList(directory.map(student => ({ id: student.id, name: formatPersonName(student.full_name), email: student.email, enrollment: student.enrollment_number, group: student.group_code })))
       const databaseMaterials = (materialResult.data || []).map(material => ({ id: material.id, title: material.title, description: material.description, unit: material.unit || 'Sin unidad', type: material.resource_type === 'file' ? 'Archivo' : material.resource_type, url: material.resource_url, published: material.published, group: material.groups?.code || 'Todos', date: new Date(material.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) }))
-      const integratedMaterials = [
-        { id: 'integrated-asin-ra12', title: 'ASIN · Material didáctico R.A. 1.2', description: 'Plan de seguridad en cómputo', unit: 'R.A. 1.2', type: 'Interactivo', url: 'courseware://ASIN-RA-1.2', published: true, group: '310', date: 'Integrado', system: true },
-        { id: 'integrated-msii-ra12', title: 'MSII · Material didáctico R.A. 1.2', description: 'Gestión de recursos del sistema operativo', unit: 'R.A. 1.2', type: 'Interactivo', url: 'courseware://MSII-RA-1.2', published: true, group: '310', date: 'Integrado', system: true },
-      ]
       setMaterialList([...integratedMaterials, ...databaseMaterials.filter(material => !integratedMaterials.some(integrated => integrated.url === material.url))])
       setAssessmentList((assessmentResult.data || []).map(assessment => {
         const submissions = assessment.submissions || []
@@ -294,15 +304,31 @@ function Dashboard({ session, onLogout }) {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { if (isSupabaseReady) loadData() }, [session.id, session.group, session.role])
+  function loadDemoData() {
+    setGroupList(demo.groups.map(group => ({ id: group.id, code: group.name, semester: group.semester, career: group.career, students: group.students })))
+    setStudentList(demo.students.map(student => ({ id: student.id, name: student.name, email: student.email, enrollment: null, group: student.group })))
+    setMaterialList([...integratedMaterials, ...demo.materials.map(material => ({ ...material, description: '', published: true }))])
+    setAssessmentList(demo.assessments.map(assessment => ({ ...assessment, groupId: assessment.group, drafts: 0, submissionDetails: [] })))
+    setLoading(false)
+  }
+
+  useEffect(() => { loadData() }, [session.id, session.group, session.role])
+
+  function demoBlocked() {
+    if (isSupabaseReady) return false
+    saved('Modo demostración: los cambios no se guardan')
+    return true
+  }
 
   function saved(message) { setModal(null); setToast(message); setTimeout(() => setToast(''), 2600) }
   async function toggleMaterial(item) {
+    if (demoBlocked()) return
     const { error } = await supabase.from('materials').update({ published: !item.published }).eq('id', item.id)
     if (error) { setDataError(error.message); return }
     await loadData(); saved(item.published ? 'Material bloqueado para los alumnos' : 'Material publicado para los alumnos')
   }
   async function toggleAssessment(item) {
+    if (demoBlocked()) return
     const nextStatus = item.status === 'Activa' ? 'draft' : 'published'
     const { error } = await supabase.from('assessments').update({ status: nextStatus }).eq('id', item.id)
     if (error) { setDataError(error.message); return }
@@ -348,6 +374,7 @@ function Dashboard({ session, onLogout }) {
     {!isTeacher && <nav className="student-mobile-nav" aria-label="Navegación del alumno">{studentNavItems.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? 'active' : ''} onClick={() => { if (id === 'materiales') setStudentCourseFilter('Todos'); setView(id); setMobileMenu(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }}><Icon size={20} /><span>{label}</span></button>)}</nav>}
     {mobileMenu && <div className="overlay mobile" onClick={() => setMobileMenu(false)} />}
     {modal === 'material' && <MaterialModal groups={groupList} onClose={() => setModal(null)} onSave={async (item) => {
+      if (demoBlocked()) return
       const { data: authData } = await supabase.auth.getUser()
       const extension = item.file.name.split('.').pop()
       const path = `${authData.user.id}/${crypto.randomUUID()}.${extension}`
@@ -358,6 +385,7 @@ function Dashboard({ session, onLogout }) {
       await loadData(); saved('Material publicado correctamente')
     }} />}
     {modal === 'assessment' && <AssessmentModal groups={groupList} onClose={() => setModal(null)} onSave={async (item) => {
+      if (demoBlocked()) return
       const { data: authData } = await supabase.auth.getUser()
       const { error } = await supabase.from('assessments').insert({ teacher_id: authData.user.id, group_id: item.groupId, title: item.title, instructions: item.instructions, activity_code: item.activityCode, status: 'published', due_at: item.dueAt })
       if (error) throw error
@@ -427,6 +455,7 @@ function ModuleStudentTracker({ session, course, students, assessments, learning
     setMessage('')
   }
   async function saveNote() {
+    if (!isSupabaseReady) { setMessage('Modo demostración: la nota no se guarda.'); return }
     setSaving(true); setMessage('')
     const { error } = await supabase.from('teacher_student_notes').upsert({ teacher_id: session.id, student_id: selectedStudent.id, course_code: course.code, note: note.trim(), updated_at: new Date().toISOString() }, { onConflict: 'teacher_id,student_id,course_code' })
     if (error) setMessage(error.message || 'No fue posible guardar la nota.')
@@ -591,7 +620,22 @@ function StudentAssessmentCards({ items, onOpen, onLearn }) {
 
 function AssessmentTable({ items, student, onOpen, onToggle }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className={`table-wrap ${student ? 'student-assessment-table' : ''}`}><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Actividad</th>}<th>{student ? 'Estado' : 'Publicación'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id} className={a.locked ? 'locked-assessment' : ''}><td data-label="Evaluación"><div className="title-cell"><div className="mini-icon">{a.locked ? <Lock size={17} /> : <ClipboardCheck size={17} />}</div><strong>{a.title}</strong></div></td><td data-label="Grupo">{a.group}</td><td data-label="Entrega">{a.due}</td>{!student && <td data-label="Actividad"><strong>{a.submissions}</strong> entregas · {a.drafts} avances</td>}<td data-label="Estado"><span className={`tag ${a.status === 'Activa' && !a.locked ? 'active' : ''}`}>{a.locked ? 'BLOQUEADA' : a.status}</span></td><td className="assessment-open"><div className="table-actions"><button className="text-btn" disabled={a.locked} onClick={() => !a.locked && onOpen?.(a)}>{a.locked ? 'Completa los materiales' : student ? 'Abrir actividad' : 'Resultados'} {!a.locked && <ChevronRight size={15} />}</button>{!student && onToggle && <button className="lock-btn" onClick={() => onToggle(a)}>{a.status === 'Activa' ? <Lock size={15} /> : <Unlock size={15} />}{a.status === 'Activa' ? 'Bloquear' : 'Publicar'}</button>}</div></td></tr>)}</tbody></table></div> }
 
+const spreadsheetDelivery = {
+  extensions: ['xlsx', 'pdf'],
+  accept: '.xlsx,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf',
+  label: 'libro de Excel (.xlsx) o PDF',
+  short: 'XLSX o PDF',
+}
+const documentDelivery = {
+  extensions: ['docx', 'pdf'],
+  accept: '.docx,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf',
+  label: 'documento de Word (.docx) o PDF',
+  short: 'DOCX o PDF',
+}
+
 function GenericActivity({ assessment, session, onBack }) {
+  // La Unidad 3 de EDOA (hoja de cálculo) se entrega como libro de trabajo.
+  const delivery = assessment.activityCode?.startsWith('EDOA-RA-3.') ? spreadsheetDelivery : documentDelivery
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -601,7 +645,7 @@ function GenericActivity({ assessment, session, onBack }) {
     setBusy(true); setMessage('')
     try {
       const extension = file.name.split('.').pop().toLowerCase()
-      if (!['docx', 'pdf'].includes(extension)) throw new Error('Entrega un documento de Word (.docx) o PDF.')
+      if (!delivery.extensions.includes(extension)) throw new Error(`Entrega un ${delivery.label}.`)
       if (file.size > 20 * 1024 * 1024) throw new Error('El archivo supera el límite de 20 MB.')
       const path = `${session.id}/${assessment.id}/entrega-${Date.now()}.${extension}`
       const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true })
@@ -612,7 +656,7 @@ function GenericActivity({ assessment, session, onBack }) {
     } catch (error) { setMessage(error.message || 'No fue posible entregar la actividad.') }
     finally { setBusy(false) }
   }
-  return <section className="panel page-panel activity-workspace"><button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button><div className="activity-hero"><div><span className="eyebrow">{assessment.activityCode || 'ACTIVIDAD DE EVALUACIÓN'}</span><h1>{assessment.title}</h1><p>{assessment.instructions || 'Sigue las indicaciones y entrega tu evidencia en un solo archivo.'}</p></div><div className="activity-deadline"><span>FECHA LÍMITE</span><strong>{assessment.due}</strong></div></div><section className="generic-delivery"><div className="delivery-guide"><span>1</span><div><h3>Prepara tu evidencia</h3><p>Revisa que el documento esté completo, abra correctamente y tenga un nombre fácil de identificar.</p></div></div><div className="delivery-guide"><span>2</span><div><h3>Entrega un solo archivo</h3><p>Formatos permitidos: documento de Word (.docx) o PDF. Tamaño máximo: 20 MB.</p></div></div><form onSubmit={submit}><label className="final-file-upload"><Upload size={23} /><span><strong>{file?.name || 'Selecciona tu documento terminado'}</strong><small>DOCX o PDF · máximo 20 MB</small></span><input type="file" accept=".docx,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf" disabled={busy || session.preview} onChange={event => setFile(event.target.files?.[0] || null)} /></label><button className="primary" disabled={!file || busy || session.preview}>{busy ? 'Entregando…' : session.preview ? 'Entrega deshabilitada en vista previa' : 'Entregar actividad'}</button></form>{message && <div className={message.startsWith('¡') ? 'submission-success' : 'form-error'}>{message}</div>}</section></section>
+  return <section className="panel page-panel activity-workspace"><button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button><div className="activity-hero"><div><span className="eyebrow">{assessment.activityCode || 'ACTIVIDAD DE EVALUACIÓN'}</span><h1>{assessment.title}</h1><p>{assessment.instructions || 'Sigue las indicaciones y entrega tu evidencia en un solo archivo.'}</p></div><div className="activity-deadline"><span>FECHA LÍMITE</span><strong>{assessment.due}</strong></div></div><section className="generic-delivery"><div className="delivery-guide"><span>1</span><div><h3>Prepara tu evidencia</h3><p>Revisa que el documento esté completo, abra correctamente y tenga un nombre fácil de identificar.</p></div></div><div className="delivery-guide"><span>2</span><div><h3>Entrega un solo archivo</h3><p>Formatos permitidos: {delivery.label}. Tamaño máximo: 20 MB.</p></div></div><form onSubmit={submit}><label className="final-file-upload"><Upload size={23} /><span><strong>{file?.name || 'Selecciona tu documento terminado'}</strong><small>{delivery.short} · máximo 20 MB</small></span><input type="file" accept={delivery.accept} disabled={busy || session.preview} onChange={event => setFile(event.target.files?.[0] || null)} /></label><button className="primary" disabled={!file || busy || session.preview}>{busy ? 'Entregando…' : session.preview ? 'Entrega deshabilitada en vista previa' : 'Entregar actividad'}</button></form>{message && <div className={message.startsWith('¡') ? 'submission-success' : 'form-error'}>{message}</div>}</section></section>
 }
 
 function AssessmentResults({ assessment, onBack, onRefresh }) {
@@ -1025,7 +1069,7 @@ function AssessmentModal({ groups, onClose, onSave }) {
   const [data, setData] = useState({ title: '', groupId: groups[0]?.id || '', dueAt: '', instructions: '', activityCode: 'ASIN-RA-1.1' })
   const [error, setError] = useState(''); const [busy, setBusy] = useState(false)
   async function submit(event) { event.preventDefault(); setBusy(true); setError(''); try { await onSave(data) } catch (err) { setError(err.message || 'No fue posible crear la evaluación') } finally { setBusy(false) } }
-  return <Modal title="Nueva evaluación" onClose={onClose}><form onSubmit={submit}><label>Tipo de actividad<select required value={data.activityCode} onChange={e => setData({...data,activityCode:e.target.value})}><option value="ASIN-RA-1.1">ASIN · Actividad en plataforma</option><option value="MSII-RA-1.1">MSII · Documento DOCX</option></select></label><label>Título<input required value={data.title} onChange={e => setData({...data,title:e.target.value})} placeholder="Nombre de la evaluación" /></label><div className="form-row"><label>Grupo<select required value={data.groupId} onChange={e => setData({...data,groupId:e.target.value})}>{groups.map(group=><option key={group.id} value={group.id}>{group.code}</option>)}</select></label><label>Fecha límite<input type="datetime-local" required value={data.dueAt} onChange={e => setData({...data,dueAt:e.target.value})} /></label></div><label>Instrucciones<textarea value={data.instructions} onChange={e => setData({...data,instructions:e.target.value})} placeholder="Indicaciones para los alumnos" rows="4" /></label><div className="info-note compact">Solo se muestran tipos de actividad que ya cuentan con un espacio de trabajo funcional para el alumno.</div>{error && <div className="form-error">{error}</div>}<ModalActions onClose={onClose} label={busy ? 'Creando…' : 'Crear evaluación'} disabled={busy} /></form></Modal>
+  return <Modal title="Nueva evaluación" onClose={onClose}><form onSubmit={submit}><label>Tipo de actividad<select required value={data.activityCode} onChange={e => setData({...data,activityCode:e.target.value})}><option value="ASIN-RA-1.1">ASIN · Actividad en plataforma</option><option value="MSII-RA-1.1">MSII · Documento DOCX</option><option value="ASIN-RA-1.2">ASIN 1.2 · Entrega de archivo</option><option value="MSII-RA-1.2">MSII 1.2 · Entrega de archivo</option><option value="ASIN-RA-2.1">ASIN 2.1 · Entrega de archivo</option><option value="MSII-RA-2.1">MSII 2.1 · Entrega de archivo</option></select></label><label>Título<input required value={data.title} onChange={e => setData({...data,title:e.target.value})} placeholder="Nombre de la evaluación" /></label><div className="form-row"><label>Grupo<select required value={data.groupId} onChange={e => setData({...data,groupId:e.target.value})}>{groups.map(group=><option key={group.id} value={group.id}>{group.code}</option>)}</select></label><label>Fecha límite<input type="datetime-local" required value={data.dueAt} onChange={e => setData({...data,dueAt:e.target.value})} /></label></div><label>Instrucciones<textarea value={data.instructions} onChange={e => setData({...data,instructions:e.target.value})} placeholder="Indicaciones para los alumnos" rows="4" /></label><div className="info-note compact">Solo se muestran tipos de actividad que ya cuentan con un espacio de trabajo funcional para el alumno.</div>{error && <div className="form-error">{error}</div>}<ModalActions onClose={onClose} label={busy ? 'Creando…' : 'Crear evaluación'} disabled={busy} /></form></Modal>
 }
 
 function ThemeModal({ selected, onSelect, onClose }) {
