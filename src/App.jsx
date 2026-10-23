@@ -584,7 +584,22 @@ function StudentAssessmentCards({ items, onOpen, onLearn }) {
 
 function AssessmentTable({ items, student, onOpen, onToggle }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className={`table-wrap ${student ? 'student-assessment-table' : ''}`}><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Actividad</th>}<th>{student ? 'Estado' : 'Publicación'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id} className={a.locked ? 'locked-assessment' : ''}><td data-label="Evaluación"><div className="title-cell"><div className="mini-icon">{a.locked ? <Lock size={17} /> : <ClipboardCheck size={17} />}</div><strong>{a.title}</strong></div></td><td data-label="Grupo">{a.group}</td><td data-label="Entrega">{a.due}</td>{!student && <td data-label="Actividad"><strong>{a.submissions}</strong> entregas · {a.drafts} avances</td>}<td data-label="Estado"><span className={`tag ${a.status === 'Activa' && !a.locked ? 'active' : ''}`}>{a.locked ? 'BLOQUEADA' : a.status}</span></td><td className="assessment-open"><div className="table-actions"><button className="text-btn" disabled={a.locked} onClick={() => !a.locked && onOpen?.(a)}>{a.locked ? 'Completa los materiales' : student ? 'Abrir actividad' : 'Resultados'} {!a.locked && <ChevronRight size={15} />}</button>{!student && onToggle && <button className="lock-btn" onClick={() => onToggle(a)}>{a.status === 'Activa' ? <Lock size={15} /> : <Unlock size={15} />}{a.status === 'Activa' ? 'Bloquear' : 'Publicar'}</button>}</div></td></tr>)}</tbody></table></div> }
 
+const spreadsheetDelivery = {
+  extensions: ['xlsx', 'pdf'],
+  accept: '.xlsx,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf',
+  label: 'libro de Excel (.xlsx) o PDF',
+  short: 'XLSX o PDF',
+}
+const documentDelivery = {
+  extensions: ['docx', 'pdf'],
+  accept: '.docx,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf',
+  label: 'documento de Word (.docx) o PDF',
+  short: 'DOCX o PDF',
+}
+
 function GenericActivity({ assessment, session, onBack }) {
+  // La Unidad 3 de EDOA (hoja de cálculo) se entrega como libro de trabajo.
+  const delivery = assessment.activityCode?.startsWith('EDOA-RA-3.') ? spreadsheetDelivery : documentDelivery
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -594,7 +609,7 @@ function GenericActivity({ assessment, session, onBack }) {
     setBusy(true); setMessage('')
     try {
       const extension = file.name.split('.').pop().toLowerCase()
-      if (!['docx', 'pdf'].includes(extension)) throw new Error('Entrega un documento de Word (.docx) o PDF.')
+      if (!delivery.extensions.includes(extension)) throw new Error(`Entrega un ${delivery.label}.`)
       if (file.size > 20 * 1024 * 1024) throw new Error('El archivo supera el límite de 20 MB.')
       const path = `${session.id}/${assessment.id}/entrega-${Date.now()}.${extension}`
       const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true })
@@ -605,7 +620,7 @@ function GenericActivity({ assessment, session, onBack }) {
     } catch (error) { setMessage(error.message || 'No fue posible entregar la actividad.') }
     finally { setBusy(false) }
   }
-  return <section className="panel page-panel activity-workspace"><button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button><div className="activity-hero"><div><span className="eyebrow">{assessment.activityCode || 'ACTIVIDAD DE EVALUACIÓN'}</span><h1>{assessment.title}</h1><p>{assessment.instructions || 'Sigue las indicaciones y entrega tu evidencia en un solo archivo.'}</p></div><div className="activity-deadline"><span>FECHA LÍMITE</span><strong>{assessment.due}</strong></div></div><section className="generic-delivery"><div className="delivery-guide"><span>1</span><div><h3>Prepara tu evidencia</h3><p>Revisa que el documento esté completo, abra correctamente y tenga un nombre fácil de identificar.</p></div></div><div className="delivery-guide"><span>2</span><div><h3>Entrega un solo archivo</h3><p>Formatos permitidos: documento de Word (.docx) o PDF. Tamaño máximo: 20 MB.</p></div></div><form onSubmit={submit}><label className="final-file-upload"><Upload size={23} /><span><strong>{file?.name || 'Selecciona tu documento terminado'}</strong><small>DOCX o PDF · máximo 20 MB</small></span><input type="file" accept=".docx,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf" disabled={busy || session.preview} onChange={event => setFile(event.target.files?.[0] || null)} /></label><button className="primary" disabled={!file || busy || session.preview}>{busy ? 'Entregando…' : session.preview ? 'Entrega deshabilitada en vista previa' : 'Entregar actividad'}</button></form>{message && <div className={message.startsWith('¡') ? 'submission-success' : 'form-error'}>{message}</div>}</section></section>
+  return <section className="panel page-panel activity-workspace"><button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button><div className="activity-hero"><div><span className="eyebrow">{assessment.activityCode || 'ACTIVIDAD DE EVALUACIÓN'}</span><h1>{assessment.title}</h1><p>{assessment.instructions || 'Sigue las indicaciones y entrega tu evidencia en un solo archivo.'}</p></div><div className="activity-deadline"><span>FECHA LÍMITE</span><strong>{assessment.due}</strong></div></div><section className="generic-delivery"><div className="delivery-guide"><span>1</span><div><h3>Prepara tu evidencia</h3><p>Revisa que el documento esté completo, abra correctamente y tenga un nombre fácil de identificar.</p></div></div><div className="delivery-guide"><span>2</span><div><h3>Entrega un solo archivo</h3><p>Formatos permitidos: {delivery.label}. Tamaño máximo: 20 MB.</p></div></div><form onSubmit={submit}><label className="final-file-upload"><Upload size={23} /><span><strong>{file?.name || 'Selecciona tu documento terminado'}</strong><small>{delivery.short} · máximo 20 MB</small></span><input type="file" accept={delivery.accept} disabled={busy || session.preview} onChange={event => setFile(event.target.files?.[0] || null)} /></label><button className="primary" disabled={!file || busy || session.preview}>{busy ? 'Entregando…' : session.preview ? 'Entrega deshabilitada en vista previa' : 'Entregar actividad'}</button></form>{message && <div className={message.startsWith('¡') ? 'submission-success' : 'form-error'}>{message}</div>}</section></section>
 }
 
 function AssessmentResults({ assessment, onBack, onRefresh }) {
