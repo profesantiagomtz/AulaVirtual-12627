@@ -80,6 +80,32 @@ export const mtcsContent = {
       ['closing', 'Diapositiva 8. Escribe una conclusión y tres recomendaciones concretas.'],
     ],
   },
+  'MTCS-RA-2.2': {
+    label: 'MTCS · R.A. 2.2',
+    materialTitle: 'Principios y tecnologías de confidencialidad',
+    intro: 'Este R.A. muestra cómo se comprueba que la información no fue alterada, cómo se mantiene disponible y cómo se defienden equipos, servidores y redes. Al final elaborarás un reporte con el caso asignado.',
+    lessons: [
+      ['1. Hash y técnica salting', 'Un algoritmo de hash, como SHA-256, convierte cualquier dato en un resumen de longitud fija. Si cambia un solo carácter, el resumen cambia por completo, por eso sirve para verificar integridad. Las contraseñas se guardan como hash, nunca en texto claro; la técnica salting agrega un valor aleatorio distinto a cada contraseña antes de calcular el hash, para que dos contraseñas iguales no produzcan el mismo resultado y no puedan atacarse con tablas precalculadas. MD5 y SHA-1 ya no se consideran seguros.'],
+      ['2. HMAC, firmas digitales y certificados', 'HMAC combina un hash con una clave secreta compartida: comprueba que el mensaje no cambió y que lo envió alguien que conoce la clave. La firma digital usa la clave privada del emisor y se verifica con su clave pública; aporta integridad, autenticidad y no repudio. Un certificado digital, emitido por una autoridad certificadora, asocia una clave pública con una persona o un sitio; es lo que permite que HTTPS confirme que un sitio es quien dice ser. En las bases de datos, la integridad se protege con validaciones, llaves primarias y foráneas, restricciones y respaldos.'],
+      ['3. Disponibilidad y alta disponibilidad', 'La disponibilidad asegura que la información y los servicios funcionen cuando se necesitan. La alta disponibilidad busca eliminar puntos únicos de falla mediante redundancia: discos en RAID, fuentes de energía y enlaces duplicados, servidores en clúster y balanceo de carga. Se mide en porcentaje de tiempo en servicio; por ejemplo, 99.999 % («cinco nueves») equivale a poco más de 5 minutos fuera de servicio al año.'],
+      ['4. Defensa en profundidad, incidentes y recuperación', 'La defensa en profundidad coloca varias capas de protección (políticas, seguridad física, red, equipo, aplicación y datos) para que la falla de una no exponga todo. La respuesta a incidentes sigue fases: preparación; detección y análisis; contención, erradicación y recuperación; y actividades posteriores para aprender del incidente. El plan de recuperación tras un desastre define respaldos, sitios alternos y dos metas: RPO, cuánta información se puede perder, y RTO, en cuánto tiempo debe volver el servicio.'],
+      ['5. Defensa de sistemas y dispositivos', 'Protección del host: actualizaciones, antivirus o EDR, firewall local, cuentas sin privilegios y cifrado de disco. Protección del servidor: desactivar servicios innecesarios, mínimo privilegio, registros (bitácoras) y respaldos. Protección de la red: firewall, segmentación con VLAN, sistemas de detección o prevención de intrusos (IDS/IPS), VPN y redes inalámbricas con WPA2 o WPA3. Seguridad física: control de acceso a los sitios, cámaras, candados y respaldo de energía (UPS).'],
+      ['6. Dominio de la ciberseguridad', 'Las vulnerabilidades públicas se registran con un identificador CVE y se califican con CVSS para priorizar su corrección. El trabajo en ciberseguridad exige ética: actuar solo con autorización por escrito, proteger la privacidad, no causar daño y reportar los hallazgos de forma responsable. Algunas herramientas comunes son Nmap para descubrir equipos y puertos, Wireshark para analizar tráfico, gestores de contraseñas y escáneres de vulnerabilidades; usarlas sin permiso puede ser un delito.'],
+    ],
+    example: 'Ejemplo: una papelería guarda las contraseñas de sus empleados con hash y salting, firma digitalmente sus facturas electrónicas y usa un certificado HTTPS en su tienda en línea (integridad). Duplica su servicio de Internet y respalda sus ventas cada noche en la nube (disponibilidad y recuperación). Protege la caja con antivirus y una cuenta sin privilegios, separa la red de clientes de la red interna y mantiene el módem bajo llave (defensa en profundidad).',
+    taskTitle: 'Actividad de evaluación: reporte de principios y tecnologías de confidencialidad',
+    taskIntro: 'Elabora un reporte en PDF sobre la organización que te asignó la plataforma. Usa estas secciones como guía y entrega el archivo al terminar. Valor máximo: 60 puntos.',
+    fields: [
+      ['context', 'Describe la organización asignada, la información que maneja y los servicios que no pueden detenerse.'],
+      ['integrity', 'Controles de integridad: explica cómo usarías hash con salting, HMAC o firmas digitales y certificados en este caso.'],
+      ['database', 'Integridad en la base de datos: indica qué validaciones, llaves, restricciones o respaldos aplicarías.'],
+      ['availability', 'Disponibilidad: identifica puntos únicos de falla y propón medidas de alta disponibilidad.'],
+      ['incident', 'Respuesta a incidentes y recuperación: describe las fases ante el incidente asignado y define el RPO y el RTO.'],
+      ['defense', 'Defensa de sistemas: propón medidas para host, servidor, red y seguridad física, organizadas como defensa en profundidad.'],
+      ['domain', 'Dominio de ciberseguridad: menciona una vulnerabilidad (con su CVE si la conoces), una herramienta que usarías y los principios éticos que respetarías.'],
+      ['conclusion', 'Conclusión: resume las tres medidas más importantes y por qué.'],
+    ],
+  },
 }
 
 function hash(text) {
@@ -106,6 +132,14 @@ function assignmentFor(studentId, assessmentId, code) {
       lines: [`Red base: 192.168.${second}.0/24`, `Subred A: ${hostA} hosts`, `Subred B: ${hostB} hosts`, `Equipo con falla: 192.168.${second}.${200 + (seed % 30)}/24`, `Gateway registrado en el equipo: 192.168.${second}.1`],
     }
   }
+  if (code === 'MTCS-RA-2.2') {
+    const organizations = ['clínica dental con expedientes electrónicos', 'tienda en línea de refacciones', 'despacho contable con declaraciones de clientes', 'escuela con plataforma de calificaciones', 'cibercafé con servicio de impresión', 'farmacia con sistema de inventario y ventas']
+    const incidents = ['se cortó la energía y el servidor no volvió a encender', 'un ransomware cifró la carpeta compartida', 'se detectaron cambios no autorizados en precios o registros', 'el disco del servidor principal falló sin aviso', 'un empleado instaló software sin licencia que desactivó el antivirus']
+    return {
+      title: `Organización ${String(seed % 997).padStart(3, '0')}`,
+      lines: [`Organización: ${organizations[seed % organizations.length]}`, `Usuarios: ${5 + (seed % 26)} · Equipos: ${4 + (seed % 19)} · Servidores: ${1 + (seed % 2)}`, `Incidente reciente: ${incidents[seed % incidents.length]}`, `Tiempo máximo sin servicio aceptado: ${[1, 2, 4, 8][seed % 4]} h`],
+    }
+  }
   const cases = [
     'Un usuario abrió un archivo adjunto inesperado y después varios documentos dejaron de abrir.',
     'Una cuenta con permisos administrativos fue compartida y se detectaron cambios fuera del horario laboral.',
@@ -118,6 +152,7 @@ function assignmentFor(studentId, assessmentId, code) {
 const mtcsDeliverables = {
   'MTCS-RA-1.1': { label: 'Diagrama final de Packet Tracer', accept: '.pkt,application/octet-stream', extensions: ['pkt'], help: 'Archivo .pkt · máximo 20 MB' },
   'MTCS-RA-1.2': { label: 'Reporte final', accept: '.pdf,application/pdf', extensions: ['pdf'], help: 'Archivo PDF · máximo 20 MB' },
+  'MTCS-RA-2.2': { label: 'Reporte final', accept: '.pdf,application/pdf', extensions: ['pdf'], help: 'Archivo PDF · máximo 20 MB' },
   'MTCS-RA-2.1': { label: 'Presentación electrónica', accept: '.pptx,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf', extensions: ['pptx', 'pdf'], help: 'Archivo PPTX o PDF · máximo 20 MB' },
 }
 
@@ -360,6 +395,14 @@ const guidedExamples = {
     'Un empleado que comparte accidentalmente un archivo provoca una amenaza interna. Un atacante que intenta ingresar desde Internet representa una amenaza externa.',
     'Bloquear archivos peligrosos es preventivo; generar una alerta es detectivo; restaurar una copia limpia después del incidente es correctivo.',
   ],
+  'MTCS-RA-2.2': [
+    'Al descargar una imagen de instalación, el sitio publica su SHA-256. Si el resumen que calculas en tu equipo coincide, el archivo no fue alterado; si difiere en un solo carácter, no lo instales.',
+    'El banco firma digitalmente su estado de cuenta: tu lector usa la clave pública del banco para comprobar que nadie lo modificó y que realmente lo emitió el banco.',
+    'Una escuela tiene un solo servidor y un solo enlace a Internet. Si cualquiera falla, nadie entra a la plataforma: son puntos únicos de falla. Un segundo enlace y un servidor de respaldo los eliminan.',
+    'Si el respaldo se hace cada noche, el RPO es de 24 horas: en el peor caso se pierde un día de trabajo. Si el servicio debe volver en 2 horas, ese es el RTO.',
+    'En el laboratorio: equipos con actualizaciones y cuentas de alumno sin privilegios (host), servidor sin servicios innecesarios (servidor), red de alumnos separada de la administrativa (red) y puerta con llave (física).',
+    'Un técnico encuentra un puerto abierto con Nmap en la red de su escuela. Solo lo hizo porque tenía autorización por escrito y reporta el hallazgo al responsable, sin aprovecharlo.',
+  ],
 }
 
 const guidedExercises = {
@@ -378,6 +421,14 @@ const guidedExercises = {
     'Propón una amenaza interna accidental y una externa intencional para una escuela.',
     'Para un archivo infectado, propón un control preventivo, uno detectivo y uno correctivo.',
   ],
+  'MTCS-RA-2.2': [
+    'Explica con tus palabras por qué dos usuarios con la misma contraseña no deben tener el mismo hash guardado y qué técnica lo evita.',
+    'Indica qué aporta una firma digital que no aporta un hash solo, y para qué sirve el certificado de un sitio HTTPS.',
+    'Identifica dos puntos únicos de falla en el laboratorio o en tu casa y propón cómo eliminarlos.',
+    'Una tienda respalda cada 6 horas y necesita volver a vender en 1 hora. Escribe su RPO y su RTO y una medida para cumplirlos.',
+    'Propón una medida de protección para cada capa: host, servidor, red y seguridad física.',
+    'Escribe tres reglas éticas que seguirías antes de usar una herramienta como Nmap o Wireshark.',
+  ],
 }
 
 function GuidedMaterial({ definition, code, session, onProgressUpdate, onBack }) {
@@ -387,6 +438,10 @@ function GuidedMaterial({ definition, code, session, onProgressUpdate, onBack })
     'En la red 192.168.50.0/24 identifica dirección de red, primer host, último host y broadcast.',
     'Explica qué cambia cuando el destino está en otra red.',
     'Escribe un orden lógico para revisar un equipo que no puede salir de su red.',
+  ] : code === 'MTCS-RA-2.2' ? [
+    'Distingue para qué sirven hash con salting, HMAC y firma digital.',
+    'Explica la diferencia entre RPO y RTO con un ejemplo.',
+    'Propón tres capas de defensa en profundidad para una organización pequeña.',
   ] : [
     'Escribe un ejemplo propio de amenaza, vulnerabilidad y riesgo.',
     'Explica una afectación a confidencialidad, integridad y disponibilidad.',
@@ -593,6 +648,10 @@ function PracticeExercises({ code }) {
     'Explica qué ocurre cuando dos equipos de la misma red se comunican y qué cambia cuando el destino está en otra red.',
     'Determina si 192.168.20.15/24 y 192.168.21.15/24 pertenecen a la misma red. Justifica tu respuesta.',
     'Un equipo tiene dirección IP y máscara correctas, pero no puede salir de su red. Escribe un orden lógico de revisión.',
+  ] : code === 'MTCS-RA-2.2' ? [
+    'Calcula el SHA-256 de un archivo de texto (por ejemplo, con certutil -hashfile archivo.txt SHA256), cambia una letra y vuelve a calcularlo. Compara ambos resultados.',
+    'Abre el candado de un sitio HTTPS en tu navegador y anota quién emitió su certificado y hasta cuándo es válido.',
+    'Para un servidor de archivos de la escuela, propón una medida de alta disponibilidad y una de recuperación tras desastre.',
   ] : [
     'Escribe un ejemplo propio de amenaza, vulnerabilidad y riesgo sin utilizar el ejemplo del material.',
     'Clasifica tres situaciones como afectación a confidencialidad, integridad o disponibilidad y explica por qué.',
