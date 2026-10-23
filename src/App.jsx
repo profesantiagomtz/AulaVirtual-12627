@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, BookOpen, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, FileText, GraduationCap,
@@ -6,14 +6,21 @@ import {
 } from 'lucide-react'
 import { courses } from './data/academic'
 import * as demo from './data/demo'
-import AsinActivity from './components/AsinActivity'
-import EdoaMaterial from './components/EdoaMaterial'
-import EdoaAdvancedMaterial from './components/EdoaAdvancedMaterial'
-import MtcsActivity, { MtcsMaterialView } from './components/MtcsActivity'
-import { PearMaterialView } from './components/PearMaterial'
-import IntegratedCourseMaterial from './components/IntegratedCourseMaterial'
-import { analyzeMsiiDocument, buildMsiiDocument, downloadBlob, readAssignmentId } from './lib/msii-docx'
 import { isSupabaseReady, supabase } from './lib/supabase'
+
+// Los contenidos de cada materia se descargan solo cuando el alumno los abre.
+const AsinActivity = lazy(() => import('./components/AsinActivity'))
+const EdoaMaterial = lazy(() => import('./components/EdoaMaterial'))
+const EdoaAdvancedMaterial = lazy(() => import('./components/EdoaAdvancedMaterial'))
+const MtcsActivity = lazy(() => import('./components/MtcsActivity'))
+const MtcsMaterialView = lazy(() => import('./components/MtcsActivity').then(module => ({ default: module.MtcsMaterialView })))
+const PearMaterialView = lazy(() => import('./components/PearMaterial').then(module => ({ default: module.PearMaterialView })))
+const IntegratedCourseMaterial = lazy(() => import('./components/IntegratedCourseMaterial'))
+const msiiDocx = () => import('./lib/msii-docx')
+
+function LazyView({ children }) {
+  return <Suspense fallback={<div className="loading-state">Cargando contenido…</div>}>{children}</Suspense>
+}
 
 const navItems = [
   { id: 'inicio', label: 'Resumen', icon: LayoutDashboard },
@@ -582,11 +589,11 @@ function Materials({ items, groups, courses, session, isTeacher, initialCourse =
     if (preview) preview.location.href = data.signedUrl
     else window.location.href = data.signedUrl
   }
-  if (selectedMaterial?.url?.startsWith('pear://')) return <PearMaterialView code={selectedMaterial.url.replace('pear://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} />
-  if (selectedMaterial?.url === 'edoa://EDOA-RA-1.1' || selectedMaterial?.url === 'edoa://EDOA-WORD-U1') return <EdoaMaterial code="EDOA-RA-1.1" session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} />
-  if (selectedMaterial?.url?.startsWith('edoa://')) return <EdoaAdvancedMaterial code={selectedMaterial.url.replace('edoa://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} />
-  if (selectedMaterial?.url?.startsWith('courseware://')) return <IntegratedCourseMaterial code={selectedMaterial.url.replace('courseware://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} />
-  if (selectedMaterial) return <MtcsMaterialView code={selectedMaterial.url.replace('mtcs://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} />
+  if (selectedMaterial?.url?.startsWith('pear://')) return <LazyView><PearMaterialView code={selectedMaterial.url.replace('pear://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
+  if (selectedMaterial?.url === 'edoa://EDOA-RA-1.1' || selectedMaterial?.url === 'edoa://EDOA-WORD-U1') return <LazyView><EdoaMaterial code="EDOA-RA-1.1" session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
+  if (selectedMaterial?.url?.startsWith('edoa://')) return <LazyView><EdoaAdvancedMaterial code={selectedMaterial.url.replace('edoa://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
+  if (selectedMaterial?.url?.startsWith('courseware://')) return <LazyView><IntegratedCourseMaterial code={selectedMaterial.url.replace('courseware://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
+  if (selectedMaterial) return <LazyView><MtcsMaterialView code={selectedMaterial.url.replace('mtcs://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
   const materialCard = m => <article className={`material-card ${!m.published ? 'locked-card' : ''}`} key={m.id}><div className="material-icon"><FileText /></div><span className={`tag ${m.published ? 'active' : ''}`}>{isTeacher ? (m.system ? 'INTEGRADO' : m.published ? 'PUBLICADO' : 'BLOQUEADO') : m.unit}</span><h3>{m.title}</h3><p>{m.type} · Grupo {m.group} · {m.unit}</p><footer><span>{isTeacher ? (m.system ? 'Contenido interactivo de Aula Virtual' : m.published ? 'Visible para alumnos' : 'Oculto para alumnos') : 'Listo para estudiar'}</span><div className="card-actions"><button className="text-btn" onClick={() => openMaterial(m)}>{isTeacher ? 'Abrir' : 'Continuar'} <ChevronRight size={15} /></button>{isTeacher && !m.system && <button className="lock-btn" onClick={() => onToggle?.(m)}>{m.published ? <Lock size={15} /> : <Unlock size={15} />}{m.published ? 'Bloquear' : 'Publicar'}</button>}</div></footer></article>
   return <section className="panel page-panel"><div className="list-toolbar"><div>{!isTeacher && <span className="eyebrow">GRUPO {session.group}</span>}<h1>{isTeacher ? 'Material didáctico' : 'Aprender'}</h1><p>{isTeacher ? 'Recursos organizados por módulo y unidad.' : 'Elige una materia, abre el primer contenido pendiente y completa sus pasos.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div>{!isTeacher && <><div className="student-course-switcher" aria-label="Elegir materia"><button className={courseFilter === 'Todos' ? 'active' : ''} onClick={() => setCourseFilter('Todos')}>Todas</button>{courses.map(course => <button key={`${course.code}-${course.group}`} className={courseFilter === course.code ? 'active' : ''} onClick={() => setCourseFilter(course.code)}><b>{course.code}</b><span>{course.name}</span></button>)}</div><div className="student-page-guide"><span><b>1</b> Elige tu materia</span><ChevronRight size={16} /><span><b>2</b> Completa el contenido</span><ChevronRight size={16} /><span><b>3</b> Ve a Entregar</span></div></>}<div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder={isTeacher ? 'Buscar material…' : 'Buscar dentro de esta materia…'} /></div>{isTeacher ? <select value={group} onChange={e => setGroup(e.target.value)}><option value="Todos">Todos los grupos</option>{groups.map(item => <option key={item.id} value={item.code}>Grupo {item.code}</option>)}</select> : <div className="group-chip">Grupo {session.group}</div>}</div>{filtered.length ? <div className="learning-module-sections">{moduleSections.map(({ course, materials: moduleMaterials }) => <section key={`${course.code}-${course.group}`}><header><div className="module-code">{course.code}</div><div><h2>{course.name}</h2><p>Grupo {course.group} · {moduleMaterials.length} {moduleMaterials.length === 1 ? 'contenido' : 'contenidos'} · Sigue el orden indicado</p></div></header><div className="unit-material-sections">{unitSectionsFor(moduleMaterials).map(({ unit, materials: unitMaterials }, unitIndex) => <section className="unit-material-section" key={`${course.code}-${unit}`}><div className="unit-heading"><span>{String(unitIndex + 1).padStart(2, '0')}</span><div><small>PASO {unitIndex + 1}</small><h3>{unit}</h3></div><b>{unitMaterials.length} {unitMaterials.length === 1 ? 'contenido' : 'contenidos'}</b></div><div className="card-grid">{unitMaterials.map(materialCard)}</div></section>)}</div></section>)}</div> : <EmptyState text={isTeacher ? 'No hay materiales con estos filtros.' : 'Todavía no hay contenidos publicados para esta materia.'} />}</section>
 }
@@ -596,10 +603,10 @@ function Assessments({ items, session, isTeacher, learningProgress = [], setView
   function clearSelected() { setSelected(null); onClearSelected?.() }
   if (selected && isTeacher) return <AssessmentResults assessment={selected} onBack={clearSelected} onRefresh={onRefresh} />
   if (selected) {
-    if (selected.activityCode === 'ASIN-RA-1.1') return <AsinActivity assessment={selected} onBack={clearSelected} />
+    if (selected.activityCode === 'ASIN-RA-1.1') return <LazyView><AsinActivity assessment={selected} onBack={clearSelected} /></LazyView>
     if (selected.activityCode === 'MSII-RA-1.1') return <MsiiActivity assessment={selected} session={session} onBack={clearSelected} />
     if (selected.activityCode?.startsWith('PEAR-')) return <PearActivity assessment={selected} session={session} onBack={clearSelected} />
-    if (selected.activityCode?.startsWith('MTCS-')) return <MtcsActivity assessment={selected} session={session} onBack={clearSelected} />
+    if (selected.activityCode?.startsWith('MTCS-')) return <LazyView><MtcsActivity assessment={selected} session={session} onBack={clearSelected} /></LazyView>
     return <GenericActivity assessment={selected} session={session} onBack={clearSelected} />
   }
   const visibleItems = items.map(item => ({ ...item, locked: !isTeacher && assessmentIsLocked(item, learningProgress) }))
@@ -767,6 +774,7 @@ function MsiiActivity({ assessment, session, onBack }) {
       if (error) throw error
       const updatedAssignment = Array.isArray(data) ? data[0] : data
       setAssignment(updatedAssignment)
+      const { buildMsiiDocument, downloadBlob } = await msiiDocx()
       const blob = await buildMsiiDocument(updatedAssignment, session)
       const surname = session.name.trim().split(/\s+/).at(-1) || 'Alumno'
       downloadBlob(blob, `MSII_310_${surname}_RA_1.1.docx`)
@@ -779,6 +787,7 @@ function MsiiActivity({ assessment, session, onBack }) {
     if (!file) return
     try {
       setStatus('working'); setMessage('')
+      const { readAssignmentId } = await msiiDocx()
       const token = await readAssignmentId(file)
       if (!token) throw new Error('No fue posible reconocer este archivo. Descarga nuevamente la actividad y trabaja en ese documento.')
       if (token !== assignment.id) throw new Error('No es posible entregar este archivo. Descarga nuevamente tu actividad.')
@@ -1035,6 +1044,7 @@ function StudentRecord({ student, assessments, learningProgress = [], onBack, on
       if (error) throw error
       const response = await fetch(data.signedUrl)
       if (!response.ok) throw new Error('No fue posible descargar el documento para analizarlo.')
+      const { analyzeMsiiDocument } = await msiiDocx()
       const analysis = await analyzeMsiiDocument(await response.blob(), submission.assignment || {})
       setDocumentAnalyses(current => ({ ...current, [submission.id]: analysis }))
     } catch (error) { setMessage(error.message || 'No fue posible analizar el documento.') }
