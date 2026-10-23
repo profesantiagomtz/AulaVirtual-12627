@@ -31,6 +31,20 @@ const courseMaterials = {
     description: 'Ruta interactiva sobre datos, CPU, memoria, periféricos, almacenamiento y respaldos.',
     file: 'courses/msii-ra12-material.html',
   },
+  'ASIN-RA-2.1': {
+    course: 'ASIN',
+    label: 'R.A. 2.1',
+    title: 'Instala y configura herramientas de seguridad',
+    description: 'Manual de instalación, configuración local (actualizaciones, cuentas, bitácoras, firewall, antivirus, permisos y cifrado) y seguridad en red.',
+    file: 'courses/asin-ra21-material.html',
+  },
+  'MSII-RA-2.1': {
+    course: 'MSII',
+    label: 'R.A. 2.1',
+    title: 'Opera el sistema operativo con comandos',
+    description: 'Sistema operativo, rutas, CMD, variables de entorno y PowerShell, con consolas simuladas para practicar sin riesgo.',
+    file: 'courses/msii-ra21-material.html',
+  },
 }
 
 export default function IntegratedCourseMaterial({ code, session, onBack, onProgressUpdate }) {
