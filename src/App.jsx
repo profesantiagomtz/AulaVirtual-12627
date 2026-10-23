@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Lock, LogOut, Menu, Palette, Plus, Search, Settings, TrendingUp, Unlock, Upload, Users, X
 } from 'lucide-react'
 import { courses } from './data/academic'
+import * as demo from './data/demo'
 import AsinActivity from './components/AsinActivity'
 import EdoaMaterial from './components/EdoaMaterial'
 import EdoaAdvancedMaterial from './components/EdoaAdvancedMaterial'
@@ -76,6 +77,16 @@ function learningSequence(item) {
   return match ? Number(match[1]) * 100 + Number(match[2]) : Number.MAX_SAFE_INTEGER
 }
 
+const integratedMaterials = [
+    { id: 'integrated-asin-ra12', title: 'ASIN · Material didáctico R.A. 1.2', description: 'Plan de seguridad en cómputo', unit: 'R.A. 1.2', type: 'Interactivo', url: 'courseware://ASIN-RA-1.2', published: true, group: '310', date: 'Integrado', system: true },
+    { id: 'integrated-msii-ra12', title: 'MSII · Material didáctico R.A. 1.2', description: 'Gestión de recursos del sistema operativo', unit: 'R.A. 1.2', type: 'Interactivo', url: 'courseware://MSII-RA-1.2', published: true, group: '310', date: 'Integrado', system: true },
+]
+
+// Sin Supabase, la sesión de demostración se comporta como vista previa: nada se guarda.
+function demoSession(session) {
+  return session && !isSupabaseReady ? { id: `demo-${session.role}`, ...session, preview: true } : session
+}
+
 function App() {
   const [session, setSession] = useState(() => JSON.parse(localStorage.getItem('aula-session') || 'null'))
   useEffect(() => {
@@ -94,7 +105,7 @@ function App() {
   }, [session?.id, session?.group])
   return <Routes>
     <Route path="/acceso" element={session ? <Navigate to="/panel" /> : <Login onLogin={setSession} />} />
-    <Route path="/panel/*" element={session ? <Dashboard session={session} onLogout={() => { localStorage.removeItem('aula-session'); setSession(null) }} /> : <Navigate to="/acceso" />} />
+    <Route path="/panel/*" element={session ? <Dashboard session={demoSession(session)} onLogout={() => { localStorage.removeItem('aula-session'); setSession(null) }} /> : <Navigate to="/acceso" />} />
     <Route path="*" element={<Navigate to={session ? '/panel' : '/acceso'} />} />
   </Routes>
 }
@@ -251,6 +262,7 @@ function Dashboard({ session, onLogout }) {
   }
 
   async function loadData() {
+    if (!isSupabaseReady) { loadDemoData(); return }
     setLoading(true); setDataError('')
     try {
       const { data: authState, error: authError } = await supabase.auth.getSession()
@@ -271,10 +283,6 @@ function Dashboard({ session, onLogout }) {
       setGroupList((groupResult.data || []).map(group => ({ ...group, students: directory.filter(student => student.group_code === group.code).length })))
       setStudentList(directory.map(student => ({ id: student.id, name: formatPersonName(student.full_name), email: student.email, enrollment: student.enrollment_number, group: student.group_code })))
       const databaseMaterials = (materialResult.data || []).map(material => ({ id: material.id, title: material.title, description: material.description, unit: material.unit || 'Sin unidad', type: material.resource_type === 'file' ? 'Archivo' : material.resource_type, url: material.resource_url, published: material.published, group: material.groups?.code || 'Todos', date: new Date(material.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) }))
-      const integratedMaterials = [
-        { id: 'integrated-asin-ra12', title: 'ASIN · Material didáctico R.A. 1.2', description: 'Plan de seguridad en cómputo', unit: 'R.A. 1.2', type: 'Interactivo', url: 'courseware://ASIN-RA-1.2', published: true, group: '310', date: 'Integrado', system: true },
-        { id: 'integrated-msii-ra12', title: 'MSII · Material didáctico R.A. 1.2', description: 'Gestión de recursos del sistema operativo', unit: 'R.A. 1.2', type: 'Interactivo', url: 'courseware://MSII-RA-1.2', published: true, group: '310', date: 'Integrado', system: true },
-      ]
       setMaterialList([...integratedMaterials, ...databaseMaterials.filter(material => !integratedMaterials.some(integrated => integrated.url === material.url))])
       setAssessmentList((assessmentResult.data || []).map(assessment => {
         const submissions = assessment.submissions || []
@@ -287,15 +295,31 @@ function Dashboard({ session, onLogout }) {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { if (isSupabaseReady) loadData() }, [session.id, session.group, session.role])
+  function loadDemoData() {
+    setGroupList(demo.groups.map(group => ({ id: group.id, code: group.name, semester: group.semester, career: group.career, students: group.students })))
+    setStudentList(demo.students.map(student => ({ id: student.id, name: student.name, email: student.email, enrollment: null, group: student.group })))
+    setMaterialList([...integratedMaterials, ...demo.materials.map(material => ({ ...material, description: '', published: true }))])
+    setAssessmentList(demo.assessments.map(assessment => ({ ...assessment, groupId: assessment.group, drafts: 0, submissionDetails: [] })))
+    setLoading(false)
+  }
+
+  useEffect(() => { loadData() }, [session.id, session.group, session.role])
+
+  function demoBlocked() {
+    if (isSupabaseReady) return false
+    saved('Modo demostración: los cambios no se guardan')
+    return true
+  }
 
   function saved(message) { setModal(null); setToast(message); setTimeout(() => setToast(''), 2600) }
   async function toggleMaterial(item) {
+    if (demoBlocked()) return
     const { error } = await supabase.from('materials').update({ published: !item.published }).eq('id', item.id)
     if (error) { setDataError(error.message); return }
     await loadData(); saved(item.published ? 'Material bloqueado para los alumnos' : 'Material publicado para los alumnos')
   }
   async function toggleAssessment(item) {
+    if (demoBlocked()) return
     const nextStatus = item.status === 'Activa' ? 'draft' : 'published'
     const { error } = await supabase.from('assessments').update({ status: nextStatus }).eq('id', item.id)
     if (error) { setDataError(error.message); return }
@@ -341,6 +365,7 @@ function Dashboard({ session, onLogout }) {
     {!isTeacher && <nav className="student-mobile-nav" aria-label="Navegación del alumno">{studentNavItems.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? 'active' : ''} onClick={() => { if (id === 'materiales') setStudentCourseFilter('Todos'); setView(id); setMobileMenu(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }}><Icon size={20} /><span>{label}</span></button>)}</nav>}
     {mobileMenu && <div className="overlay mobile" onClick={() => setMobileMenu(false)} />}
     {modal === 'material' && <MaterialModal groups={groupList} onClose={() => setModal(null)} onSave={async (item) => {
+      if (demoBlocked()) return
       const { data: authData } = await supabase.auth.getUser()
       const extension = item.file.name.split('.').pop()
       const path = `${authData.user.id}/${crypto.randomUUID()}.${extension}`
@@ -351,6 +376,7 @@ function Dashboard({ session, onLogout }) {
       await loadData(); saved('Material publicado correctamente')
     }} />}
     {modal === 'assessment' && <AssessmentModal groups={groupList} onClose={() => setModal(null)} onSave={async (item) => {
+      if (demoBlocked()) return
       const { data: authData } = await supabase.auth.getUser()
       const { error } = await supabase.from('assessments').insert({ teacher_id: authData.user.id, group_id: item.groupId, title: item.title, instructions: item.instructions, activity_code: item.activityCode, status: 'published', due_at: item.dueAt })
       if (error) throw error
@@ -420,6 +446,7 @@ function ModuleStudentTracker({ session, course, students, assessments, learning
     setMessage('')
   }
   async function saveNote() {
+    if (!isSupabaseReady) { setMessage('Modo demostración: la nota no se guarda.'); return }
     setSaving(true); setMessage('')
     const { error } = await supabase.from('teacher_student_notes').upsert({ teacher_id: session.id, student_id: selectedStudent.id, course_code: course.code, note: note.trim(), updated_at: new Date().toISOString() }, { onConflict: 'teacher_id,student_id,course_code' })
     if (error) setMessage(error.message || 'No fue posible guardar la nota.')
