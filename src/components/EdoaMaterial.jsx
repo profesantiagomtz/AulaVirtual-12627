@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import JSZip from 'jszip'
 import { ArrowLeft, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, Download, FileText, LockKeyhole, ShieldCheck, Upload } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { uploadSubmissionFile } from '../lib/upload'
 
 const cards = [
   { icon: '🖥️', title: 'Conoce la interfaz de Word', intro: 'Antes de editar, ubica las zonas principales de Word 2019.', notes: [['Barra de título', 'Muestra el nombre del documento.'], ['Acceso rápido', 'Contiene Guardar, Deshacer y Rehacer.'], ['Pestañas', 'Agrupan los comandos por tipo de trabajo.'], ['Cinta de opciones', 'Muestra los botones de la pestaña activa.'], ['Regla', 'Ayuda a controlar márgenes y sangrías.'], ['Área de trabajo', 'Es la hoja donde escribes.'], ['Barra de estado', 'Muestra página, palabras y zoom.']], question: '¿En qué parte aparecen los botones de la pestaña activa?', options: ['Cinta de opciones', 'Barra de estado', 'Regla'], answer: 'Cinta de opciones' },
@@ -132,8 +133,7 @@ export default function EdoaMaterial({ code = 'EDOA-RA-1.1', session, onBack, on
       if (!review.passed) throw new Error('El documento todavía no cumple todos los puntos. Corrígelo en Word y vuelve a subirlo.')
       if (!session.preview) {
         const path = `${session.id}/edoa/${practice.code}/${file.name}`
-        const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true, contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
-        if (uploadError) throw uploadError
+        await uploadSubmissionFile(path, file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
         const { error } = await supabase.from('edoa_practice_submissions').upsert({ student_id: session.id, practice_code: practice.code, file_path: path, original_filename: file.name, analysis: review, submitted_at: new Date().toISOString() }, { onConflict: 'student_id,practice_code' })
         if (error) throw error
       }

@@ -7,6 +7,7 @@ import {
 import { courses } from './data/academic'
 import * as demo from './data/demo'
 import { isSupabaseReady, supabase } from './lib/supabase'
+import { uploadSubmissionFile } from './lib/upload'
 import { CourseChips, RaCourseMap, Schedule, StudentGrades, TeacherGrades, WeekPlan, assessmentState, itemBelongsToCourse, progressCodeFor } from './components/CoursePlan'
 
 // Los contenidos de cada materia se descargan solo cuando el alumno los abre.
@@ -730,8 +731,7 @@ function GenericActivity({ assessment, session, onBack }) {
       if (!delivery.extensions.includes(extension)) throw new Error(`Entrega un ${delivery.label}.`)
       if (file.size > 20 * 1024 * 1024) throw new Error('El archivo supera el límite de 20 MB.')
       const path = `${session.id}/${assessment.id}/entrega-${Date.now()}.${extension}`
-      const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true })
-      if (uploadError) throw uploadError
+      await uploadSubmissionFile(path, file)
       const { error } = await supabase.from('submissions').upsert({ assessment_id: assessment.id, student_id: session.id, answers: {}, file_path: path, original_filename: file.name, submitted_at: new Date().toISOString() }, { onConflict: 'assessment_id,student_id' })
       if (error) throw error
       setMessage('¡Tu actividad fue entregada correctamente!')
@@ -875,8 +875,7 @@ function MsiiActivity({ assessment, session, onBack }) {
       if (token !== assignment.id) throw new Error('No es posible entregar este archivo. Descarga nuevamente tu actividad.')
       const { data: authData } = await supabase.auth.getUser()
       const path = `${authData.user.id}/${assessment.id}/${assignment.id}.docx`
-      const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true, contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
-      if (uploadError) throw uploadError
+      await uploadSubmissionFile(path, file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
       const { error } = await supabase.rpc('submit_msii_document', {
         p_assessment_id: assessment.id,
         p_assignment_id: assignment.id,
@@ -968,8 +967,7 @@ function PearActivity({ assessment, session, onBack }) {
       if (file.size > 20 * 1024 * 1024) throw new Error('El archivo no debe superar 20 MB.')
       const { data: authData } = await supabase.auth.getUser()
       const path = `${authData.user.id}/${assessment.id}/entrega.pdf`
-      const { error: uploadError } = await supabase.storage.from('submissions').upload(path, file, { upsert: true, contentType: 'application/pdf' })
-      if (uploadError) throw uploadError
+      await uploadSubmissionFile(path, file, 'application/pdf')
       const { error } = await supabase.from('submissions').insert({ assessment_id: assessment.id, student_id: authData.user.id, answers: { assigned_case: assignment }, file_path: path, original_filename: file.name, submitted_at: new Date().toISOString() })
       if (error) throw error
       setStatus('submitted'); setMessage('Actividad entregada correctamente.')
