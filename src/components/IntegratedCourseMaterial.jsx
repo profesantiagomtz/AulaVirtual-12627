@@ -26,15 +26,16 @@ export default function IntegratedCourseMaterial({ code, session, onBack, onProg
   const source = useMemo(() => material ? new URL(`${material.file}?student=${encodeURIComponent(session?.id || 'preview')}`, document.baseURI).href : '', [material, session?.id])
 
   useEffect(() => {
-    if (!material || session?.preview || session?.role === 'teacher') return undefined
+    if (!material || !supabase || session?.preview || session?.role === 'teacher') return undefined
     let active = true
     supabase.from('learning_progress').select('completed_steps, completed_at').eq('student_id', session.id).eq('material_code', code).maybeSingle().then(({ data }) => {
       if (!active || !data) return
       const steps = Array.isArray(data.completed_steps) ? data.completed_steps : []
-      setProgress({ done: steps.length, total: steps.length, completed: Boolean(data.completed_at) })
+      // El total de pasos no se guarda; se conoce hasta que el material envía su avance.
+      setProgress({ done: steps.length, total: 0, completed: Boolean(data.completed_at) })
     })
     return () => { active = false }
-  }, [code, material, session?.id, session?.preview])
+  }, [code, material, session?.id, session?.preview, session?.role])
 
   useEffect(() => {
     let timer
@@ -52,7 +53,7 @@ export default function IntegratedCourseMaterial({ code, session, onBack, onProg
         updated_at: new Date().toISOString(),
       }
       if (session?.role !== 'teacher') onProgressUpdate?.(record)
-      if (session?.preview || session?.role === 'teacher') return
+      if (!supabase || session?.preview || session?.role === 'teacher') return
       clearTimeout(timer)
       timer = setTimeout(async () => {
         const { error } = await supabase.from('learning_progress').upsert({ student_id: session.id, ...record }, { onConflict: 'student_id,material_code' })
@@ -61,10 +62,10 @@ export default function IntegratedCourseMaterial({ code, session, onBack, onProg
     }
     window.addEventListener('message', receive)
     return () => { window.removeEventListener('message', receive); clearTimeout(timer) }
-  }, [code, onProgressUpdate, session?.id, session?.preview])
+  }, [code, onProgressUpdate, session?.id, session?.preview, session?.role])
 
   if (!material) return null
-  const percent = progress.total ? Math.round(progress.done / progress.total * 100) : progress.completed ? 100 : 0
+  const percent = progress.completed ? 100 : progress.total ? Math.round(progress.done / progress.total * 100) : null
   return <section className="integrated-course-page">
     <div className="integrated-course-toolbar">
       <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a materiales</button>
@@ -72,7 +73,7 @@ export default function IntegratedCourseMaterial({ code, session, onBack, onProg
     </div>
     <header className="integrated-course-header">
       <div><span className="eyebrow">{material.course} · {material.label} · MATERIAL DIDÁCTICO</span><h1>{material.title}</h1><p>{material.description}</p></div>
-      <div className={progress.completed ? 'complete' : ''}><strong>{percent}%</strong><span>{progress.completed ? <><CheckCircle2 size={14} /> COMPLETADO</> : 'AVANCE'}</span></div>
+      <div className={progress.completed ? 'complete' : ''}><strong>{percent === null ? progress.done : `${percent}%`}</strong><span>{progress.completed ? <><CheckCircle2 size={14} /> COMPLETADO</> : percent === null ? (progress.done === 1 ? 'PASO' : 'PASOS') : 'AVANCE'}</span></div>
     </header>
     {message && <div className={message.startsWith('El contenido') ? 'form-error' : 'submission-success'}>{message}</div>}
     <div className="integrated-course-frame"><iframe title={`${material.course} ${material.label}`} src={source} /></div>
