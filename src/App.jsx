@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, Award, BookOpen, CalendarDays, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, FileText, GraduationCap,
+  ArrowLeft, Award, BookOpen, CalendarDays, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, FileText, GraduationCap, KeyRound,
   LayoutDashboard, Lock, LogOut, Menu, Palette, Plus, Search, Settings, TrendingUp, Unlock, Upload, Users, X
 } from 'lucide-react'
 import { courses } from './data/academic'
@@ -117,11 +117,81 @@ function App() {
     })
     return () => { active = false }
   }, [session?.id, session?.group])
+  const [recovery, setRecovery] = useState(() => sessionStorage.getItem('aula-recovery') === '1')
+  function logout() { localStorage.removeItem('aula-session'); setSession(null) }
+  if (recovery) return <SetPassword title="Crea tu nueva contraseña" text="Escribe una contraseña nueva para tu cuenta." onDone={async () => {
+    sessionStorage.removeItem('aula-recovery')
+    sessionStorage.setItem('aula-auth-notice', 'Listo. Ya puedes entrar con tu nueva contraseña.')
+    await supabase?.auth.signOut(); logout(); setRecovery(false)
+  }} />
+  if (session?.mustChangePassword) return <SetPassword title="Crea tu contraseña" text="Por seguridad, cambia la contraseña temporal que te dio tu profe por una propia antes de continuar." onCancel={async () => { await supabase?.auth.signOut(); logout() }} onDone={() => {
+    const updated = { ...session, mustChangePassword: false }
+    localStorage.setItem('aula-session', JSON.stringify(updated)); setSession(updated)
+  }} />
   return <Routes>
     <Route path="/acceso" element={session ? <Navigate to="/panel" /> : <Login onLogin={setSession} />} />
-    <Route path="/panel/*" element={session ? <Dashboard session={demoSession(session)} onLogout={() => { localStorage.removeItem('aula-session'); setSession(null) }} /> : <Navigate to="/acceso" />} />
+    <Route path="/panel/*" element={session ? <Dashboard session={demoSession(session)} onLogout={logout} /> : <Navigate to="/acceso" />} />
     <Route path="*" element={<Navigate to={session ? '/panel' : '/acceso'} />} />
   </Routes>
+}
+
+function SetPassword({ title, text, onDone, onCancel }) {
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  async function submit(e) {
+    e.preventDefault()
+    setError('')
+    if (password.length < 6) { setError('Usa al menos 6 caracteres.'); return }
+    if (password !== confirm) { setError('Las contraseñas no coinciden.'); return }
+    setBusy(true)
+    try {
+      if (isSupabaseReady) {
+        const { error: updateError } = await supabase.auth.updateUser({ password })
+        if (updateError) throw updateError
+        await supabase.rpc('password_changed')
+      }
+      await onDone()
+    } catch (err) { setError(err.message || 'No fue posible guardar la contraseña') }
+    finally { setBusy(false) }
+  }
+  return <main className="login-page set-password-page">
+    <section className="login-panel">
+      <form className="login-card" onSubmit={submit}>
+        <div className="mobile-brand"><GraduationCap size={25} /> Aula Virtual</div>
+        <span className="eyebrow">SEGURIDAD DE TU CUENTA</span>
+        <h2>{title}</h2>
+        <p className="muted">{text}</p>
+        <label>Nueva contraseña<input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" autoComplete="new-password" required /></label>
+        <label>Repite la contraseña<input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Escríbela otra vez" autoComplete="new-password" required /></label>
+        {error && <div className="form-error">{error}</div>}
+        <button className="primary full" disabled={busy}>{busy ? 'Guardando…' : 'Guardar contraseña'} <ChevronRight size={18} /></button>
+        {onCancel && <button type="button" className="auth-link" onClick={onCancel}>Cerrar sesión</button>}
+      </form>
+    </section>
+  </main>
+}
+
+function ResetPasswordModal({ student, onClose }) {
+  const [password, setPassword] = useState('')
+  const [result, setResult] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  async function submit(e) {
+    e.preventDefault()
+    setError('')
+    if (!isSupabaseReady) { setError('Modo demostración: no se cambian contraseñas.'); return }
+    setBusy(true)
+    const { data, error: resetError } = await supabase.rpc('reset_student_password', { p_student_id: student.id, p_password: password.trim() || null })
+    setBusy(false)
+    if (resetError) { setError(/function|schema cache/i.test(resetError.message) ? 'Falta ejecutar supabase/password_reset.sql en Supabase.' : resetError.message); return }
+    setResult(data)
+  }
+  return <Modal title="Restablecer contraseña" onClose={onClose}>{result
+    ? <div className="reset-result"><p>Nueva contraseña temporal de <b>{student.name}</b>:</p><div className="temp-password"><code>{result}</code><button type="button" className="secondary small" onClick={() => navigator.clipboard?.writeText(result)}>Copiar</button></div><p className="muted">Dásela al alumno. Al entrar con ella, el aula le pedirá crear una propia.</p><div className="modal-actions"><button type="button" className="primary" onClick={onClose}>Listo</button></div></div>
+    : <form onSubmit={submit}><p>Se asignará una contraseña temporal a <b>{student.name}</b> ({student.email}) y se le pedirá cambiarla al entrar. La anterior dejará de funcionar.</p><label>Contraseña temporal (opcional)<input value={password} onChange={e => setPassword(e.target.value)} placeholder="Vacío = se genera una" /></label>{error && <div className="form-error">{error}</div>}<ModalActions onClose={onClose} label={busy ? 'Restableciendo…' : 'Restablecer'} disabled={busy} /></form>}
+  </Modal>
 }
 
 function Login({ onLogin }) {
@@ -134,11 +204,25 @@ function Login({ onLogin }) {
   const [enrollment, setEnrollment] = useState('')
   const [studentGroup, setStudentGroup] = useState('')
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState(() => { const value = sessionStorage.getItem('aula-auth-notice') || ''; sessionStorage.removeItem('aula-auth-notice'); return value })
   const [busy, setBusy] = useState(false)
+
+  async function sendResetLink(e) {
+    e.preventDefault()
+    setError(''); setNotice('')
+    if (!isSupabaseReady) { setNotice('Modo demostración: no se envían correos.'); return }
+    setBusy(true)
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: window.location.origin + window.location.pathname })
+    setBusy(false)
+    if (resetError) { setError(resetError.message); return }
+    setNotice('Te enviamos un enlace a tu correo. Ábrelo desde este mismo dispositivo para crear tu nueva contraseña.')
+    setAuthMode('login')
+  }
 
   async function submit(e) {
     e.preventDefault()
-    setError('')
+    if (authMode === 'forgot') return sendResetLink(e)
+    setError(''); setNotice('')
     const institutionalEmail = email.toLowerCase()
     const allowedStudentDomains = ['@tam.conalep.edu.mx', '@conaleptamaulipas.edu.mx']
     if (mode === 'student' && !allowedStudentDomains.some(domain => institutionalEmail.endsWith(domain))) {
@@ -163,6 +247,8 @@ function Login({ onLogin }) {
           .eq('id', data.user.id)
           .single()
         if (profileError) throw profileError
+        // Se consulta aparte para que el acceso siga funcionando aunque aún no exista la columna.
+        const { data: passwordState } = await supabase.from('profiles').select('must_change_password').eq('id', data.user.id).maybeSingle()
         const session = {
           id: data.user.id,
           email: data.user.email,
@@ -170,6 +256,7 @@ function Login({ onLogin }) {
           name: profile.full_name || data.user.user_metadata?.full_name || 'Usuario',
           group: profile.groups?.code || 'Sin asignar',
           semester: profile.groups?.semester || null,
+          mustChangePassword: Boolean(passwordState?.must_change_password),
         }
         localStorage.setItem('aula-session', JSON.stringify(session)); onLogin(session)
       } else {
@@ -197,6 +284,21 @@ function Login({ onLogin }) {
       <form className="login-card" onSubmit={submit}>
         <div className="mobile-brand"><GraduationCap size={25} /> Aula Virtual</div>
         <div className="mobile-author-signature">Recurso educativo de <strong>Ing. Santiago Martínez González</strong></div>
+        {authMode === 'forgot' ? <>
+          <span className="eyebrow">RECUPERAR ACCESO</span>
+          <h2>Restablecer contraseña</h2>
+          {mode === 'teacher' ? <>
+            <p className="muted">Escribe tu correo y te enviaremos un enlace para crear una nueva contraseña.</p>
+            <label>Correo<input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Tu correo de docente" required /></label>
+            {error && <div className="form-error">{error}</div>}
+            <button className="primary full" disabled={busy}>{busy ? 'Enviando…' : 'Enviar enlace'} <ChevronRight size={18} /></button>
+          </> : <div className="forgot-help">
+            <KeyRound size={22} />
+            <p><b>Pídele a tu profe que restablezca tu contraseña.</b> Tu profe la cambia desde su panel y te da una contraseña temporal al momento.</p>
+            <p>Entra con esa contraseña temporal y el aula te pedirá crear una propia. No necesitas abrir tu correo.</p>
+          </div>}
+          <button type="button" className="auth-link" onClick={() => { setAuthMode('login'); setError('') }}>Volver a iniciar sesión</button>
+        </> : <>
         <span className="eyebrow">{authMode === 'register' ? 'NUEVO ALUMNO' : 'BIENVENIDO'}</span>
         <h2>{authMode === 'register' ? 'Crea tu cuenta' : 'Ingresa a tu aula'}</h2>
         <p className="muted">{authMode === 'register' ? 'Selecciona tu grupo y utiliza tus datos institucionales.' : 'Selecciona tu perfil y escribe tus datos.'}</p>
@@ -211,9 +313,12 @@ function Login({ onLogin }) {
         <label>Contraseña
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Tu contraseña" required={isSupabaseReady} />
         </label>
+        {notice && <div className="form-notice">{notice}</div>}
         {error && <div className="form-error">{error}</div>}
         <button className="primary full" disabled={busy}>{busy ? 'Procesando…' : authMode === 'register' ? 'Crear cuenta' : 'Ingresar al aula'} <ChevronRight size={18} /></button>
         {mode === 'student' && <button type="button" className="auth-link" onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setError('') }}>{authMode === 'login' ? '¿Eres alumno nuevo? Crea tu cuenta' : 'Ya tengo cuenta. Iniciar sesión'}</button>}
+        {authMode === 'login' && <button type="button" className="auth-link forgot-link" onClick={() => { setAuthMode('forgot'); setError(''); setNotice('') }}>¿Olvidaste tu contraseña?</button>}
+        </>}
         {!isSupabaseReady && <p className="demo-note"><CheckCircle2 size={15} /> Modo demostración activo. Puedes ingresar con cualquier contraseña.</p>}
       </form>
     </section>
@@ -923,6 +1028,7 @@ function Students({ students, groups, assessments, learningProgress = [], onRefr
   const [query, setQuery] = useState('')
   const [group, setGroup] = useState('Todos')
   const [selectedStudent, setSelectedStudent] = useState(null)
+  const [resetStudent, setResetStudent] = useState(null)
   const rows = useMemo(() => students.filter(s => (group === 'Todos' || s.group === group) && `${s.name} ${s.email}`.toLowerCase().includes(query.toLowerCase())), [query, group])
   function progressFor(student) {
     const submissions = assessments.filter(item => item.group === student.group).flatMap(item => item.submissionDetails).filter(item => item.student?.email === student.email)
@@ -937,7 +1043,7 @@ function Students({ students, groups, assessments, learningProgress = [], onRefr
     return { label: parts.join(' · ') || (submissions.length ? 'En proceso' : '—'), average: scores.length ? `${Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length)} / 60` : '—' }
   }
   if (selectedStudent) return <StudentRecord student={selectedStudent} assessments={assessments.filter(item => item.group === selectedStudent.group)} learningProgress={learningProgress.filter(item => item.student_id === selectedStudent.id)} onBack={() => setSelectedStudent(null)} onRefresh={onRefresh} />
-  return <section className="panel page-panel"><div className="list-toolbar"><div><h1>Alumnos registrados</h1><p>Cuentas reales creadas en Aula Virtual, organizadas por grupo.</p></div></div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar alumno…" /></div><select value={group} onChange={e => setGroup(e.target.value)}><option>Todos</option>{groups.map(item => <option key={item.id}>{item.code}</option>)}</select></div><div className="table-wrap"><table><thead><tr><th>Alumno</th><th>Grupo</th><th>Matrícula</th><th>Cuenta</th><th>Progreso</th><th>Promedio</th><th /></tr></thead><tbody>{rows.map(student => { const progress = progressFor(student); return <tr key={student.id}><td><div className="student-cell"><div className="avatar small">{student.name.split(' ').slice(0,2).map(part => part[0]).join('')}</div><div><strong>{student.name}</strong><span>{student.email}</span></div></div></td><td>{student.group}</td><td>{student.enrollment || 'Sin matrícula'}</td><td><span className="tag active">Registrada</span></td><td>{progress.label}</td><td>{progress.average}</td><td><button className="text-btn" onClick={() => setSelectedStudent(student)}>Ver expediente <ChevronRight size={15} /></button></td></tr> })}</tbody></table></div></section>
+  return <section className="panel page-panel"><div className="list-toolbar"><div><h1>Alumnos registrados</h1><p>Cuentas reales creadas en Aula Virtual, organizadas por grupo.</p></div></div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar alumno…" /></div><select value={group} onChange={e => setGroup(e.target.value)}><option>Todos</option>{groups.map(item => <option key={item.id}>{item.code}</option>)}</select></div><div className="table-wrap"><table><thead><tr><th>Alumno</th><th>Grupo</th><th>Matrícula</th><th>Cuenta</th><th>Progreso</th><th>Promedio</th><th /></tr></thead><tbody>{rows.map(student => { const progress = progressFor(student); return <tr key={student.id}><td><div className="student-cell"><div className="avatar small">{student.name.split(' ').slice(0,2).map(part => part[0]).join('')}</div><div><strong>{student.name}</strong><span>{student.email}</span></div></div></td><td>{student.group}</td><td>{student.enrollment || 'Sin matrícula'}</td><td><span className="tag active">Registrada</span></td><td>{progress.label}</td><td>{progress.average}</td><td><div className="table-actions"><button className="lock-btn" onClick={() => setResetStudent(student)} title="Restablecer contraseña"><KeyRound size={15} />Contraseña</button><button className="text-btn" onClick={() => setSelectedStudent(student)}>Ver expediente <ChevronRight size={15} /></button></div></td></tr> })}</tbody></table></div><p className="muted reset-help">¿Un alumno olvidó su contraseña? Toca <b>Contraseña</b> en su renglón: se le asigna una temporal al instante y la ves aquí para dársela.</p>{resetStudent && <ResetPasswordModal student={resetStudent} onClose={() => setResetStudent(null)} />}</section>
 }
 
 function evidenceReview(assessment, submission) {
