@@ -10,6 +10,20 @@ const courseMaterials = {
     description: 'Lecciones, hojas de cálculo simuladas, ejercicios autocorregibles y prácticas con el caso de la cafetería del plantel.',
     file: 'courses/edoa-ra31-material.html',
   },
+  'MTCS-RA-1.2': {
+    course: 'MTCS',
+    label: 'R.A. 1.2',
+    title: 'Direccionamiento y enrutamiento IPv4',
+    description: 'Direcciones IPv4, máscaras, subredes, gateway, IPv6 y DHCP, con calculadora de subredes, revisor de gateway, ejercicios y prácticas.',
+    file: 'courses/mtcs-ra12-material.html',
+  },
+  'MTCS-RA-2.1': {
+    course: 'MTCS',
+    label: 'R.A. 2.1',
+    title: 'Fundamentos de ciberseguridad',
+    description: 'Principios, amenazas, ataques y protección, con detective de phishing, medidor de contraseñas, ejercicios y prácticas sobre el caso de un gimnasio.',
+    file: 'courses/mtcs-ra21-material.html',
+  },
   'MTCS-RA-2.2': {
     course: 'MTCS',
     label: 'R.A. 2.2',
