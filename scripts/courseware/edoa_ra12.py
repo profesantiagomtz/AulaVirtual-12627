@@ -167,9 +167,9 @@ c.Z('📌', 'Completa las ideas clave', 'Elige la palabra correcta en cada frase
 c.W('✍️', 'Planea tu reporte', 'Aplica lo aprendido.',
     'Describe cómo armarías el reporte del Club de Fotografía: qué <b>tabla</b> pondrías, dónde irían las <b>imágenes</b> y con qué ajuste, y qué <b>objetos de referencia</b> usarías.',
     [['Tiene al menos 35 palabras', 'palabras:35'],
-     ['Menciona una tabla', '(tabla|fila|columna)'],
-     ['Menciona una imagen y su ajuste', '(imagen|foto|ajuste|cuadrado|texto)'],
-     ['Menciona índice, nota, vínculo o cita', '(índice|indice|nota|v.nculo|cita|referencia)']],
+     ['Menciona una tabla', '\\b(tabla\\w*|fila\\w*|columna\\w*)\\b'],
+     ['Menciona una imagen y su ajuste', '\\b(imagen\\w*|foto\\w*|ajuste|cuadrado)\\b'],
+     ['Menciona índice, nota, vínculo o cita', '\\b(indice|nota\\w*|vinculo\\w*|hipervinculo\\w*|cita\\w*|referencia\\w*|bibliograf\\w+)\\b']],
     'Tres o cuatro oraciones.', 'Ejemplo: Pondría una tabla con el horario, una foto con ajuste cuadrado y un índice…')
 c_end = c.mark() - 1
 

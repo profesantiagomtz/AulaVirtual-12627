@@ -220,10 +220,10 @@ c.A('📐', '¿Qué función del marco es?', 'Relaciona cada acción con la func
 c.W('✍️', 'Explica los tres principios', 'Aplica lo aprendido.',
     'Con el gimnasio como ejemplo, explica con tus palabras <b>confidencialidad</b>, <b>integridad</b> y <b>disponibilidad</b>, con un ejemplo de cada una.',
     [['Tiene al menos 30 palabras', 'palabras:30'],
-     ['Explica la confidencialidad', '(confidencialidad|secreto|privad|autorizad|solo.*(ver|acceso))'],
-     ['Explica la integridad', '(integridad|alter|modific|cambi|correct|exact)'],
-     ['Explica la disponibilidad', '(disponibilidad|disponible|funcion|acces|cuando se necesita)'],
-     ['Incluye al menos un ejemplo', '(ejemplo|por ejemplo|como cuando|si alguien|si un)']],
+     ['Explica la confidencialidad', '\\b(confidencialidad|secreto|privad\\w+|autorizad\\w+)\\b'],
+     ['Explica la integridad', '\\b(integridad|alter\\w+|modific\\w+|cambi\\w+|exact\\w+)\\b'],
+     ['Explica la disponibilidad', '\\b(disponib\\w+|funcion\\w+|cuando se necesita)\\b'],
+     ['Incluye al menos un ejemplo', '\\b(ejemplo|por ejemplo|como cuando|si alguien|si un|si una)\\b']],
     'Una o dos oraciones por principio.', 'Ejemplo: Confidencialidad: solo la administradora ve los pagos. Integridad: …')
 b_end = c.mark() - 1
 
@@ -370,10 +370,10 @@ c.A('🫥', '¿Cifrado, esteganografía o enmascaramiento?', 'Clasifica cada té
 c.W('✍️', 'Protege el gimnasio', 'Aplica lo aprendido.',
     'Propón <b>cuatro medidas</b> para proteger al gimnasio: una de <b>autenticación</b>, una de <b>autorización</b>, una de <b>cifrado</b> y una <b>física</b>.',
     [['Tiene al menos 30 palabras', 'palabras:30'],
-     ['Una medida de autenticación (contraseña, huella, doble factor…)', '(autentic|contrase|huella|doble factor|dos pasos|codigo|mfa)'],
-     ['Una medida de autorización (permisos, roles, mínimo privilegio…)', '(autoriz|permiso|rol|privilegio|solo la|solo el)'],
-     ['Una medida de cifrado', '(cifr|encript|cripto|https|vpn)'],
-     ['Una medida física (llave, cámara, candado, torniquete…)', '(llave|camara|candado|torniquete|cuarto|cerradura|fisic)']],
+     ['Una medida de autenticación (contraseña, huella, doble factor…)', '\\b(autentic\\w*|contrasena\\w*|huella\\w*|doble factor|dos pasos|codigo|mfa)\\b'],
+     ['Una medida de autorización (permisos, roles, mínimo privilegio…)', '\\b(autoriz\\w*|permiso\\w*|roles?|privilegio\\w*)\\b'],
+     ['Una medida de cifrado', '\\b(cifr\\w+|encript\\w+|cripto\\w*|https|vpn)\\b'],
+     ['Una medida física (llave, cámara, candado, torniquete…)', '\\b(llave\\w*|camara\\w*|candado\\w*|torniquete\\w*|cuarto\\w*|cerradura\\w*|fisic\\w+)\\b']],
     'Una oración por medida.', 'Ejemplo: Autenticación: doble factor para los empleados. Autorización: …')
 d_end = c.mark() - 1
 

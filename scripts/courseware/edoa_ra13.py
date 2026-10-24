@@ -145,9 +145,9 @@ c.Z('📌', 'Completa las ideas clave', 'Elige la palabra correcta en cada frase
 c.W('✍️', 'Explica el proceso', 'Aplica lo aprendido.',
     'Explica cómo generarías las constancias del torneo con <b>combinación de correspondencia</b> y cómo revisarías el aviso con tu equipo usando <b>control de cambios</b>.',
     [['Tiene al menos 40 palabras', 'palabras:40'],
-     ['Menciona la lista de destinatarios y los campos', '(lista|destinatario|campo)'],
-     ['Menciona la vista previa', '(vista previa|revisar.*registro|previa)'],
-     ['Menciona control de cambios y aceptar o rechazar', '(control de cambios|aceptar|rechazar)']],
+     ['Menciona la lista de destinatarios y los campos', '\\b(lista\\w*|destinatario\\w*|campo\\w*)\\b'],
+     ['Menciona la vista previa', '\\b(vista previa|previsualiz\\w+)\\b'],
+     ['Menciona control de cambios y aceptar o rechazar', '^(?=[\\s\\S]*control de cambios)(?=[\\s\\S]*\\b(acept\\w+|rechaz\\w+))']],
     'Cuatro o cinco oraciones.', 'Ejemplo: Primero escribiría la constancia y una lista con nombre, grupo y matrícula…')
 b_end = c.mark() - 1
 

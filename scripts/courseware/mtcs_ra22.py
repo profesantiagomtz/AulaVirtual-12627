@@ -234,10 +234,10 @@ c.A('⚖️', '¿Buena o mala práctica?', 'Decide si cada práctica de la clín
 c.W('✍️', 'Defiende la clínica en 4 capas', 'Aplica lo aprendido.',
     'Escribe una medida para cada capa de la clínica: <b>host</b>, <b>servidor</b>, <b>red</b> y <b>física</b>.',
     [['Tiene al menos 25 palabras', 'palabras:25'],
-     ['Una medida para el host (equipo, PC, laptop, antivirus, cifrado…)', '(host|pc|computadora|laptop|equipo|antivirus|bitlocker|cifra)'],
-     ['Una medida para el servidor', '(servidor)'],
-     ['Una medida para la red (firewall, VLAN, wifi, IDS, VPN…)', '(red|firewall|vlan|wifi|ids|ips|vpn|wpa)'],
-     ['Una medida física (llave, cámara, no-break, acceso…)', '(llave|camara|no-break|nobreak|ups|acceso fisico|cuarto|candado|tarjeta|fisica)']],
+     ['Una medida para el host (equipo, PC, laptop, antivirus, cifrado…)', '\\b(host|pc|computadora\\w*|laptop\\w*|equipos?|antivirus|bitlocker|cifr\\w+)\\b'],
+     ['Una medida para el servidor', '\\bservidor\\w*\\b'],
+     ['Una medida para la red (firewall, VLAN, wifi, IDS, VPN…)', '\\b(red|redes|firewall|vlan|wifi|ids|ips|vpn|wpa\\w*)\\b'],
+     ['Una medida física (llave, cámara, no-break, acceso…)', '\\b(llave\\w*|camara\\w*|no-?break|ups|acceso fisico|cuarto\\w*|candado\\w*|tarjeta\\w*|fisic\\w+)\\b']],
     'Una oración por capa.', 'Ejemplo: Host: las PCs tienen antivirus y disco cifrado. Servidor: …')
 c_end = c.mark() - 1
 
