@@ -119,6 +119,11 @@ def build(name):
         if old not in html:
             raise SystemExit(f'No se encontró en la plantilla: {old[:60]}')
         html = html.replace(old, new)
+    tabs = {'a': ['Aprende', 'Teoría, esquemas y ejercicios'], 'd': ['Diagnostica', 'Herramientas y simulador'], 'c': ['Construye', 'Prácticas guiadas']}
+    tabs.update(getattr(c, 'TABS', {}))
+    html, n = re.subn(r'/\*TABL\*/\{[^}]*\}', lambda m: '/*TABL*/' + js(tabs), html, count=1)
+    if n != 1:
+        raise SystemExit('La plantilla no tiene las pestañas: ejecuta patch_tabs.py')
     for old, new in getattr(c, 'ENGINE_PATCHES', []):
         if html.count(old) != 1:
             raise SystemExit(f'Parche ambiguo o ausente: {old[:60]}')

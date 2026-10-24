@@ -19,6 +19,8 @@ EV_CARD = 'Reporte R.A. 2.2'
 RA = 'R.A. 2.2'
 GROUP = '511'
 
+TABS = {'d': ['Diagnostica', 'Laboratorio de hash y comprobación'], 'c': ['Construye', 'Prácticas de ciberseguridad']}
+
 EXTRA_JS = r'''
 function pHash(){K++;return '<article class="lesson"><header><span class="kick">🧪 Herramienta</span><h1>Laboratorio de hash</h1><p class="sub">Escribe, cambia una sola letra y mira qué le pasa a la huella.</p></header><div class="hashlab czf"><label>Texto (puede ser una contraseña de prueba o un dato del expediente)<textarea class="hx" rows="2">Ana López · alergia a la penicilina</textarea></label><label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" class="hs"> Agregar sal (un valor aleatorio antes del texto)</label><div class="co co-def"><div class="co-l">Huella SHA-256 (64 caracteres)</div><p class="ho" style="font-family:Consolas,monospace;word-break:break-all;margin:0"></p></div><p class="hn" style="font-size:14.5px;color:var(--mut)"></p></div><p class="take"><b>Prueba:</b> cambia «Ana» por «Ena». Después activa la sal y escribe dos veces lo mismo. No cuenta como actividad.</p></article>'}
 function hashInit(d){var x=d.querySelector(".hx"),s=d.querySelector(".hs"),o=d.querySelector(".ho"),n=d.querySelector(".hn"),prev=null,salt="";
