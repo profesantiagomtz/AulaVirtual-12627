@@ -20,6 +20,8 @@ EV_CARD = 'Manual de instalación'
 RA = 'R.A. 2.1'
 GROUP = '310'
 
+TABS = {'d': ['Diagnostica', 'Revisa y comprueba tu avance'], 'c': ['Construye', 'Instala y configura en práctica']}
+
 c = Course()
 
 # ───────────────────────── Empieza aquí ─────────────────────────

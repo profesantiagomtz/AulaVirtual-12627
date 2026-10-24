@@ -21,6 +21,8 @@ EV_CARD = 'Sesión práctica'
 RA = 'R.A. 2.1'
 GROUP = '310'
 
+TABS = {'d': ['Diagnostica', 'Comandos y simulador'], 'c': ['Construye', 'Prácticas con CMD y PowerShell']}
+
 EXTRA_JS = (Path(__file__).parent / 'shell_sim.js').read_text(encoding='utf8')
 ENGINE_PATCHES = [
     ('function initW(d){\n', 'function initW(d){\n if(d.querySelector(".cmdsim"))cmdInit(d);\n'),

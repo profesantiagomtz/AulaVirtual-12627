@@ -22,6 +22,8 @@ EV_CARD = 'Libro de trabajo R.A. 3.1'
 RA = 'R.A. 3.1'
 GROUP = '311'
 
+TABS = {'d': ['Diagnostica', 'Simulador de hoja de cálculo'], 'c': ['Construye', 'Prácticas en la hoja de cálculo']}
+
 EXTRA_JS = (Path(__file__).parent / 'xls_sim.js').read_text(encoding='utf8')
 ENGINE_PATCHES = [
     ('function initW(d){\n', 'function initW(d){\n if(d.querySelector(".xlsim"))xlsInit(d);\n'),
