@@ -3,6 +3,20 @@ import { ArrowLeft, CheckCircle2, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 const courseMaterials = {
+  'EDOA-RA-1.2': {
+    course: 'EDOA',
+    label: 'R.A. 1.2',
+    title: 'Inserción y formato de objetos',
+    description: 'Tablas, imágenes, ajuste de texto y objetos de referencia en Word, con constructor de tablas, simulador de ajuste y prácticas.',
+    file: 'courses/edoa-ra12-material.html',
+  },
+  'EDOA-RA-1.3': {
+    course: 'EDOA',
+    label: 'R.A. 1.3',
+    title: 'Correspondencia y revisión colaborativa',
+    description: 'Combinación de correspondencia, control de cambios y protección, con simuladores y prácticas en Word.',
+    file: 'courses/edoa-ra13-material.html',
+  },
   'EDOA-RA-3.1': {
     course: 'EDOA',
     label: 'R.A. 3.1',
