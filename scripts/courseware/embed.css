@@ -1,0 +1,20 @@
+:root{--exb:var(--ex-bg)}
+html.embed body{background:var(--bg)}
+html.embed .top{background:transparent;border-bottom:0;padding:8px 14px;position:static}
+html.embed .brand{display:none}
+html.embed .tp{margin-left:0;flex:1;width:auto}
+html.embed .tabs3{max-width:none;margin:14px 20px 0;padding:4px;gap:4px;background:var(--pri-soft);border-radius:14px}
+html.embed .tabs3 button{border:0;background:transparent;border-radius:10px;padding:9px 12px;box-shadow:none}
+html.embed .tabs3 button.on{background:var(--card);box-shadow:0 1px 4px color-mix(in srgb,var(--ink) 18%,transparent);color:var(--pri)}
+html.embed .tabs3 b{font-size:14px}
+html.embed .tabs3 small{font-size:11.5px}
+html.embed main{padding:18px 4px 24px}
+html.embed .lesson{border-radius:16px;padding:24px 24px;box-shadow:0 1px 3px color-mix(in srgb,var(--ink) 10%,transparent)}
+html.embed .crumb{margin-bottom:12px}
+html.embed .sh{margin:18px 8px 6px}
+html.embed .sl{padding:8px 10px}
+html.embed .sl.on{background:var(--card);box-shadow:inset 3px 0 0 var(--pri),0 1px 3px color-mix(in srgb,var(--ink) 10%,transparent)}
+html.embed .hero2{background:linear-gradient(135deg,var(--pri),color-mix(in srgb,var(--pri) 62%,#000));border-radius:20px}
+html.embed .fnav{background:linear-gradient(transparent,var(--bg) 24%)}
+@media (min-width:1000px){html.embed .top{display:none}html.embed .reader .body{max-width:none;grid-template-columns:250px minmax(0,1fr);gap:20px;padding:0 20px}html.embed .reader #side{width:auto;top:0;height:calc(100vh - 72px);padding-top:14px}html.embed .reader main{padding-top:18px}}
+@media (max-width:640px){html.embed .tp{display:none}html.embed .top{padding:8px 12px 0}html.embed .tabs3{margin:8px 12px 0}html.embed .tabs3 small{display:none}html.embed .tabs3 button{flex-direction:column;gap:1px;text-align:center;padding:7px 2px}html.embed .tabs3 b{font-size:12.5px}html.embed .lesson{padding:18px 16px}}
