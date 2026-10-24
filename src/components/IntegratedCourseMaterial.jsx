@@ -75,11 +75,36 @@ const courseMaterials = {
   },
 }
 
+// El material vive en un iframe: se le pasan los colores de la skin activa para que se vea como parte de la plataforma.
+function platformTheme() {
+  const root = document.documentElement
+  const style = getComputedStyle(root)
+  const get = name => style.getPropertyValue(name).trim()
+  const dark = root.dataset.aulaTheme === 'oscuro'
+  return {
+    type: 'aula-theme',
+    dark,
+    vars: {
+      '--bg': get('--surface-soft') || '#f4f6fa',
+      '--card': get('--surface') || '#ffffff',
+      '--ink': get('--ink') || '#14213d',
+      '--mut': get('--muted') || '#5b6b85',
+      '--line': get('--line') || '#e2e8f0',
+      '--pri': (dark ? get('--blue') : get('--navy-2')) || '#1b3fa0',
+      '--on': dark ? '#07131f' : '#ffffff',
+      '--ok': get('--green') || '#1e8e4e',
+      '--bad': get('--red') || '#c62f3a',
+      '--amb': dark ? '#f2b53a' : (get('--gold') || '#f2a900'),
+    },
+  }
+}
+
 export default function IntegratedCourseMaterial({ code, session, onBack, onProgressUpdate }) {
   const material = courseMaterials[code]
   const [progress, setProgress] = useState({ done: 0, total: 0, completed: false })
   const [message, setMessage] = useState('')
   const persisted = useRef(Promise.resolve({ done: 0, completed: false }))
+  const frame = useRef(null)
   const source = useMemo(() => material ? new URL(`${material.file}?student=${encodeURIComponent(session?.id || 'preview')}`, document.baseURI).href : '', [material, session?.id])
 
   useEffect(() => {
@@ -130,18 +155,28 @@ export default function IntegratedCourseMaterial({ code, session, onBack, onProg
     return () => { window.removeEventListener('message', receive); clearTimeout(timer) }
   }, [code, onProgressUpdate, session?.id, session?.preview, session?.role])
 
+  const sendTheme = () => frame.current?.contentWindow?.postMessage(platformTheme(), window.location.origin)
+  useEffect(() => {
+    const observer = new MutationObserver(sendTheme)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-aula-theme'] })
+    const onRequest = event => { if (event.origin === window.location.origin && event.data?.type === 'aula-theme-request') sendTheme() }
+    window.addEventListener('message', onRequest)
+    return () => { observer.disconnect(); window.removeEventListener('message', onRequest) }
+  }, [])
+
   if (!material) return null
   const percent = progress.completed ? 100 : progress.total ? Math.round(progress.done / progress.total * 100) : null
   return <section className="integrated-course-page">
-    <div className="integrated-course-toolbar">
-      <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a materiales</button>
-      <a className="secondary" href={source} target="_blank" rel="noreferrer"><ExternalLink size={16} /> Abrir en pantalla completa</a>
+    <div className="integrated-course-bar">
+      <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Materiales</button>
+      <div className="icb-title"><span>{material.course} · {material.label}</span><h1>{material.title}</h1></div>
+      <div className={`icb-progress ${progress.completed ? 'complete' : ''}`} title="Avance del material">
+        <i><b style={{ width: `${percent ?? 0}%` }} /></i>
+        <strong>{progress.completed ? <><CheckCircle2 size={15} /> Completado</> : percent === null ? `${progress.done} ${progress.done === 1 ? 'paso' : 'pasos'}` : `${percent}%`}</strong>
+      </div>
+      <a className="icb-full" href={source} target="_blank" rel="noreferrer" title="Abrir en pantalla completa" aria-label="Abrir en pantalla completa"><ExternalLink size={16} /></a>
     </div>
-    <header className="integrated-course-header">
-      <div><span className="eyebrow">{material.course} · {material.label} · MATERIAL DIDÁCTICO</span><h1>{material.title}</h1><p>{material.description}</p></div>
-      <div className={progress.completed ? 'complete' : ''}><strong>{percent === null ? progress.done : `${percent}%`}</strong><span>{progress.completed ? <><CheckCircle2 size={14} /> COMPLETADO</> : percent === null ? (progress.done === 1 ? 'PASO' : 'PASOS') : 'AVANCE'}</span></div>
-    </header>
     {message && <div className={message.startsWith('El contenido') ? 'form-error' : 'submission-success'}>{message}</div>}
-    <div className="integrated-course-frame"><iframe title={`${material.course} ${material.label}`} src={source} /></div>
+    <div className="integrated-course-frame"><iframe ref={frame} onLoad={sendTheme} title={`${material.course} ${material.label}`} src={source} /></div>
   </section>
 }

@@ -129,6 +129,8 @@ def build(name):
             raise SystemExit(f'Parche ambiguo o ausente: {old[:60]}')
         html = html.replace(old, new)
     target = ROOT / 'public/courses' / c.FILE
+    from embed_patch import apply as embed
+    html = embed(html)
     target.write_text(html, encoding='utf8')
     print(f'{target.relative_to(ROOT)}: {len(html):,} bytes, {c.P.count(chr(10)) + 1} páginas')
 
