@@ -146,10 +146,10 @@ c.A('🧮', '¿Qué prefijo necesita?', 'Elige el prefijo más pequeño que alca
 c.W('✍️', 'Explica una subred', 'Aplica lo aprendido.',
     'Con la oficina del taller (192.168.10.0/26) explica cuál es su <b>dirección de red</b>, su <b>rango de hosts</b> y su <b>broadcast</b>, y por qué el broadcast no se le puede asignar a un equipo.',
     [['Tiene al menos 30 palabras', 'palabras:30'],
-     ['Menciona la dirección de red', '(192\\.168\\.10\\.0|direcci.n de red)'],
-     ['Menciona el rango o el primer y último host', '(\\.1|\\.62|primer|último|ultimo|rango)'],
-     ['Menciona el broadcast', '(192\\.168\\.10\\.63|broadcast)'],
-     ['Explica por qué no se asigna', '(reservad|todos|no se (puede|asigna)|no.*(equipo|host))']],
+     ['Menciona la dirección de red', '\\b(192\\.168\\.10\\.0|direccion de red)\\b'],
+     ['Menciona el rango o el primer y último host', '(\\.1\\b|\\.62\\b|\\bprimer\\w*|\\bultimo\\b|\\brango\\b)'],
+     ['Menciona el broadcast', '(192\\.168\\.10\\.63|\\bbroadcast\\b)'],
+     ['Explica por qué no se asigna', '\\b(reservad\\w+|no se (puede|debe) (asignar|usar)|no se asigna|no puede (asignarse|usarse)|a todos|para todos)\\b']],
     'Una o dos oraciones por dato.', 'Ejemplo: La red es 192.168.10.0, los hosts van de .1 a .62 y el broadcast es .63…')
 b_end = c.mark() - 1
 
@@ -193,9 +193,9 @@ c.A('🌐', '¿IPv4, IPv6 o DHCP?', 'Elige a qué corresponde cada frase.', [
 c.W('✍️', 'Explica por qué un equipo no navega', 'Aplica lo aprendido.',
     'Un equipo del taller tiene IP 192.168.10.25/24 y gateway <b>192.168.20.1</b>. Se comunica con la impresora pero no abre páginas. Explica el problema y cómo lo corregirías.',
     [['Tiene al menos 30 palabras', 'palabras:30'],
-     ['Identifica que el gateway no está en su red', '(gateway|puerta de enlace)'],
-     ['Menciona la red o el rango correcto', '(192\\.168\\.10|misma red|otra red|distint)'],
-     ['Propone una corrección', '(cambi|corregi|configur|poner|usar|192\\.168\\.10\\.1)']],
+     ['Identifica que el gateway no está en su red', '\\b(gateway|puerta de enlace)\\b'],
+     ['Menciona la red o el rango correcto', '\\b(192\\.168\\.10|misma red|otra red|distint\\w+|diferente\\w*)\\b'],
+     ['Propone una corrección', '\\b(cambi\\w+|corregi\\w*|configur\\w+|poner|usar|192\\.168\\.10\\.1)\\b']],
     'Tres o cuatro oraciones.', 'Ejemplo: El gateway 192.168.20.1 está en otra red…')
 c_end = c.mark() - 1
 

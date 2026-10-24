@@ -289,7 +289,7 @@ c.T('🧠', '¿Qué escribes?', 'Escribe el comando completo. Las mayúsculas no
     ['Para ver procesador, RAM y versión de Windows', ['SYSTEMINFO'], 'SYSTEMINFO muestra la información del sistema.', 'System + info.'],
     ['Para listar todas las variables de entorno', ['SET'], 'SET sin nada más.', 'Tres letras.'],
     ['Para ver la versión de Windows', ['VER'], 'VER (de «versión»).', 'Tres letras.'],
-], 'Si no te acuerdas, repasa la lección «Configurar el sistema operativo».', 'u')
+], 'Si no te acuerdas, repasa la lección «Configurar el sistema operativo».', 'c')
 c_end = c.mark() - 1
 
 # ───────────────────────── Bloque D ─────────────────────────
@@ -350,16 +350,16 @@ sim('💙', 'Simulador: PowerShell en el Nova', 'Bloque D · Practica cmdlets y 
 c.W('🗣️', 'Explica un comando', 'Demuestra que entiendes la tubería.',
     'Explica con tus palabras qué hace: <b>Get-Process | Sort-Object CPU -Descending | Select-Object -First 3</b>',
     [['Tiene al menos 12 palabras', 'palabras:12'],
-     ['Habla de procesos o programas', '(proceso|procesos|programa|programas|aplicacion)'],
-     ['Dice que los ordena', '(ordena|orden|acomoda|mayor a menor|de mayor)'],
-     ['Menciona el procesador o CPU', '(cpu|procesador)'],
-     ['Dice cuántos muestra', '(3|tres|primeros)']],
+     ['Habla de procesos o programas', '\\b(proceso\\w*|programa\\w*|aplicacion\\w*)\\b'],
+     ['Dice que los ordena', '\\b(ordena\\w*|orden|acomoda\\w*|mayor a menor|de mayor)\\b'],
+     ['Menciona el procesador o CPU', '\\b(cpu|procesador)\\b'],
+     ['Dice cuántos muestra', '\\b(3|tres|primeros)\\b']],
     'Explica cada parte: obtener, ordenar y elegir.', 'Ejemplo: Obtiene los programas en ejecución…')
 c.W('📋', 'Escribe una fila de tu listado', 'Practica el formato de tu evidencia.',
     'Escribe una fila de tu <b>listado de comandos</b>: el comando, para qué sirve y el ejemplo exacto que escribiste. Ejemplo: «COPY · copia un archivo · COPY lista.txt D:\\Respaldo».',
-    [['Incluye un comando de CMD o PowerShell', '(dir|cd|md|mkdir|rd|copy|move|ren|del|type|echo|tree|set|setx|ver|hostname|systeminfo|get-|set-|new-item|remove-item|copy-item|move-item|rename-item)'],
-     ['Dice para qué sirve', '(sirve|para|copia|crea|borra|muestra|lista|cambia|mueve|renombra|entra|ordena)'],
-     ['Trae un ejemplo con una ruta o un nombre de archivo', '(\\\\|\\.txt|\\.docx|\\.jpg|[a-z]:|documentos|descargas|nova)'],
+    [['Incluye un comando de CMD o PowerShell', '(^|[\\s·|:;,-])(dir|cd|md|mkdir|rd|copy|move|ren|del|type|echo|tree|setx?|ver|hostname|systeminfo|get-\\w+|set-\\w+|new-item|remove-item|copy-item|move-item|rename-item)(?=\\s|$|[·|:;,])'],
+     ['Dice para qué sirve', '\\b(sirve|copia|crea|borra|muestra|lista|cambia|mueve|renombra|entra|ordena)\\w*\\b'],
+     ['Trae un ejemplo con una ruta o un nombre de archivo', '(\\\\|\\.txt|\\.docx|\\.jpg|\\b[a-z]:|\\bdocumentos\\b|\\bdescargas\\b|\\bnova\\b)'],
      ['Tiene al menos 6 palabras', 'palabras:6']],
     'Comando · para qué sirve · ejemplo.', 'Ejemplo: MD · crea una carpeta · MD Nova\\Clientes')
 d_end = c.mark() - 1

@@ -154,7 +154,7 @@ c.T('🔤', 'Escribe la referencia', 'Escribe la celda o el rango, sin espacios.
     ['La celda de la columna C y la fila 5', 'C5', 'Primero la letra de la columna y luego el número de fila.', 'Letra y luego número.', 'u'],
     ['La celda que está a la derecha de B4', 'C4', 'A la derecha cambia la columna: de B a C.', 'Cambia la letra, no el número.', 'u'],
     ['La celda que está arriba de B4', 'B3', 'Arriba cambia la fila: de 4 a 3.', 'Cambia el número, no la letra.', 'u'],
-    ['El rango que va de A1 hasta D10', 'A1:D10', 'Primera celda, dos puntos y última celda.', 'Usa dos puntos.', 'u'],
+    ['El rango que va de A1 hasta D10', 'A1:D10', 'Primera celda, dos puntos y última celda.', 'Usa dos puntos.', 'c'],
     ['¿Cuántas celdas tiene el rango A1:B3? (escribe solo el número)', '6', '2 columnas (A y B) × 3 filas = 6 celdas.', 'Columnas × filas.', 'm'],
 ], 'Columna (letra) + fila (número).')
 c.A('🎀', '¿En qué ficha lo buscas?', 'Doña Lupita necesita estas herramientas. ¿Dónde están?', [

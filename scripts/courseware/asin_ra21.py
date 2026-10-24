@@ -131,9 +131,9 @@ c.A('📑', '¿En qué parte del manual va?', 'Elige la sección del manual dond
 c.W('✍️', 'Escribe un paso como profesional', 'Redacta un paso para tu manual.',
     'Escribe el paso para <b>abrir el instalador</b> después de descargarlo. Empieza con un verbo y di qué debe aparecer en pantalla.',
     [['Tiene al menos 8 palabras', 'palabras:8'],
-     ['Empieza con un verbo (abre, da clic, busca, ejecuta…)', '^ *(abre|abrir|da|dar|haz|dale|ejecuta|ejecutar|selecciona|busca|entra|ve|localiza|presiona|ubica)'],
-     ['Menciona el instalador o el archivo', '(instalador|archivo|descarga|exe|7-zip|7zip|programa)'],
-     ['Dice qué aparece o qué pasa', '(aparece|aparecera|se abre|abrira|muestra|mostrara|veras|sale|saldra|pregunta)']],
+     ['Empieza con un verbo (abre, da clic, busca, ejecuta…)', '^\\s*(abre|abrir|da|dar|haz|dale|ejecuta|ejecutar|selecciona|busca|entra|ve|localiza|presiona|ubica)\\b'],
+     ['Menciona el instalador o el archivo', '\\b(instalador|archivo|descarg\\w*|exe|7-?zip|programa)\\b'],
+     ['Dice qué aparece o qué pasa', '\\b(aparece|aparecera|se abre|abrira|muestra|mostrara|veras|sale|saldra|pregunta)\\b']],
     'Verbo + dónde + lo que aparece.', 'Ejemplo: Abre la carpeta Descargas y da doble clic en el instalador; aparece una ventana que pide permiso')
 c.T('🧮', 'Calcula si alcanza', 'Escribe solo el número. Recuerda: 1 GB = 1024 MB.', [
     ['La caja tiene 3 GB libres. ¿Cuántos MB son?', '3072', '3 × 1024 = 3072 MB.', 'Multiplica los GB por 1024.', 'n'],
@@ -339,9 +339,9 @@ c.A('🧰', '¿Qué herramienta resuelve el problema?', 'Elige la protección lo
 c.W('✍️', 'Redacta una regla de seguridad', 'Escribe una regla para la computadora de la caja.',
     'Escribe una regla para el <b>antivirus</b>, el <b>firewall</b> o las <b>actualizaciones</b>. Debe decir qué se hace y cada cuándo, para que se pueda comprobar.',
     [['Tiene al menos 8 palabras', 'palabras:8'],
-     ['Menciona antivirus, firewall o actualizaciones', '(antivirus|firewall|cortafuegos|actualizacion|actualizaciones|definiciones|parche|parches)'],
-     ['Dice cada cuándo o en qué momento (diario, cada semana, siempre, antes de…)', '(diario|diaria|diariamente|cada|semana|semanal|mes|mensual|siempre|nunca|antes de|al iniciar|todos los)'],
-     ['Usa un verbo de acción (activar, analizar, instalar, revisar…)', '(activa|activar|analiza|analizar|instala|instalar|revisa|revisar|actualiza|actualizar|bloquea|bloquear|mantener|mantiene|ejecuta|ejecutar|permanecera|estara)']],
+     ['Menciona antivirus, firewall o actualizaciones', '\\b(antivirus|firewall|cortafuegos|actualizacion\\w*|definiciones|parche\\w*)\\b'],
+     ['Dice cada cuándo o en qué momento (diario, cada semana, siempre, antes de…)', '\\b(diari\\w+|cada|seman\\w+|mes|mensual\\w*|siempre|nunca|antes de|al iniciar|todos los)\\b'],
+     ['Usa un verbo de acción (activar, analizar, instalar, revisar…)', '\\b(activ\\w+|analiz\\w+|instal\\w+|revis\\w+|actualiz\\w+|bloque\\w+|manten\\w+|ejecut\\w+|permanecera|estara)\\b']],
     'Qué + cada cuándo. Ejemplo: «Se hará un examen completo con el antivirus cada viernes».',
     'Ejemplo: El antivirus estará siempre activado y se analizará cada USB antes de abrirla')
 b2_end = c.mark() - 1
@@ -421,10 +421,10 @@ c.O('🧅', 'Ordena las capas de protección', 'Ordena de afuera (internet) haci
 c.W('✍️', 'Diseña la red segura de Don Beto', 'Explica cómo protegerías la red de la papelería.',
     'Describe en 3 o 4 renglones cómo protegerías la red de Don Beto. Menciona el <b>firewall perimetral</b>, cómo separas a los <b>clientes</b>, si usarías un <b>IDS</b> y dónde usarías <b>HTTPS o IPsec</b>.',
     [['Tiene al menos 25 palabras', 'palabras:25'],
-     ['Menciona el firewall', '(firewall|cortafuegos)'],
-     ['Separa la red de los clientes (wifi de invitados o red aparte)', '(invitad|separ|aparte|otra red|red de clientes|clientes)'],
-     ['Menciona IDS, IPS o detección de intrusos', '(ids|ips|intrus|deteccion|alarma)'],
-     ['Menciona HTTPS, IPsec o VPN', '(https|ipsec|vpn|tls|ssl)']],
+     ['Menciona el firewall', '\\b(firewall|cortafuegos)\\b'],
+     ['Separa la red de los clientes (wifi de invitados o red aparte)', '\\b(invitad\\w*|separ\\w*|aparte|otra red|red de clientes|clientes)\\b'],
+     ['Menciona IDS, IPS o detección de intrusos', '\\b(ids|ips|intrus\\w*|deteccion|alarma)\\b'],
+     ['Menciona HTTPS, IPsec o VPN', '\\b(https|ipsec|vpn|tls|ssl)\\b']],
     'Recorre las capas: entrada de la red, clientes, vigilancia y comunicación.',
     'Ejemplo: Activaría el firewall del router y crearía un wifi de invitados…')
 c_end = c.mark() - 1
