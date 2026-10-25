@@ -107,6 +107,30 @@ export const mtcsContent = {
       ['conclusion', 'Conclusión: resume las tres medidas más importantes y por qué.'],
     ],
   },
+  'MTCS-RA-3.1': {
+    label: 'MTCS · R.A. 3.1',
+    materialTitle: 'Fundamentos y lenguajes de programación',
+    intro: 'Este R.A. enseña a darle instrucciones a la computadora con Python: variables, tipos de datos y operadores. Al final elaborarás un reporte con el escenario asignado.',
+    lessons: [
+      ['1. Programa, algoritmo y lenguaje', 'Un programa es un conjunto de instrucciones; un algoritmo son los pasos ordenados para resolver un problema. Todo programa recibe datos (entrada), los transforma (proceso) y muestra un resultado (salida). Python es un lenguaje de alto nivel e interpretado.'],
+      ['2. Archivo fuente y herramientas', 'El archivo fuente es un archivo de texto (.py) con las instrucciones. Se escribe en un editor o IDE y se ejecuta con el intérprete, por ejemplo con el comando python ciber_lab.py en la terminal.'],
+      ['3. Sintaxis y semántica', 'La sintaxis son las reglas de escritura: si falla, el programa no arranca (SyntaxError). La semántica es el significado: un error de ejecución detiene el programa en una línea y un error de lógica da un resultado incorrecto sin mostrar mensaje.'],
+      ['4. Variables y literales', 'Una variable es un espacio con nombre que guarda un dato (intentos = 3). Los literales tienen tipo: int (15), float (3.14), str ("Ana") y bool (True o False). input() siempre entrega texto; se convierte con int() o float().'],
+      ['5. Operadores', 'Aritméticos: + - * / // % **. De comparación: == != > < >= <=, que dan True o False. Lógicos: and, or y not. Se resuelven con la misma prioridad que en matemáticas; los paréntesis cambian el orden.'],
+    ],
+    example: 'Ejemplo: con 62 caracteres posibles y contraseñas de 8 caracteres, caracteres ** longitud da 218,340,105,584,896 combinaciones; dividido entre mil millones de intentos por segundo, un atacante tardaría unas 60 horas y 39 minutos. Con longitud >= 12 se obtiene True o False para saber si la contraseña es segura.',
+    taskTitle: 'Actividad de evaluación: reporte de fundamentos y lenguajes de programación',
+    taskIntro: 'Elabora un reporte en PDF con el sistema asignado por la plataforma. Incluye tu código en Python y capturas de la salida. Valor máximo: 60 puntos.',
+    fields: [
+      ['context', 'Describe el sistema asignado y para qué sirve programar en su seguridad.'],
+      ['concepts', 'Conceptos: explica qué es un programa, un algoritmo, entrada-proceso-salida y la diferencia entre archivo fuente y programa ejecutable.'],
+      ['language', 'Lenguaje y herramientas: indica que usaste Python, si es interpretado o compilado y qué editor, intérprete o terminal utilizaste.'],
+      ['variables', 'Variables y literales: describe las variables de tu programa con los datos asignados, su tipo (str, int, float, bool) y por qué elegiste esos nombres.'],
+      ['operators', 'Operadores: muestra los cálculos con los datos asignados (combinaciones, segundos, horas y minutos) y las comparaciones o condiciones lógicas, con sus resultados.'],
+      ['errors', 'Errores: describe un error de sintaxis y uno de ejecución o de lógica que cometiste, qué mensaje apareció y cómo lo corregiste.'],
+      ['conclusion', 'Conclusión: explica qué otra tarea de seguridad te gustaría automatizar con programación y qué necesitarías aprender.'],
+    ],
+  },
 }
 
 function hash(text) {
@@ -133,6 +157,15 @@ function assignmentFor(studentId, assessmentId, code) {
       lines: [`Red base: 192.168.${second}.0/24`, `Subred A: ${hostA} hosts`, `Subred B: ${hostB} hosts`, `Equipo con falla: 192.168.${second}.${200 + (seed % 30)}/24`, `Gateway registrado en el equipo: 192.168.${second}.1`],
     }
   }
+  if (code === 'MTCS-RA-3.1') {
+    const places = ['laboratorio de cómputo', 'biblioteca escolar', 'cooperativa de ahorro', 'tienda en línea', 'consultorio médico', 'gimnasio']
+    const sets = [['letras minúsculas', 26], ['letras minúsculas y dígitos', 36], ['letras mayúsculas, minúsculas y dígitos', 62], ['letras, dígitos y símbolos', 94]]
+    const chars = sets[(seed >> 3) % sets.length]
+    return {
+      title: `Sistema ${String(seed % 997).padStart(3, '0')}`,
+      lines: [`Sistema: control de acceso de un ${places[seed % places.length]}`, `Usuarios registrados: ${20 + (seed % 80)}`, `Longitud de contraseña: ${6 + ((seed >> 5) % 7)} caracteres`, `Caracteres permitidos: ${chars[0]} (${chars[1]})`, `Intentos por segundo de un atacante: ${[1000, 100000, 1000000000][(seed >> 7) % 3]}`],
+    }
+  }
   if (code === 'MTCS-RA-2.2') {
     const organizations = ['clínica dental con expedientes electrónicos', 'tienda en línea de refacciones', 'despacho contable con declaraciones de clientes', 'escuela con plataforma de calificaciones', 'cibercafé con servicio de impresión', 'farmacia con sistema de inventario y ventas']
     const incidents = ['se cortó la energía y el servidor no volvió a encender', 'un ransomware cifró la carpeta compartida', 'se detectaron cambios no autorizados en precios o registros', 'el disco del servidor principal falló sin aviso', 'un empleado instaló software sin licencia que desactivó el antivirus']
@@ -154,6 +187,7 @@ const mtcsDeliverables = {
   'MTCS-RA-1.1': { label: 'Diagrama final de Packet Tracer', accept: '.pkt,application/octet-stream', extensions: ['pkt'], help: 'Archivo .pkt · máximo 20 MB' },
   'MTCS-RA-1.2': { label: 'Reporte final', accept: '.pdf,application/pdf', extensions: ['pdf'], help: 'Archivo PDF · máximo 20 MB' },
   'MTCS-RA-2.2': { label: 'Reporte final', accept: '.pdf,application/pdf', extensions: ['pdf'], help: 'Archivo PDF · máximo 20 MB' },
+  'MTCS-RA-3.1': { label: 'Reporte final', accept: '.pdf,application/pdf', extensions: ['pdf'], help: 'Archivo PDF · máximo 20 MB' },
   'MTCS-RA-2.1': { label: 'Presentación electrónica', accept: '.pptx,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf', extensions: ['pptx', 'pdf'], help: 'Archivo PPTX o PDF · máximo 20 MB' },
 }
 
