@@ -24,6 +24,13 @@ const courseMaterials = {
     description: 'Lecciones, hojas de cálculo simuladas, ejercicios autocorregibles y prácticas con el caso de la cafetería del plantel.',
     file: 'courses/edoa-ra31-material.html',
   },
+  'EDOA-RA-3.2': {
+    course: 'EDOA',
+    label: 'R.A. 3.2',
+    title: 'Cálculos y funciones',
+    description: 'Fórmulas, referencias, nombres y funciones de varias categorías, con cuatro hojas de cálculo simuladas, ejercicios y prácticas sobre la cafetería del plantel.',
+    file: 'courses/edoa-ra32-material.html',
+  },
   'MTCS-RA-1.2': {
     course: 'MTCS',
     label: 'R.A. 1.2',
