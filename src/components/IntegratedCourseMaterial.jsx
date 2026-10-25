@@ -52,6 +52,13 @@ const courseMaterials = {
     description: 'Lecciones, laboratorio de hash, ejercicios autocorregibles y prácticas sobre el caso de una clínica dental.',
     file: 'courses/mtcs-ra22-material.html',
   },
+  'MTCS-RA-3.1': {
+    course: 'MTCS',
+    label: 'R.A. 3.1',
+    title: 'Fundamentos y lenguajes de programación',
+    description: 'Programación en Python: variables, tipos de datos, operadores, errores y herramientas, con un laboratorio que ejecuta tu código aquí mismo.',
+    file: 'courses/mtcs-ra31-material.html',
+  },
   'ASIN-RA-1.2': {
     course: 'ASIN',
     label: 'R.A. 1.2',
