@@ -1,4 +1,4 @@
--- Restablecer contraseñas (igual que en PEAR).
+-- Restablecer contraseñas.
 -- El docente asigna una contraseña temporal a un alumno; al entrar, el alumno debe cambiarla por una propia.
 -- Ejecutar una vez en el SQL Editor de Supabase.
 

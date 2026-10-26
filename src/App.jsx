@@ -16,7 +16,6 @@ const EdoaMaterial = lazy(() => import('./components/EdoaMaterial'))
 const EdoaAdvancedMaterial = lazy(() => import('./components/EdoaAdvancedMaterial'))
 const MtcsActivity = lazy(() => import('./components/MtcsActivity'))
 const MtcsMaterialView = lazy(() => import('./components/MtcsActivity').then(module => ({ default: module.MtcsMaterialView })))
-const PearMaterialView = lazy(() => import('./components/PearMaterial').then(module => ({ default: module.PearMaterialView })))
 const IntegratedCourseMaterial = lazy(() => import('./components/IntegratedCourseMaterial'))
 const msiiDocx = () => import('./lib/msii-docx')
 
@@ -69,7 +68,6 @@ function formatPersonName(name = '') {
 }
 
 function materialCodeForActivity(activityCode = '') {
-  if (activityCode.startsWith('PEAR-')) return activityCode.replace(/\.1$/, '')
   if (activityCode === 'EDOA-RA-1.1' || activityCode === 'EDOA-1.1.1') return 'EDOA-RA-1.1'
   if (activityCode === 'EDOA-RA-1.2') return 'EDOA-RA-1.2'
   if (activityCode === 'EDOA-RA-1.3') return 'EDOA-RA-1.3'
@@ -77,7 +75,7 @@ function materialCodeForActivity(activityCode = '') {
 }
 
 function assessmentRequiresProgress(activityCode = '') {
-  return activityCode.startsWith('MTCS-RA-') || activityCode.startsWith('PEAR-') || activityCode.startsWith('EDOA-') || ['ASIN-RA-1.2', 'MSII-RA-1.2', 'ASIN-RA-2.1', 'MSII-RA-2.1', 'ASIN-RA-2.2', 'MSII-RA-2.2', 'ASIN-RA-2.3'].includes(activityCode)
+  return activityCode.startsWith('MTCS-RA-') || activityCode.startsWith('EDOA-') || ['ASIN-RA-1.2', 'MSII-RA-1.2', 'ASIN-RA-2.1', 'MSII-RA-2.1', 'ASIN-RA-2.2', 'MSII-RA-2.2', 'ASIN-RA-2.3'].includes(activityCode)
 }
 
 function assessmentIsLocked(assessment, learningProgress = []) {
@@ -266,7 +264,7 @@ function Login({ onLogin }) {
       } else {
         const session = mode === 'teacher'
           ? { email: email || 'docente@institucional.edu.mx', role: 'teacher', name: 'Profr. Santiago' }
-          : { email, role: 'student', name: fullName || 'Alumno', group: '111', semester: 1 }
+          : { email, role: 'student', name: fullName || 'Alumno', group: '310', semester: 3 }
         localStorage.setItem('aula-session', JSON.stringify(session)); onLogin(session)
       }
       navigate('/panel')
@@ -310,7 +308,7 @@ function Login({ onLogin }) {
           <button type="button" className={mode === 'student' ? 'active' : ''} onClick={() => setMode('student')}>Alumno</button>
           <button type="button" className={mode === 'teacher' ? 'active' : ''} onClick={() => { setMode('teacher'); setAuthMode('login') }}>Docente</button>
         </div>
-        {authMode === 'register' && <><label>Nombre completo<input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Como aparece en tu expediente" required /></label><label>Matrícula<input value={enrollment} onChange={e => setEnrollment(e.target.value)} placeholder="Tu matrícula institucional" required /></label><label>Grupo<select value={studentGroup} onChange={e => setStudentGroup(e.target.value)} required><option value="">Selecciona tu grupo</option><option value="111">111</option><option value="310">310</option><option value="311">311</option><option value="511">511</option></select></label></>}
+        {authMode === 'register' && <><label>Nombre completo<input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Como aparece en tu expediente" required /></label><label>Matrícula<input value={enrollment} onChange={e => setEnrollment(e.target.value)} placeholder="Tu matrícula institucional" required /></label><label>Grupo<select value={studentGroup} onChange={e => setStudentGroup(e.target.value)} required><option value="">Selecciona tu grupo</option><option value="310">310</option><option value="311">311</option><option value="511">511</option></select></label></>}
         <label>Correo institucional
           <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="correo institucional" required />
         </label>
@@ -662,7 +660,6 @@ function Materials({ items, groups, courses, session, isTeacher, assessments = [
   const visibleAssessments = assessments.map(item => ({ ...item, locked: !isTeacher && assessmentIsLocked(item, learningProgress) }))
   async function openMaterial(material) {
     if (material.url?.startsWith('mtcs://')) { setSelectedMaterial(material); return }
-    if (material.url?.startsWith('pear://')) { setSelectedMaterial(material); return }
     if (material.url?.startsWith('edoa://')) { setSelectedMaterial(material); return }
     if (material.url?.startsWith('courseware://')) { setSelectedMaterial(material); return }
     if (material.type !== 'Archivo') return window.open(material.url, '_blank', 'noopener,noreferrer')
@@ -672,7 +669,6 @@ function Materials({ items, groups, courses, session, isTeacher, assessments = [
     if (preview) preview.location.href = data.signedUrl
     else window.location.href = data.signedUrl
   }
-  if (selectedMaterial?.url?.startsWith('pear://')) return <LazyView><PearMaterialView code={selectedMaterial.url.replace('pear://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
   if (selectedMaterial?.url === 'edoa://EDOA-RA-1.1' || selectedMaterial?.url === 'edoa://EDOA-WORD-U1') return <LazyView><EdoaMaterial code="EDOA-RA-1.1" session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
   if (selectedMaterial?.url?.startsWith('edoa://')) return <LazyView><EdoaAdvancedMaterial code={selectedMaterial.url.replace('edoa://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
   if (selectedMaterial?.url?.startsWith('courseware://')) return <LazyView><IntegratedCourseMaterial code={selectedMaterial.url.replace('courseware://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
@@ -691,7 +687,6 @@ function Assessments({ items, session, isTeacher, learningProgress = [], setView
   if (selected) {
     if (selected.activityCode === 'ASIN-RA-1.1') return <LazyView><AsinActivity assessment={selected} onBack={clearSelected} /></LazyView>
     if (selected.activityCode === 'MSII-RA-1.1') return <MsiiActivity assessment={selected} session={session} onBack={clearSelected} />
-    if (selected.activityCode?.startsWith('PEAR-')) return <PearActivity assessment={selected} session={session} onBack={clearSelected} />
     if (selected.activityCode?.startsWith('MTCS-')) return <LazyView><MtcsActivity assessment={selected} session={session} onBack={clearSelected} /></LazyView>
     return <GenericActivity assessment={selected} session={session} onBack={clearSelected} />
   }
@@ -920,116 +915,6 @@ function MsiiActivity({ assessment, session, onBack }) {
 }
 
 function AssignedValue({ label, value }) { return <div className="assigned-value"><span>{label}</span><strong>{value}</strong></div> }
-
-const pearEvaluationGuides = {
-  '1.1': {
-    product: 'Un reporte en PDF con las proposiciones asignadas, cuatro tablas de verdad y una conclusión.',
-    steps: ['Copia el tema y las proposiciones p, q y r que aparecen abajo.', 'Escribe con palabras qué significa cada expresión lógica.', 'Construye una tabla para ¬p, otra para p ∧ q, otra para (p ∨ q) → r y otra para p ↔ q.', 'Debajo de cada tabla escribe una oración: “El resultado muestra que…”.', 'Termina con una conclusión sobre el caso y guarda todo en un solo PDF.'],
-    checklist: ['Se ven p, q y r', 'Incluye las cuatro tablas', 'Cada tabla tiene todas sus combinaciones', 'Explica los resultados con sus palabras', 'El archivo final es PDF'],
-  },
-  '1.2': {
-    product: 'Un reporte en PDF con la operación representada en un ábaco, fotografías y explicación.',
-    steps: ['Anota la operación y las dos cantidades asignadas.', 'Separa cada cantidad en centenas, decenas y unidades.', 'Representa la primera cantidad en el ábaco y toma una fotografía.', 'Realiza la suma o resta moviendo las cuentas y toma la fotografía del resultado.', 'Escribe el procedimiento, comprueba la operación y reúne todo en un solo PDF.'],
-    checklist: ['Aparecen las cantidades asignadas', 'La primera representación es correcta', 'Se observa el resultado en el ábaco', 'Incluye fotografías claras', 'Explica y comprueba la operación'],
-  },
-  '1.3': {
-    product: 'Un reporte de presupuesto en PDF con tabla, operaciones y una conclusión.',
-    steps: ['Copia los datos asignados y escribe cuál es el ingreso disponible.', 'Organiza los gastos en una tabla con concepto y cantidad.', 'Convierte las frecuencias de compra a un mismo periodo.', 'Suma los gastos y réstalos al ingreso.', 'Explica si el presupuesto alcanza y propone una decisión para mejorarlo.'],
-    checklist: ['Usa todos los datos asignados', 'Presenta una tabla ordenada', 'Muestra las operaciones', 'Calcula el saldo', 'Incluye una conclusión comprensible'],
-  },
-  '1.4': {
-    product: 'Un reporte de compra en PDF con proporción, porcentaje, operaciones y decisión final.',
-    steps: ['Copia el producto, precio, cantidad y descuento asignados.', 'Calcula el costo antes del descuento.', 'Calcula el porcentaje de descuento mostrando la multiplicación.', 'Resta el descuento y obtiene el precio final.', 'Explica el tipo de relación asignada y escribe una decisión de compra.'],
-    checklist: ['Usa los datos asignados', 'Calcula el costo inicial', 'Muestra el cálculo del descuento', 'Obtiene el precio final', 'Explica la relación y su decisión'],
-  },
-  '1.5': {
-    product: 'Un problemario en PDF con seis problemas contextualizados, procedimientos completos y comprobaciones.',
-    steps: ['Copia los seis problemas asignados y numéralos.', 'En cada problema escribe: datos, operación o regla, procedimiento, resultado y comprobación.', 'Incluye un problema de componentes de potencia, uno de reglas de exponentes y uno de exponente negativo.', 'Incluye un problema de raíz, uno de relación inversa entre potencia y raíz y uno integrador.', 'Escribe una introducción breve y termina con una autoevaluación de lo que aprendiste.'],
-    checklist: ['Contiene los seis problemas', 'Muestra cada procedimiento', 'Usa correctamente exponentes y radicales', 'Comprueba los resultados', 'Incluye introducción y autoevaluación'],
-  },
-}
-
-function PearActivity({ assessment, session, onBack }) {
-  const [file, setFile] = useState(null)
-  const [status, setStatus] = useState('loading')
-  const [message, setMessage] = useState('')
-  const assignment = useMemo(() => buildPearAssignment(`${session.id}-${assessment.id}`, assessment.activityCode), [session.id, assessment.id, assessment.activityCode])
-  const purpose = assessment.activityCode.match(/1\.\d/)?.[0] || '1.1'
-  const guide = pearEvaluationGuides[purpose] || pearEvaluationGuides['1.1']
-
-  useEffect(() => {
-    let active = true
-    supabase.from('submissions').select('submitted_at').eq('assessment_id', assessment.id).maybeSingle().then(({ data, error }) => {
-      if (!active) return
-      if (error) { setMessage(error.message); setStatus('error') }
-      else setStatus(data?.submitted_at ? 'submitted' : 'ready')
-    })
-    return () => { active = false }
-  }, [assessment.id])
-
-  async function submit(event) {
-    event.preventDefault()
-    if (!file) return
-    try {
-      setStatus('working'); setMessage('')
-      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) throw new Error('Entrega un archivo en formato PDF.')
-      if (file.size > 20 * 1024 * 1024) throw new Error('El archivo no debe superar 20 MB.')
-      const { data: authData } = await supabase.auth.getUser()
-      const path = `${authData.user.id}/${assessment.id}/entrega.pdf`
-      await uploadSubmissionFile(path, file, 'application/pdf')
-      const { error } = await supabase.from('submissions').insert({ assessment_id: assessment.id, student_id: authData.user.id, answers: { assigned_case: assignment }, file_path: path, original_filename: file.name, submitted_at: new Date().toISOString() })
-      if (error) throw error
-      setStatus('submitted'); setMessage('Actividad entregada correctamente.')
-    } catch (error) { setStatus('error'); setMessage(error.message || 'No fue posible entregar la actividad.') }
-  }
-
-  return <section className="panel page-panel activity-workspace pear-workspace">
-    <button className="text-btn back-action" onClick={onBack}><ArrowLeft size={16} /> Volver a evaluaciones</button>
-    <div className="activity-hero"><div><span className="eyebrow">PEAR · PROPÓSITO {assessment.activityCode.match(/\d+\.\d+/)?.[0] || ''}</span><h1>{assessment.title}</h1><p>Trabaja en este orden. No necesitas adivinar qué entregar.</p></div></div>
-    <section className="pear-eval-guide"><div className="pear-eval-product"><span>LO QUE VAS A ENTREGAR</span><strong>{guide.product}</strong></div><div className="pear-eval-columns"><div><h2>Hazlo paso a paso</h2><ol>{guide.steps.map(step => <li key={step}>{step}</li>)}</ol></div><div><h2>Revisa antes de subir</h2>{guide.checklist.map(item => <label key={item}><CheckCircle2 size={16} />{item}</label>)}</div></div></section>
-    <div className="assigned-case"><h2>Datos asignados para tu trabajo</h2><p>Utiliza estos datos en el reporte que entregarás.</p><div className="assigned-grid">{assignment.map(item => <AssignedValue key={item.label} label={item.label} value={item.value} />)}</div></div>
-    <form className="pear-submit" onSubmit={submit}><label>Cuando termines, sube un solo archivo PDF<input type="file" accept=".pdf,application/pdf" disabled={status === 'submitted' || status === 'working'} required onChange={event => setFile(event.target.files[0] || null)} /><small>Antes de entregar, abre el PDF y comprueba que se lea completo.</small></label><button className="primary" disabled={!file || status === 'submitted' || status === 'working'}><Upload size={17} /> {status === 'submitted' ? 'Actividad entregada' : status === 'working' ? 'Subiendo…' : 'Entregar actividad'}</button></form>
-    {message && <div className={status === 'submitted' ? 'submission-success' : 'form-error'}>{message}</div>}
-  </section>
-}
-
-function buildPearAssignment(seedText, activityCode) {
-  let seed = 0
-  for (const char of seedText) seed = (seed * 31 + char.charCodeAt(0)) >>> 0
-  const pick = (min, max, offset = 0) => min + ((seed >>> offset) % (max - min + 1))
-  if (activityCode.includes('1.1')) {
-    const cases = [
-      ['Derecho a la educación', 'Todas las personas tienen acceso a la educación.', 'La escuela ofrece condiciones de igualdad.', 'La comunidad participa en las decisiones escolares.'],
-      ['Privacidad digital', 'Los datos personales están protegidos.', 'Las aplicaciones solicitan autorización informada.', 'Las personas conocen cómo se utiliza su información.'],
-      ['Igualdad y no discriminación', 'Todas las personas reciben un trato digno.', 'Las reglas se aplican sin distinciones injustificadas.', 'Existen mecanismos para denunciar la discriminación.'],
-      ['Libertad de expresión', 'Las personas pueden expresar sus ideas.', 'Las opiniones respetan los derechos de otras personas.', 'El diálogo permite responder a los desacuerdos.'],
-      ['Derecho a un ambiente sano', 'La comunidad reduce la generación de residuos.', 'Las autoridades atienden los reportes ambientales.', 'La población participa en el cuidado de los espacios comunes.'],
-    ]
-    const selected = cases[seed % cases.length]
-    return [{ label: 'Tema del debate', value: selected[0] }, { label: 'Proposición p', value: selected[1] }, { label: 'Proposición q', value: selected[2] }, { label: 'Proposición r', value: selected[3] }, { label: 'Expresiones para las tablas', value: '¬p, p ∧ q, (p ∨ q) → r, p ↔ q' }]
-  }
-  if (activityCode.includes('1.2')) {
-    const first = pick(240, 780)
-    const second = pick(110, Math.min(390, first - 20), 8)
-    const operation = seed % 2 ? 'Suma' : 'Resta'
-    return [{ label: 'Operación que debes representar', value: operation }, { label: 'Primera cantidad', value: first }, { label: 'Segunda cantidad', value: second }]
-  }
-  if (activityCode.includes('1.4')) {
-    const price = pick(18, 42) * 5
-    const quantity = pick(3, 8, 6)
-    const discount = [10, 15, 20][pick(0, 2, 10)]
-    return [{ label: 'Producto principal', value: ['Cuadernos', 'Memorias USB', 'Audífonos', 'Mochilas'][seed % 4] }, { label: 'Precio unitario', value: `$${price.toLocaleString('es-MX')}` }, { label: 'Cantidad inicial', value: quantity }, { label: 'Descuento por aplicar', value: `${discount}%` }, { label: 'Relación para analizar', value: seed % 2 ? 'Directamente proporcional' : 'Inversamente proporcional' }]
-  }
-  if (activityCode.includes('1.5')) {
-    const base = pick(2, 5)
-    const exponent = pick(3, 5, 4)
-    const squareRoot = [64, 81, 100, 121, 144, 169, 196, 225][seed % 8]
-    const cubeRoot = [27, 64, 125, 216][pick(0, 3, 8)]
-    return [{ label: 'Potencia para desarrollar', value: `${base}^${exponent}` }, { label: 'Producto de potencias', value: `${base}^2 × ${base}^3` }, { label: 'Cociente de potencias', value: `${base}^6 ÷ ${base}^2` }, { label: 'Exponente negativo', value: `${base}^-2` }, { label: 'Raíz cuadrada', value: `√${squareRoot}` }, { label: 'Raíz cúbica', value: `∛${cubeRoot}` }]
-  }
-  const income = pick(680, 980) * 10
-  return [{ label: 'Ingreso mensual', value: `$${income.toLocaleString('es-MX')}` }, { label: 'Integrantes del hogar', value: pick(3, 6, 6) }, { label: 'Compra de higiene', value: `Cada ${pick(12, 20, 10)} días` }, { label: 'Compra de alimentos base', value: `Cada ${pick(5, 9, 14)} días` }]
-}
 
 function Students({ students, groups, assessments, learningProgress = [], onRefresh }) {
   const [query, setQuery] = useState('')
