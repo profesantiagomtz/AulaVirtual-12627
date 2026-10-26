@@ -552,6 +552,7 @@ document.addEventListener("load",function(e){if(e.target&&e.target.tagName==="IF
 try{parent.postMessage({type:"aula-theme-request"},location.origin)}catch(x){}})();</script><script id="aula-apuntes">(function(){var m=/-ra(\d)(\d)-avance/.exec(typeof KEY=="string"?KEY:"");if(!m||+m[1]<2||typeof sec!="function")return;
 /* Apuntes imprimibles: solo lo que sirve para estudiar (conceptos, pasos, diagramas, avisos e ideas clave) de las lecciones de «Aprende».
    Casos, analogías, actividades, prácticas y simuladores se quedan en la plataforma. */
+var FIT=/*FIT*/{"asin-ra21": 0.92, "asin-ra22": 0.88, "edoa-ra21": 0.96, "edoa-ra33": 0.96, "edoa-ra42": 0.84, "msii-ra21": 0.96, "msii-ra22": 0.94, "mtcs-ra21": 0.84, "mtcs-ra22": 0.92};
 var KEEP_EX=/^(Ejemplo|Así sí|Atajo|Comparación|La fórmula|Cómo |Leer el código|Truco|¿Cuál conviene|Compruébalo|Porcentaje)/;
 function txt(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;")}
 function brand(){var b=document.querySelector(".brand b"),s=document.querySelector(".brand span"),mo=(b?b.textContent:"").split("·"),ra=(s?s.textContent:"").split("·");
@@ -595,7 +596,8 @@ var CSS=':root{--pri:#1b3a8a;--pri-soft:#eef2fa;--ok:#1e7a46;--amb:#b7791f;--bad
 'table{width:100%;border-collapse:collapse;font-size:7.8pt;margin:3px 0;break-inside:avoid}th,td{border:1px solid var(--line);padding:1px 4px;text-align:left;vertical-align:top}th{background:var(--pri-soft)}'+
 '.exw,.mw,.mph{max-width:100%;overflow:hidden;font-size:7.6pt;break-inside:avoid;margin:3px 0}.mw{border:1px solid var(--line);border-radius:4px}.mt{background:var(--bg);padding:1px 5px;font-size:7pt}.mt i{display:none}.mbd{padding:3px}.mcap{font-size:7.6pt;margin:2px 0}'+
 '.foot{display:flex;justify-content:space-between;margin-top:6mm;padding-top:3px;border-top:1px solid var(--line);color:var(--mut);font-size:7pt}.foot b{color:var(--pri);letter-spacing:.05em}.foot em{font-family:"Segoe Script","Brush Script MT",cursive;font-size:8.4pt;color:var(--pri);margin-right:6px}'+
-'@page{size:letter portrait;margin:9mm 9mm 10mm}@media print{body{background:#fff}.bar{display:none}.sheet{width:auto;margin:0;padding:0;box-shadow:none}}'+
+':root{--z:'+(FIT[m.input.split("-avance")[0]]||1)+'}'+
+'@page{size:letter portrait;margin:9mm 9mm 10mm}@media print{body{background:#fff}.bar{display:none}.sheet{width:auto;margin:0;padding:0;box-shadow:none;zoom:var(--z,1)}}'+
 '@media (max-width:600px){.sheet{padding:5mm;margin:6px auto}.flow{column-count:1}.who{grid-template-columns:1fr 1fr}.who div:first-child{grid-column:1/-1;border-right:0;border-bottom:1px solid var(--line)}}';
 /* Nombre y grupo del alumno: primero la sesión de la plataforma (mismo origen), luego lo que escribió en «Mi entrega». */
 function alumno(){var s=null;try{s=JSON.parse(localStorage.getItem("aula-session")||"null")}catch(e){}
@@ -615,6 +617,7 @@ function build(){var B=brand(),A=alumno(),h='',idx='';
   '<div class="who"><div><small>Alumno</small><b>'+txt(A.name)+'</b></div><div><small>Grupo</small><b>'+txt(A.group)+'</b></div><div><small>Fecha de descarga</small><b>'+hoy()+'</b></div></div>'+
   '<div class="idx"><span>Contenido</span>'+idx+'</div>'+
   '<div class="flow">'+h+'</div><div class="foot"><span>'+txt(B.mod+' · '+B.ra+' · '+B.raName)+'</span><span><em>Ing. Santiago Martínez González</em><b>AulaVirtual</b></span></div></div></body></html>'}
+
 function open(){var html=build(),w=null;try{w=window.open("","_blank")}catch(e){}
  if(w){w.document.open();w.document.write(html);w.document.close();return}
  location.href=URL.createObjectURL(new Blob([html],{type:"text/html"}))}

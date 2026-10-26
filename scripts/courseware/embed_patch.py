@@ -2,6 +2,7 @@
 
 Inserta (o actualiza) embed.css y embed.js en un material ya construido. Es idempotente y lo llama build.py.
 """
+import json
 import re
 import sys
 from pathlib import Path
@@ -10,7 +11,9 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 CSS = (HERE / 'embed.css').read_text(encoding='utf8').strip()
 JS = (HERE / 'embed.js').read_text(encoding='utf8').strip()
-NOTES = (HERE / 'print_notes.js').read_text(encoding='utf8').strip()
+FIT = HERE / 'print_fit.json'
+NOTES = (HERE / 'print_notes.js').read_text(encoding='utf8').strip().replace(
+    '/*FIT*/{}', '/*FIT*/' + (json.dumps(json.loads(FIT.read_text(encoding='utf8'))) if FIT.exists() else '{}'))
 
 
 def apply(html):
