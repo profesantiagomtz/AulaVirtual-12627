@@ -101,6 +101,13 @@ const courseMaterials = {
     description: 'Sistema operativo, rutas, CMD, variables de entorno y PowerShell, con consolas simuladas para practicar sin riesgo.',
     file: 'courses/msii-ra21-material.html',
   },
+  'MSII-RA-2.2': {
+    course: 'MSII',
+    label: 'R.A. 2.2',
+    title: 'Opera el sistema operativo multiusuario',
+    description: 'Linux multiusuario: archivos, discos, usuarios, permisos, programas, procesos y memoria, con terminales simuladas.',
+    file: 'courses/msii-ra22-material.html',
+  },
 }
 
 // El material vive en un iframe: se le pasan los colores de la skin activa para que se vea como parte de la plataforma.
