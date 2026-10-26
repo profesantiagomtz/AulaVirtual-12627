@@ -17,6 +17,20 @@ const courseMaterials = {
     description: 'Combinación de correspondencia, control de cambios y protección, con simuladores y prácticas en Word.',
     file: 'courses/edoa-ra13-material.html',
   },
+  'EDOA-RA-2.1': {
+    course: 'EDOA',
+    label: 'R.A. 2.1',
+    title: 'Formato de presentaciones electrónicas',
+    description: 'Entorno de PowerPoint, diseño de diapositiva, formato y plantillas, con presentaciones simuladas, ejercicios y prácticas sobre la Feria de Carreras.',
+    file: 'courses/edoa-ra21-material.html',
+  },
+  'EDOA-RA-2.2': {
+    course: 'EDOA',
+    label: 'R.A. 2.2',
+    title: 'Objetos, animaciones y transiciones',
+    description: 'Tablas, imágenes, vínculos, video y audio con formato, animaciones y transiciones, con presentaciones simuladas y prácticas.',
+    file: 'courses/edoa-ra22-material.html',
+  },
   'EDOA-RA-3.1': {
     course: 'EDOA',
     label: 'R.A. 3.1',

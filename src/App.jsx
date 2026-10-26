@@ -709,6 +709,12 @@ const spreadsheetDelivery = {
   label: 'libro de Excel (.xlsx) o PDF',
   short: 'XLSX o PDF',
 }
+const presentationDelivery = {
+  extensions: ['pptx', 'pdf'],
+  accept: '.pptx,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf',
+  label: 'presentación de PowerPoint (.pptx) o PDF',
+  short: 'PPTX o PDF',
+}
 const documentDelivery = {
   extensions: ['docx', 'pdf'],
   accept: '.docx,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf',
@@ -717,8 +723,8 @@ const documentDelivery = {
 }
 
 function GenericActivity({ assessment, session, onBack }) {
-  // La Unidad 3 de EDOA (hoja de cálculo) se entrega como libro de trabajo.
-  const delivery = assessment.activityCode?.startsWith('EDOA-RA-3.') ? spreadsheetDelivery : documentDelivery
+  // En EDOA la Unidad 2 se entrega como presentación y la Unidad 3 como libro de trabajo.
+  const delivery = assessment.activityCode?.startsWith('EDOA-RA-3.') ? spreadsheetDelivery : assessment.activityCode?.startsWith('EDOA-RA-2.') ? presentationDelivery : documentDelivery
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
