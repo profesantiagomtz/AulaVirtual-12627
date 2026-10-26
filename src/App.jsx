@@ -8,6 +8,7 @@ import { courses } from './data/academic'
 import * as demo from './data/demo'
 import { isSupabaseReady, supabase } from './lib/supabase'
 import { uploadSubmissionFile } from './lib/upload'
+import { NavSignal, ProgressStrip, studentSignals, useSectionVisits } from './components/StudentSignals'
 import { CourseChips, RaCourseMap, Schedule, StudentGrades, TeacherGrades, WeekPlan, assessmentState, itemBelongsToCourse, progressCodeFor } from './components/CoursePlan'
 
 // Los contenidos de cada materia se descargan solo cuando el alumno los abre.
@@ -446,6 +447,10 @@ function Dashboard({ session, onLogout }) {
     if (error) { setDataError(error.message); return }
     await loadData(); saved(nextStatus === 'published' ? 'Actividad publicada para los alumnos' : 'Actividad bloqueada para los alumnos')
   }
+  const signalCourses = isTeacher ? [] : assignedCourses
+  const baseSignals = studentSignals({ session, courses: signalCourses, materials: materialList, assessments: assessmentList, learningProgress, isLocked: assessmentIsLocked })
+  const visits = useSectionVisits(session, isTeacher ? null : view, baseSignals.gradedIds)
+  const signals = isTeacher ? null : studentSignals({ session, courses: signalCourses, materials: materialList, assessments: assessmentList, learningProgress, isLocked: assessmentIsLocked, visits })
   const pageTitle = studentPreview ? 'Vista del alumno' : view === 'configuracion' ? 'Configuración' : isTeacher && view === 'modulos' ? 'Módulos' : (isTeacher ? navItems : studentNavItems).find(i => i.id === view)?.label || 'Inicio'
   const previewGroupData = groupList.find(group => group.code === previewGroup)
   const previewSession = { id: `preview-${previewGroup}`, email: 'vista.previa@tam.conalep.edu.mx', role: 'student', name: `Estudiante de prueba ${previewGroup}`, group: previewGroup, semester: previewGroupData?.semester || null, preview: true }
@@ -457,7 +462,7 @@ function Dashboard({ session, onLogout }) {
       <div className="side-brand"><div className="side-brand-symbol"><GraduationCap size={25} /></div><span>Aula <b>Virtual</b><small>{isTeacher ? 'Gestión docente' : 'Espacio del alumno'}</small></span><button className="icon-btn close-menu" onClick={() => setMobileMenu(false)}><X /></button></div>
       <span className="side-section-label">{isTeacher ? 'GESTIÓN ACADÉMICA' : 'MI APRENDIZAJE'}</span>
       <nav>{(isTeacher ? navItems : studentNavItems).map(({ id, label, icon: Icon }) =>
-        <button key={id} className={view === id ? 'active' : ''} aria-current={view === id ? 'page' : undefined} onClick={() => { if (!isTeacher && id === 'materiales') setStudentCourseFilter('Todos'); setSelectedAssessment(null); setView(id); setMobileMenu(false) }}><Icon size={19} /><span>{isTeacher && id === 'modulos' ? 'Módulos' : label}</span>{view === id && <i />}</button>
+        <button key={id} className={view === id ? 'active' : ''} aria-current={view === id ? 'page' : undefined} onClick={() => { if (!isTeacher && id === 'materiales') setStudentCourseFilter('Todos'); setSelectedAssessment(null); setView(id); setMobileMenu(false) }}><Icon size={19} /><span>{isTeacher && id === 'modulos' ? 'Módulos' : label}</span>{signals && view !== id && <NavSignal signal={signals.nav[id]} />}{view === id && <i />}</button>
       )}</nav>
       <div className="side-bottom">
         {isTeacher && <button className={view === 'configuracion' ? 'active' : ''} onClick={() => { setView('configuracion'); setMobileMenu(false) }}><Settings size={19} />Configuración</button>}
@@ -476,6 +481,7 @@ function Dashboard({ session, onLogout }) {
         {loading ? <div className="loading-state">Cargando información real…</div> : studentPreview ? <StudentPreview session={previewSession} courses={courses.filter(course => course.group === previewGroup)} materials={materialList.filter(item => item.group === previewGroup && item.published)} assessments={assessmentList.filter(item => item.group === previewGroup && item.status === 'Activa').map(item => ({ ...item, submissionDetails: [] }))} /> : <>
         {view === 'inicio' && (isTeacher ? <TeacherHome session={session} setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} teacherNotes={teacherNotes} onRefresh={loadData} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} setView={setView} onOpenCourse={code => { setStudentCourseFilter(code); setView('materiales') }} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} />)}
         {view === 'modulos' && (isTeacher ? <TeacherModules session={session} courses={assignedCourses} students={studentList} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} teacherNotes={teacherNotes} onRefresh={loadData} setView={setView} /> : <Modules courses={assignedCourses} session={session} setView={setView} />)}
+        {view === 'materiales' && signals && <ProgressStrip signals={signals} setView={id => { setSelectedAssessment(null); setView(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />}
         {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} assessments={isTeacher ? assessmentList : assessmentList.filter(item => item.status === 'Activa')} students={studentList} learningProgress={learningProgress} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} initialCourse={studentCourseFilter} onAdd={() => setModal('material')} onToggle={toggleMaterial} onProgressUpdate={progress => setLearningProgress(current => [...current.filter(item => item.material_code !== progress.material_code), progress])} />}
         {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} learningProgress={learningProgress} setView={setView} onAdd={() => setModal('assessment')} onRefresh={loadData} onToggle={toggleAssessment} initialSelected={selectedAssessment} onClearSelected={() => setSelectedAssessment(null)} />}
         {view === 'notas' && (isTeacher ? <TeacherGrades courses={assignedCourses} students={studentList} assessments={assessmentList} /> : <StudentGrades courses={assignedCourses} assessments={assessmentList} session={session} />)}
@@ -485,7 +491,7 @@ function Dashboard({ session, onLogout }) {
         </>}
       </main>
     </div>
-    {!isTeacher && <nav className="student-mobile-nav" aria-label="Navegación del alumno">{studentNavItems.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? 'active' : ''} onClick={() => { if (id === 'materiales') setStudentCourseFilter('Todos'); setSelectedAssessment(null); setView(id); setMobileMenu(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }}><Icon size={20} /><span>{label}</span></button>)}</nav>}
+    {!isTeacher && <nav className="student-mobile-nav" aria-label="Navegación del alumno">{studentNavItems.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? 'active' : ''} onClick={() => { if (id === 'materiales') setStudentCourseFilter('Todos'); setSelectedAssessment(null); setView(id); setMobileMenu(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }}><span className="mobile-nav-icon"><Icon size={20} />{view !== id && <NavSignal signal={signals?.nav[id]} />}</span><span>{label}</span></button>)}</nav>}
     {mobileMenu && <div className="overlay mobile" onClick={() => setMobileMenu(false)} />}
     {modal === 'material' && <MaterialModal groups={groupList} onClose={() => setModal(null)} onSave={async (item) => {
       if (demoBlocked()) return
@@ -629,9 +635,11 @@ function StudentPreview({ session, courses, materials, assessments }) {
   const [previewSelected, setPreviewSelected] = useState(null)
   useEffect(() => { setPreviewView('inicio'); setPreviewProgress([]) }, [session.group])
   const openAssessment = assessment => { setPreviewSelected(assessment); setPreviewView('evaluaciones') }
+  const signals = studentSignals({ session, courses, materials, assessments, learningProgress: previewProgress, isLocked: assessmentIsLocked, visits: { notas: Date.now(), cronograma: Date.now() } })
   return <div className="student-preview-shell">
     <div className="preview-banner"><div><span className="eyebrow">VISTA PREVIA · GRUPO {session.group}</span><strong>Así verá el alumno únicamente el contenido publicado.</strong></div><div className="preview-avatar">AD</div></div>
-    <nav className="preview-nav">{studentNavItems.map(({ id, label, icon: Icon }) => <button key={id} className={previewView === id ? 'active' : ''} onClick={() => { if (id === 'materiales') setPreviewCourse('Todos'); setPreviewSelected(null); setPreviewView(id) }}><Icon size={17} />{label}</button>)}</nav>
+    <nav className="preview-nav">{studentNavItems.map(({ id, label, icon: Icon }) => <button key={id} className={previewView === id ? 'active' : ''} onClick={() => { if (id === 'materiales') setPreviewCourse('Todos'); setPreviewSelected(null); setPreviewView(id) }}><Icon size={17} />{label}{previewView !== id && <NavSignal signal={signals.nav[id]} />}</button>)}</nav>
+    {previewView === 'materiales' && <ProgressStrip signals={signals} setView={setPreviewView} />}
     {previewView === 'inicio' && <StudentHome session={session} courses={courses} materials={materials} assessments={assessments} learningProgress={previewProgress} setView={setPreviewView} onOpenCourse={code => { setPreviewCourse(code); setPreviewView('materiales') }} onOpenAssessment={openAssessment} />}
     {previewView === 'materiales' && <Materials items={materials} groups={[]} courses={courses} session={session} isTeacher={false} assessments={assessments} learningProgress={previewProgress} onOpenAssessment={openAssessment} initialCourse={previewCourse} onProgressUpdate={progress => setPreviewProgress(current => [...current.filter(item => item.material_code !== progress.material_code), progress])} />}
     {previewView === 'evaluaciones' && <Assessments items={assessments} session={session} isTeacher={false} learningProgress={previewProgress} setView={setPreviewView} initialSelected={previewSelected} onClearSelected={() => setPreviewSelected(null)} />}

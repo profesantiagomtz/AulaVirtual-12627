@@ -348,3 +348,47 @@ button.small{display:inline-flex;align-items:center;gap:4px;padding:7px 11px;fon
 .reset-help{margin:12px 2px 0;font-size:.8rem}
 .temp-password{display:flex;align-items:center;gap:10px;margin:10px 0;padding:12px 14px;border:1px dashed var(--navy-2);border-radius:10px;background:var(--surface-soft)}
 .temp-password code{flex:1;font-size:1.25rem;font-weight:800;letter-spacing:.06em;color:var(--navy)}
+
+/* Avisos del alumno: insignias en el menú y franja "¿Cómo voy?" */
+.nav-signal{--signal:#2a7fb3;position:relative;display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--signal);color:#fff;font:800 .62rem/1 'DM Sans',sans-serif;font-style:normal;letter-spacing:.01em;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.nav-signal.warn{--signal:#d98a00}.nav-signal.bad{--signal:#d4473b}.nav-signal.good{--signal:#169b75}.nav-signal.info{--signal:#2a7fb3}
+.sidebar nav .nav-signal.info{background:rgba(255,255,255,.14);color:#e3f1f8;box-shadow:none}
+.nav-signal.dot{min-width:9px;width:9px;height:9px;padding:0}
+.nav-signal.pulse:after,.nav-signal.dot:after{content:"";position:absolute;inset:-1px;border-radius:inherit;box-shadow:0 0 0 0 var(--signal);animation:signal-ring 3.2s ease-out infinite}
+@keyframes signal-ring{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--signal) 65%,transparent)}35%,100%{box-shadow:0 0 0 9px transparent}}
+.sidebar nav button:has(.nav-signal.pulse){animation:nav-glow 3.2s ease-in-out infinite}
+@keyframes nav-glow{0%,100%{background:transparent}30%{background:rgba(255,255,255,.07)}}
+.mobile-nav-icon{position:relative;display:grid;place-items:center}
+.mobile-nav-icon .nav-signal{position:absolute;top:-7px;left:calc(100% - 7px);height:16px;min-width:16px;padding:0 4px;font-size:.55rem}
+.mobile-nav-icon .nav-signal.dot{top:-2px;left:calc(100% - 3px);width:8px;min-width:8px;height:8px;padding:0}
+.mobile-nav-icon .nav-signal.info{display:none}
+.preview-nav button .nav-signal{margin-left:2px}
+.progress-strip{display:flex;align-items:stretch;gap:8px;margin:0 0 16px;padding:8px;border:1px solid var(--line);border-radius:var(--radius-md,14px);background:var(--surface,#fff);box-shadow:var(--shadow-sm);overflow-x:auto;scrollbar-width:none;animation:strip-in .45s ease-out both}
+.progress-strip::-webkit-scrollbar{display:none}
+.progress-strip-label{flex:0 0 auto;align-self:center;padding:0 6px 0 4px;color:var(--navy-2);font:800 .68rem/1.1 Manrope,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.progress-strip button{--tone:#2a7fb3;position:relative;flex:1 0 auto;display:flex;align-items:center;gap:9px;min-width:0;padding:8px 11px;border:1px solid color-mix(in srgb,var(--tone) 22%,transparent);border-radius:11px;background:color-mix(in srgb,var(--tone) 7%,var(--surface,#fff));color:var(--ink);text-align:left;cursor:pointer;overflow:hidden;transition:transform .15s ease,box-shadow .15s ease}
+.progress-strip button:hover{transform:translateY(-1px);box-shadow:0 6px 16px color-mix(in srgb,var(--tone) 18%,transparent)}
+.progress-strip button:focus-visible{outline:2px solid var(--tone);outline-offset:2px}
+.progress-strip button>svg:first-child{flex:0 0 auto;color:var(--tone)}
+.progress-strip button>svg:last-child{flex:0 0 auto;color:var(--muted)}
+.progress-strip button span{display:flex;flex-direction:column;gap:2px;line-height:1.25;white-space:nowrap}.progress-strip button strong{font-size:.8rem;font-weight:600}
+.progress-strip button b{color:var(--tone);font-weight:800}
+.progress-strip button small{color:var(--muted);font-size:.66rem}
+.progress-strip button.warn{--tone:#c27c00}.progress-strip button.bad{--tone:#c8433a}.progress-strip button.good{--tone:#138a67}.progress-strip button.neutral{--tone:#5d7385}
+.progress-strip button.info i{position:absolute;left:0;bottom:0;height:3px;width:var(--strip-progress);background:var(--tone);border-radius:0 3px 0 0}
+.progress-strip button.attention:before{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 2px var(--tone);opacity:0;animation:strip-attention 3.2s ease-in-out infinite}
+@keyframes strip-attention{0%,100%{opacity:0}25%{opacity:.55}50%{opacity:0}}
+@keyframes strip-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+html[data-aula-theme="oscuro"] .progress-strip button{background:color-mix(in srgb,var(--tone) 14%,var(--surface))}
+html[data-aula-theme="oscuro"] .progress-strip button b{color:color-mix(in srgb,var(--tone) 55%,#fff)}
+@media (max-width:760px){
+  .progress-strip{margin:0 -2px 12px;padding:6px;gap:6px;scroll-snap-type:x proximity}
+  .progress-strip-label{display:none}
+  .progress-strip button{flex:0 0 auto;scroll-snap-align:start;padding:7px 10px}
+  .progress-strip button>svg:last-child{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .nav-signal.pulse:after,.nav-signal.dot:after,.sidebar nav button:has(.nav-signal.pulse),.progress-strip,.progress-strip button.attention:before{animation:none}
+  .progress-strip button.attention:before{opacity:.45}
+  .progress-strip button{transition:none}
+}
