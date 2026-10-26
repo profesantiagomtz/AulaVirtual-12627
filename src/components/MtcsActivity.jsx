@@ -131,6 +131,30 @@ export const mtcsContent = {
       ['conclusion', 'Conclusión: explica qué otra tarea de seguridad te gustaría automatizar con programación y qué necesitarías aprender.'],
     ],
   },
+  'MTCS-RA-3.2': {
+    label: 'MTCS · R.A. 3.2',
+    materialTitle: 'Estructuras de flujo de control y funciones',
+    intro: 'Este R.A. enseña a controlar el flujo de un programa en Python: decidir, repetir, trabajar con listas, organizar el código en funciones y atrapar errores. Al final elaborarás un reporte con el escenario asignado.',
+    lessons: [
+      ['1. Condiciones', 'if ejecuta un bloque solo si la condición es True; elif revisa otra condición y else cubre el resto. and exige que se cumplan las dos condiciones y or basta con una. El orden importa: primero se revisa el bloqueo y después la clave.'],
+      ['2. Bucles', 'while repite mientras la condición sea True (útil para pedir la clave hasta 3 veces). for recorre una lista o un range(). break sale del ciclo y continue salta a la siguiente iteración. Algo debe cambiar dentro del while para que termine.'],
+      ['3. Operadores bit a bit y listas', 'Con | se juntan permisos, con & se revisa uno y con ^ se quita. Una lista guarda muchos datos: append agrega, count cuenta, sorted ordena y for la recorre para buscar el mayor o filtrar sospechosos.'],
+      ['4. Funciones', 'def crea una función con parámetros; al llamarla se mandan argumentos y return entrega el resultado. Una función puede llamar a otra y los parámetros pueden tener valor por omisión.'],
+      ['5. Excepciones', 'try contiene lo que puede fallar y except atrapa el error (ValueError, ZeroDivisionError). else corre si no hubo error y finally siempre. raise lanza una excepción cuando un dato no tiene sentido.'],
+    ],
+    example: 'Ejemplo: un while pide la clave hasta 3 veces; si el usuario acierta, break termina el ciclo y se muestra «Acceso concedido»; si falla 3 veces, se muestra «Cuenta bloqueada». La función es_segura(clave) regresa True si la clave tiene 12 caracteres o más, y un try/except evita que el programa se caiga si escriben letras donde van números.',
+    taskTitle: 'Actividad de evaluación: reporte de flujo de control y funciones',
+    taskIntro: 'Elabora un reporte en PDF con el escenario asignado por la plataforma. Incluye tu código en Python y capturas de la salida de cada programa. Valor máximo: 60 puntos.',
+    fields: [
+      ['context', 'Describe el escenario asignado y qué debe resolver tu programa.'],
+      ['conditions', 'Condiciones: muestra el programa de acceso con if, elif, else y operadores lógicos (and, or) usando los usuarios y la clave asignados; explica el orden de las condiciones.'],
+      ['loops', 'Bucles: muestra cómo pides la clave con while hasta el límite de intentos asignado, con break, y un for que recorra los registros del día.'],
+      ['lists', 'Listas y algoritmos: con los registros asignados, cuenta los accesos de un usuario, quita repetidos, ordénalos y encuentra el mayor número de fallos sin usar max(). Si usaste operadores bit a bit para permisos, explícalos.'],
+      ['functions', 'Funciones: describe al menos dos funciones tuyas, sus parámetros, su return y cómo se comunican entre ellas.'],
+      ['exceptions', 'Excepciones y depuración: muestra un try/except que evite que el programa se caiga y describe un error de sintaxis, de ejecución o de lógica que corregiste.'],
+      ['conclusion', 'Conclusión: explica qué parte del flujo de control te pareció más útil para la seguridad y por qué.'],
+    ],
+  },
 }
 
 function hash(text) {
@@ -166,6 +190,17 @@ function assignmentFor(studentId, assessmentId, code) {
       lines: [`Sistema: control de acceso de un ${places[seed % places.length]}`, `Usuarios registrados: ${20 + (seed % 80)}`, `Longitud de contraseña: ${6 + ((seed >> 5) % 7)} caracteres`, `Caracteres permitidos: ${chars[0]} (${chars[1]})`, `Intentos por segundo de un atacante: ${[1000, 100000, 1000000000][(seed >> 7) % 3]}`],
     }
   }
+  if (code === 'MTCS-RA-3.2') {
+    const places = ['laboratorio de cómputo', 'biblioteca escolar', 'cooperativa de ahorro', 'tienda en línea', 'consultorio médico', 'gimnasio']
+    const names = ['ana', 'luis', 'sofia', 'pedro', 'carla', 'diego', 'elena', 'marco', 'rosa', 'tomas']
+    const users = [0, 1, 2, 3].map((step) => names[(seed + step * 3) % names.length])
+    const log = Array.from({ length: 8 }, (_, index) => users[(seed >> (index + 2)) % users.length])
+    const fails = Array.from({ length: 6 }, (_, index) => ((seed >> (index * 3)) % 10) + 1)
+    return {
+      title: `Escenario ${String(seed % 997).padStart(3, '0')}`,
+      lines: [`Sistema: control de acceso de un ${places[seed % places.length]}`, `Usuarios autorizados: ${users.join(', ')} · Clave: Acceso${String(1000 + (seed % 9000))}`, `Intentos antes de bloquear la cuenta: ${3 + (seed % 3)}`, `Registros del día: ${log.join(', ')}`, `Intentos fallidos por equipo: ${fails.join(', ')} · sospechoso desde ${4 + ((seed >> 4) % 3)} fallos`],
+    }
+  }
   if (code === 'MTCS-RA-2.2') {
     const organizations = ['clínica dental con expedientes electrónicos', 'tienda en línea de refacciones', 'despacho contable con declaraciones de clientes', 'escuela con plataforma de calificaciones', 'cibercafé con servicio de impresión', 'farmacia con sistema de inventario y ventas']
     const incidents = ['se cortó la energía y el servidor no volvió a encender', 'un ransomware cifró la carpeta compartida', 'se detectaron cambios no autorizados en precios o registros', 'el disco del servidor principal falló sin aviso', 'un empleado instaló software sin licencia que desactivó el antivirus']
@@ -188,6 +223,7 @@ const mtcsDeliverables = {
   'MTCS-RA-1.2': { label: 'Reporte final', accept: '.pdf,application/pdf', extensions: ['pdf'], help: 'Archivo PDF · máximo 20 MB' },
   'MTCS-RA-2.2': { label: 'Reporte final', accept: '.pdf,application/pdf', extensions: ['pdf'], help: 'Archivo PDF · máximo 20 MB' },
   'MTCS-RA-3.1': { label: 'Reporte final', accept: '.pdf,application/pdf', extensions: ['pdf'], help: 'Archivo PDF · máximo 20 MB' },
+  'MTCS-RA-3.2': { label: 'Reporte final', accept: '.pdf,application/pdf', extensions: ['pdf'], help: 'Archivo PDF · máximo 20 MB' },
   'MTCS-RA-2.1': { label: 'Presentación electrónica', accept: '.pptx,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf', extensions: ['pptx', 'pdf'], help: 'Archivo PPTX o PDF · máximo 20 MB' },
 }
 

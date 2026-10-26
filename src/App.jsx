@@ -77,7 +77,7 @@ function materialCodeForActivity(activityCode = '') {
 }
 
 function assessmentRequiresProgress(activityCode = '') {
-  return activityCode.startsWith('MTCS-RA-') || activityCode.startsWith('PEAR-') || activityCode.startsWith('EDOA-') || ['ASIN-RA-1.2', 'MSII-RA-1.2', 'ASIN-RA-2.1', 'MSII-RA-2.1'].includes(activityCode)
+  return activityCode.startsWith('MTCS-RA-') || activityCode.startsWith('PEAR-') || activityCode.startsWith('EDOA-') || ['ASIN-RA-1.2', 'MSII-RA-1.2', 'ASIN-RA-2.1', 'MSII-RA-2.1', 'ASIN-RA-2.2', 'MSII-RA-2.2', 'ASIN-RA-2.3'].includes(activityCode)
 }
 
 function assessmentIsLocked(assessment, learningProgress = []) {
@@ -95,6 +95,9 @@ const integratedMaterials = [
     { id: 'integrated-msii-ra12', title: 'MSII · Material didáctico R.A. 1.2', description: 'Gestión de recursos del sistema operativo', unit: 'R.A. 1.2', type: 'Interactivo', url: 'courseware://MSII-RA-1.2', published: true, group: '310', date: 'Integrado', system: true },
     { id: 'integrated-asin-ra21', title: 'ASIN · Material didáctico R.A. 2.1', description: 'Instala y configura herramientas de seguridad', unit: 'R.A. 2.1', type: 'Interactivo', url: 'courseware://ASIN-RA-2.1', published: true, group: '310', date: 'Integrado', system: true },
     { id: 'integrated-msii-ra21', title: 'MSII · Material didáctico R.A. 2.1', description: 'Opera el sistema operativo con comandos', unit: 'R.A. 2.1', type: 'Interactivo', url: 'courseware://MSII-RA-2.1', published: true, group: '310', date: 'Integrado', system: true },
+    { id: 'integrated-asin-ra22', title: 'ASIN · Material didáctico R.A. 2.2', description: 'Da seguimiento a las herramientas de seguridad', unit: 'R.A. 2.2', type: 'Interactivo', url: 'courseware://ASIN-RA-2.2', published: true, group: '310', date: 'Integrado', system: true },
+    { id: 'integrated-asin-ra23', title: 'ASIN · Material didáctico R.A. 2.3', description: 'Controla parámetros de seguridad', unit: 'R.A. 2.3', type: 'Interactivo', url: 'courseware://ASIN-RA-2.3', published: true, group: '310', date: 'Integrado', system: true },
+    { id: 'integrated-msii-ra22', title: 'MSII · Material didáctico R.A. 2.2', description: 'Opera el sistema operativo multiusuario', unit: 'R.A. 2.2', type: 'Interactivo', url: 'courseware://MSII-RA-2.2', published: true, group: '310', date: 'Integrado', system: true },
 ]
 
 // Sin Supabase, la sesión de demostración se comporta como vista previa: nada se guarda.
@@ -704,10 +707,16 @@ function StudentAssessmentCards({ items, onOpen, onLearn }) {
 function AssessmentTable({ items, student, onOpen, onToggle }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className={`table-wrap ${student ? 'student-assessment-table' : ''}`}><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Actividad</th>}<th>{student ? 'Estado' : 'Publicación'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id} className={a.locked ? 'locked-assessment' : ''}><td data-label="Evaluación"><div className="title-cell"><div className="mini-icon">{a.locked ? <Lock size={17} /> : <ClipboardCheck size={17} />}</div><strong>{a.title}</strong></div></td><td data-label="Grupo">{a.group}</td><td data-label="Entrega">{a.due}</td>{!student && <td data-label="Actividad"><strong>{a.submissions}</strong> entregas · {a.drafts} avances</td>}<td data-label="Estado"><span className={`tag ${a.status === 'Activa' && !a.locked ? 'active' : ''}`}>{a.locked ? 'BLOQUEADA' : a.status}</span></td><td className="assessment-open"><div className="table-actions"><button className="text-btn" disabled={a.locked} onClick={() => !a.locked && onOpen?.(a)}>{a.locked ? 'Completa los materiales' : student ? 'Abrir actividad' : 'Resultados'} {!a.locked && <ChevronRight size={15} />}</button>{!student && onToggle && <button className="lock-btn" onClick={() => onToggle(a)}>{a.status === 'Activa' ? <Lock size={15} /> : <Unlock size={15} />}{a.status === 'Activa' ? 'Bloquear' : 'Publicar'}</button>}</div></td></tr>)}</tbody></table></div> }
 
 const spreadsheetDelivery = {
-  extensions: ['xlsx', 'pdf'],
-  accept: '.xlsx,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf',
-  label: 'libro de Excel (.xlsx) o PDF',
-  short: 'XLSX o PDF',
+  extensions: ['xlsx', 'xlsm', 'pdf'],
+  accept: '.xlsx,.xlsm,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12,application/pdf',
+  label: 'libro de Excel (.xlsx o .xlsm) o PDF',
+  short: 'XLSX, XLSM o PDF',
+}
+const presentationDelivery = {
+  extensions: ['pptx', 'pdf'],
+  accept: '.pptx,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf',
+  label: 'presentación de PowerPoint (.pptx) o PDF',
+  short: 'PPTX o PDF',
 }
 const documentDelivery = {
   extensions: ['docx', 'pdf'],
@@ -717,8 +726,8 @@ const documentDelivery = {
 }
 
 function GenericActivity({ assessment, session, onBack }) {
-  // La Unidad 3 de EDOA (hoja de cálculo) se entrega como libro de trabajo.
-  const delivery = assessment.activityCode?.startsWith('EDOA-RA-3.') ? spreadsheetDelivery : documentDelivery
+  // En EDOA la Unidad 2 se entrega como presentación y la Unidad 3 como libro de trabajo.
+  const delivery = assessment.activityCode?.startsWith('EDOA-RA-3.') ? spreadsheetDelivery : assessment.activityCode?.startsWith('EDOA-RA-2.') ? presentationDelivery : documentDelivery
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -1150,7 +1159,7 @@ function AssessmentModal({ groups, onClose, onSave }) {
   const [data, setData] = useState({ title: '', groupId: groups[0]?.id || '', dueAt: '', instructions: '', activityCode: 'ASIN-RA-1.1' })
   const [error, setError] = useState(''); const [busy, setBusy] = useState(false)
   async function submit(event) { event.preventDefault(); setBusy(true); setError(''); try { await onSave(data) } catch (err) { setError(err.message || 'No fue posible crear la evaluación') } finally { setBusy(false) } }
-  return <Modal title="Nueva evaluación" onClose={onClose}><form onSubmit={submit}><label>Tipo de actividad<select required value={data.activityCode} onChange={e => setData({...data,activityCode:e.target.value})}><option value="ASIN-RA-1.1">ASIN · Actividad en plataforma</option><option value="MSII-RA-1.1">MSII · Documento DOCX</option><option value="ASIN-RA-1.2">ASIN 1.2 · Entrega de archivo</option><option value="MSII-RA-1.2">MSII 1.2 · Entrega de archivo</option><option value="ASIN-RA-2.1">ASIN 2.1 · Entrega de archivo</option><option value="MSII-RA-2.1">MSII 2.1 · Entrega de archivo</option></select></label><label>Título<input required value={data.title} onChange={e => setData({...data,title:e.target.value})} placeholder="Nombre de la evaluación" /></label><div className="form-row"><label>Grupo<select required value={data.groupId} onChange={e => setData({...data,groupId:e.target.value})}>{groups.map(group=><option key={group.id} value={group.id}>{group.code}</option>)}</select></label><label>Fecha límite<input type="datetime-local" required value={data.dueAt} onChange={e => setData({...data,dueAt:e.target.value})} /></label></div><label>Instrucciones<textarea value={data.instructions} onChange={e => setData({...data,instructions:e.target.value})} placeholder="Indicaciones para los alumnos" rows="4" /></label><div className="info-note compact">Solo se muestran tipos de actividad que ya cuentan con un espacio de trabajo funcional para el alumno.</div>{error && <div className="form-error">{error}</div>}<ModalActions onClose={onClose} label={busy ? 'Creando…' : 'Crear evaluación'} disabled={busy} /></form></Modal>
+  return <Modal title="Nueva evaluación" onClose={onClose}><form onSubmit={submit}><label>Tipo de actividad<select required value={data.activityCode} onChange={e => setData({...data,activityCode:e.target.value})}><option value="ASIN-RA-1.1">ASIN · Actividad en plataforma</option><option value="MSII-RA-1.1">MSII · Documento DOCX</option><option value="ASIN-RA-1.2">ASIN 1.2 · Entrega de archivo</option><option value="MSII-RA-1.2">MSII 1.2 · Entrega de archivo</option><option value="ASIN-RA-2.1">ASIN 2.1 · Entrega de archivo</option><option value="MSII-RA-2.1">MSII 2.1 · Entrega de archivo</option><option value="ASIN-RA-2.2">ASIN 2.2 · Entrega de archivo</option><option value="ASIN-RA-2.3">ASIN 2.3 · Entrega de archivo</option><option value="MSII-RA-2.2">MSII 2.2 · Entrega de archivo</option></select></label><label>Título<input required value={data.title} onChange={e => setData({...data,title:e.target.value})} placeholder="Nombre de la evaluación" /></label><div className="form-row"><label>Grupo<select required value={data.groupId} onChange={e => setData({...data,groupId:e.target.value})}>{groups.map(group=><option key={group.id} value={group.id}>{group.code}</option>)}</select></label><label>Fecha límite<input type="datetime-local" required value={data.dueAt} onChange={e => setData({...data,dueAt:e.target.value})} /></label></div><label>Instrucciones<textarea value={data.instructions} onChange={e => setData({...data,instructions:e.target.value})} placeholder="Indicaciones para los alumnos" rows="4" /></label><div className="info-note compact">Solo se muestran tipos de actividad que ya cuentan con un espacio de trabajo funcional para el alumno.</div>{error && <div className="form-error">{error}</div>}<ModalActions onClose={onClose} label={busy ? 'Creando…' : 'Crear evaluación'} disabled={busy} /></form></Modal>
 }
 
 function ThemeModal({ selected, onSelect, onClose }) {
