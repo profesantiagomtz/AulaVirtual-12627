@@ -52,6 +52,13 @@ const courseMaterials = {
     description: 'Tipos, elementos, diseño y edición de gráficas, y macros con referencias absolutas y relativas, con seis simuladores sobre la cafetería del plantel.',
     file: 'courses/edoa-ra33-material.html',
   },
+  'EDOA-RA-3.4': {
+    course: 'EDOA',
+    label: 'R.A. 3.4',
+    title: 'Tablas dinámicas y protección',
+    description: 'Tablas y gráficos dinámicos, vista preliminar y protección de hojas y libros, con cinco simuladores sobre las ventas de la cafetería.',
+    file: 'courses/edoa-ra34-material.html',
+  },
   'MTCS-RA-1.2': {
     course: 'MTCS',
     label: 'R.A. 1.2',
