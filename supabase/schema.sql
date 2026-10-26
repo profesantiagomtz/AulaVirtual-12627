@@ -156,5 +156,5 @@ create policy "assigned users download materials" on storage.objects for select 
 
 -- Datos iniciales de ejemplo. Cambia códigos, carreras y reglas por los de tu plantel.
 insert into public.groups(code,semester,career) values
-('111',1,'Formación básica'),('310',3,'Informática'),('311',3,'Informática'),('511',5,'Informática')
+('310',3,'Informática'),('311',3,'Informática'),('511',5,'Informática')
 on conflict(code) do nothing;

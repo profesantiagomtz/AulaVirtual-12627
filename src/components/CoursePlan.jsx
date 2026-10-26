@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { BookOpen, CalendarDays, CheckCircle2, ChevronRight, ClipboardCheck, Clock3, FileText, Lock, Star, Unlock } from 'lucide-react'
 import { coursePlans } from '../data/plan'
 
-// Organización por resultado de aprendizaje (R.A.), igual que la plataforma PEAR:
+// Organización por resultado de aprendizaje (R.A.), como en el programa de estudios:
 // cada materia muestra sus R.A. con horas, ponderación y fechas, y dentro de cada uno su material y su evaluación.
 
 export function itemBelongsToCourse(item, course, sameGroupCourses) {
@@ -57,7 +57,7 @@ export function raCodeOf(item, course) {
 
 export function progressCodeFor(material) {
   if (material.url === 'edoa://EDOA-WORD-U1') return 'EDOA-RA-1.1'
-  const match = String(material.url || '').match(/^(?:mtcs|pear|edoa|courseware):\/\/(.+)$/)
+  const match = String(material.url || '').match(/^(?:mtcs|edoa|courseware):\/\/(.+)$/)
   return match ? match[1] : null
 }
 

@@ -1,9 +1,5 @@
 export const courses = [
   {
-    code: 'PEAR', group: '111', name: 'Pensamiento Matemático I', semester: 1, hoursPerWeek: 5,
-    source: 'Pensamiento Matemático I.pdf',
-  },
-  {
     code: 'ASIN', group: '310', name: 'Aplicación de la seguridad informática', semester: 3, hoursPerWeek: 4,
     source: 'PE_ASIN-20.pdf',
     outcomes: ['1.1 Determina riesgos de seguridad informática.', '1.2 Elabora el plan de seguridad en cómputo.', '2.1 Instala y configura herramientas de seguridad.', '2.2 Da seguimiento a herramientas de seguridad.', '2.3 Controla parámetros de seguridad.'],
