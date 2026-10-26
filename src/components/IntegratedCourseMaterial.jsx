@@ -59,6 +59,27 @@ const courseMaterials = {
     description: 'Tablas y gráficos dinámicos, vista preliminar y protección de hojas y libros, con cinco simuladores sobre las ventas de la cafetería.',
     file: 'courses/edoa-ra34-material.html',
   },
+  'EDOA-RA-4.1': {
+    course: 'EDOA',
+    label: 'R.A. 4.1',
+    title: 'Navegar y buscar seguro',
+    description: 'Internet, IP, DNS y protocolos, partes del navegador, descargas seguras, phishing y búsqueda avanzada, con cuatro simuladores de navegador.',
+    file: 'courses/edoa-ra41-material.html',
+  },
+  'EDOA-RA-4.2': {
+    course: 'EDOA',
+    label: 'R.A. 4.2',
+    title: 'Configurar el cliente de correo',
+    description: 'Servidores y clientes de correo, SMTP, POP3 e IMAP, puertos y seguridad, con dos simuladores de configuración de cuentas.',
+    file: 'courses/edoa-ra42-material.html',
+  },
+  'EDOA-RA-4.3': {
+    course: 'EDOA',
+    label: 'R.A. 4.3',
+    title: 'Correo y mensajería',
+    description: 'Redactar con CC, CCO y adjuntos, filtros, carpetas, uso responsable, acuses y mensajería instantánea, con cuatro simuladores.',
+    file: 'courses/edoa-ra43-material.html',
+  },
   'MTCS-RA-1.2': {
     course: 'MTCS',
     label: 'R.A. 1.2',
