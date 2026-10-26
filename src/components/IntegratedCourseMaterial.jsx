@@ -45,6 +45,13 @@ const courseMaterials = {
     description: 'Fórmulas, referencias, nombres y funciones de varias categorías, con cuatro hojas de cálculo simuladas, ejercicios y prácticas sobre la cafetería del plantel.',
     file: 'courses/edoa-ra32-material.html',
   },
+  'EDOA-RA-3.3': {
+    course: 'EDOA',
+    label: 'R.A. 3.3',
+    title: 'Gráficas y macros',
+    description: 'Tipos, elementos, diseño y edición de gráficas, y macros con referencias absolutas y relativas, con seis simuladores sobre la cafetería del plantel.',
+    file: 'courses/edoa-ra33-material.html',
+  },
   'MTCS-RA-1.2': {
     course: 'MTCS',
     label: 'R.A. 1.2',

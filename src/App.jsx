@@ -706,10 +706,10 @@ function StudentAssessmentCards({ items, onOpen, onLearn }) {
 function AssessmentTable({ items, student, onOpen, onToggle }) { if (!items.length) return <EmptyState text="Todavía no hay evaluaciones registradas." />; return <div className={`table-wrap ${student ? 'student-assessment-table' : ''}`}><table><thead><tr><th>Evaluación</th><th>Grupo</th><th>Entrega</th>{!student && <th>Actividad</th>}<th>{student ? 'Estado' : 'Publicación'}</th><th /></tr></thead><tbody>{items.map(a => <tr key={a.id} className={a.locked ? 'locked-assessment' : ''}><td data-label="Evaluación"><div className="title-cell"><div className="mini-icon">{a.locked ? <Lock size={17} /> : <ClipboardCheck size={17} />}</div><strong>{a.title}</strong></div></td><td data-label="Grupo">{a.group}</td><td data-label="Entrega">{a.due}</td>{!student && <td data-label="Actividad"><strong>{a.submissions}</strong> entregas · {a.drafts} avances</td>}<td data-label="Estado"><span className={`tag ${a.status === 'Activa' && !a.locked ? 'active' : ''}`}>{a.locked ? 'BLOQUEADA' : a.status}</span></td><td className="assessment-open"><div className="table-actions"><button className="text-btn" disabled={a.locked} onClick={() => !a.locked && onOpen?.(a)}>{a.locked ? 'Completa los materiales' : student ? 'Abrir actividad' : 'Resultados'} {!a.locked && <ChevronRight size={15} />}</button>{!student && onToggle && <button className="lock-btn" onClick={() => onToggle(a)}>{a.status === 'Activa' ? <Lock size={15} /> : <Unlock size={15} />}{a.status === 'Activa' ? 'Bloquear' : 'Publicar'}</button>}</div></td></tr>)}</tbody></table></div> }
 
 const spreadsheetDelivery = {
-  extensions: ['xlsx', 'pdf'],
-  accept: '.xlsx,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf',
-  label: 'libro de Excel (.xlsx) o PDF',
-  short: 'XLSX o PDF',
+  extensions: ['xlsx', 'xlsm', 'pdf'],
+  accept: '.xlsx,.xlsm,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12,application/pdf',
+  label: 'libro de Excel (.xlsx o .xlsm) o PDF',
+  short: 'XLSX, XLSM o PDF',
 }
 const presentationDelivery = {
   extensions: ['pptx', 'pdf'],
