@@ -143,6 +143,13 @@ const courseMaterials = {
     description: 'Reportes de estado, modificación de configuraciones con control de cambios y respaldo de configuraciones, con un centro de seguridad simulado.',
     file: 'courses/asin-ra22-material.html',
   },
+  'ASIN-RA-2.3': {
+    course: 'ASIN',
+    label: 'R.A. 2.3',
+    title: 'Controla parámetros de seguridad',
+    description: 'Auditoría de equipos y red contra el plan de seguridad, métricas, nuevos requerimientos, planes de contingencia y actualizaciones, con una consola de auditoría simulada.',
+    file: 'courses/asin-ra23-material.html',
+  },
   'MSII-RA-2.2': {
     course: 'MSII',
     label: 'R.A. 2.2',
