@@ -101,6 +101,13 @@ const courseMaterials = {
     description: 'Sistema operativo, rutas, CMD, variables de entorno y PowerShell, con consolas simuladas para practicar sin riesgo.',
     file: 'courses/msii-ra21-material.html',
   },
+  'ASIN-RA-2.2': {
+    course: 'ASIN',
+    label: 'R.A. 2.2',
+    title: 'Da seguimiento a las herramientas de seguridad',
+    description: 'Reportes de estado, modificación de configuraciones con control de cambios y respaldo de configuraciones, con un centro de seguridad simulado.',
+    file: 'courses/asin-ra22-material.html',
+  },
   'MSII-RA-2.2': {
     course: 'MSII',
     label: 'R.A. 2.2',
