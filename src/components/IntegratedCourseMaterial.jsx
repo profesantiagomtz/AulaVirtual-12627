@@ -108,6 +108,13 @@ const courseMaterials = {
     description: 'Programación en Python: variables, tipos de datos, operadores, errores y herramientas, con un laboratorio que ejecuta tu código aquí mismo.',
     file: 'courses/mtcs-ra31-material.html',
   },
+  'MTCS-RA-3.2': {
+    course: 'MTCS',
+    label: 'R.A. 3.2',
+    title: 'Estructuras de flujo de control y funciones',
+    description: 'Python con decisiones, ciclos, listas, operadores de bits, funciones y excepciones, con siete laboratorios que ejecutan tu código aquí mismo.',
+    file: 'courses/mtcs-ra32-material.html',
+  },
   'ASIN-RA-1.2': {
     course: 'ASIN',
     label: 'R.A. 1.2',
