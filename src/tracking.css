@@ -1,0 +1,159 @@
+/* Seguimiento docente: «En vivo», «Avance» y «Asistencia». Usa los colores de la identidad «Cuaderno». */
+
+.tracking-page { --ok: var(--green, #17845b); --warn: #a86a00; --bad: var(--red, #c8323a); --ok-soft: #e5f4ec; --warn-soft: #fff3c4; --bad-soft: #fde8e8 }
+.tracking-page .list-toolbar { align-items: flex-start }
+
+.tracking-live { display: inline-flex; align-items: center; gap: 8px; flex: none; padding: 7px 12px; border: 1px solid #b9dcc9; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-size: .8125rem; font-weight: 700 }
+.tracking-live i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: tracking-pulse 1.8s ease-out infinite }
+@keyframes tracking-pulse { 0% { box-shadow: 0 0 0 0 rgba(23, 132, 91, .45) } 100% { box-shadow: 0 0 0 8px rgba(23, 132, 91, 0) } }
+
+.tracking-setup { display: flex; gap: 12px; align-items: flex-start; margin: 0 0 18px; padding: 14px 16px; border: 1px dashed var(--linea-fuerte, #c8d2e4); border-left: 4px solid var(--marcatextos, #ffe14d); border-radius: var(--radius-md, 8px); background: #fffdf0 }
+.tracking-setup svg { flex: none; margin-top: 2px; color: var(--warn) }
+.tracking-setup strong { display: block; color: var(--ink) }
+.tracking-setup span { color: var(--muted); font-size: .875rem; line-height: 1.5 }
+.tracking-setup code { padding: 1px 5px; border-radius: 4px; background: var(--surface-soft); color: var(--ink); font-size: .8125rem }
+
+.tracking-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 14px }
+.tracking-filters > select { min-width: 220px; flex: 0 1 320px }
+.tracking-filters .search { flex: 1 1 260px; min-width: 0 }
+.tracking-check { display: inline-flex; gap: 8px; align-items: center; color: var(--ink); font-size: .875rem; font-weight: 600; cursor: pointer }
+.tracking-check input { flex: none; width: 18px; height: 18px; min-height: 0; margin: 0; padding: 0; accent-color: var(--tinta, #2340a8) }
+.tracking-page .nowrap { white-space: nowrap }
+.tracking-hint { margin: 0 0 12px; color: var(--muted); font-size: .8125rem; line-height: 1.5 }
+.tracking-hint-side { color: var(--muted); font-size: .8125rem; text-align: right }
+.tracking-message { margin: -4px 0 10px; color: var(--ok); font-size: .8125rem; font-weight: 700 }
+
+/* En vivo */
+.live-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; align-items: start }
+.live-card { min-width: 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius-lg, 12px); background: var(--surface) }
+.live-card h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 1.125rem }
+.live-card h2 span { min-width: 26px; padding: 1px 8px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-size: .8125rem; text-align: center }
+.live-empty { margin: 18px 0; color: var(--muted); text-align: center }
+.online-list, .feed-list { margin: 0; padding: 0; list-style: none }
+.online-list li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line) }
+.online-list li:first-child { border-top: 0 }
+.online-list .avatar { position: relative; flex: none }
+.online-list .avatar i { position: absolute; right: -2px; bottom: -2px; width: 11px; height: 11px; border: 2px solid var(--surface); border-radius: 50%; background: var(--ok) }
+.online-list strong { display: block; color: var(--ink); font-size: .9375rem }
+.online-list span, .online-list small { display: block; color: var(--muted); font-size: .8125rem; line-height: 1.4 }
+.online-list small { color: var(--tinta, #2340a8); font-weight: 600 }
+.feed-list { max-height: 640px; overflow-y: auto; margin-right: -8px; padding-right: 8px }
+.feed-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line) }
+.feed-list li:first-child { border-top: 0 }
+.feed-list p { margin: 0; color: var(--ink); font-size: .875rem; line-height: 1.45 }
+.feed-list p b:first-child { font-weight: 700 }
+.feed-list time { color: var(--muted); font-size: .75rem; white-space: nowrap; padding-top: 2px }
+.feed-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; background: var(--surface-soft); color: var(--muted) }
+.feed-entrada .feed-icon { background: #e8edfb; color: var(--tinta, #2340a8) }
+.feed-avance .feed-icon { background: #fff7d1; color: var(--warn) }
+.feed-completo .feed-icon, .feed-entrega .feed-icon { background: var(--ok-soft); color: var(--ok) }
+.feed-inicio .feed-icon { background: #f0eafc; color: var(--purple, #6a4fc0) }
+
+/* Avance */
+.tracking-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px }
+.tracking-stats > div { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-lg, 12px); background: var(--surface) }
+.tracking-stats strong { display: block; color: var(--pasta, var(--ink)); font-family: var(--font-display); font-size: 1.75rem; line-height: 1.1; font-variant-numeric: tabular-nums }
+.tracking-stats span { color: var(--muted); font-size: .8125rem }
+.tracking-stats .alert { border-color: #f0c4c6; background: var(--bad-soft) }
+.tracking-stats .alert strong { color: var(--bad) }
+.progress-table table { min-width: 980px }
+.progress-table th, .progress-table td { vertical-align: middle }
+.progress-table .ra-col { width: 46px; padding-left: 4px; padding-right: 4px; text-align: center }
+.progress-table td small, .attendance-table td small, .attendance-summary td small { display: block; color: var(--muted); font-size: .75rem }
+.progress-table tr.needs-attention td:first-child, .attendance-summary tr.needs-attention td:first-child { box-shadow: inset 3px 0 0 var(--bad) }
+.student-link { padding: 0; border: 0; background: none; color: var(--tinta, #2340a8); font: inherit; font-weight: 700; text-align: left; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; cursor: pointer }
+.student-link:hover { color: var(--tinta-hover, #1a3189) }
+.progress-cell { display: grid; gap: 4px; min-width: 70px }
+.progress-cell b { font-variant-numeric: tabular-nums }
+.progress-cell span { height: 6px; overflow: hidden; border-radius: 99px; background: var(--surface-soft); box-shadow: inset 0 0 0 1px var(--line) }
+.progress-cell i { display: block; height: 100%; border-radius: inherit; background: var(--tinta, #2340a8) }
+.ra-pct { display: inline-block; min-width: 34px; padding: 2px 6px; border-radius: 999px; font-size: .75rem; font-weight: 700; font-variant-numeric: tabular-nums }
+.ra-pct.full { background: var(--ok-soft); color: var(--ok) }
+.ra-pct.good { background: #e8edfb; color: var(--tinta, #2340a8) }
+.ra-pct.low { background: var(--warn-soft); color: var(--warn) }
+.ra-pct.zero { background: var(--bad-soft); color: var(--bad) }
+.ra-pct.future { color: var(--muted) }
+.ra-none { color: var(--linea-fuerte, #c8d2e4) }
+.alert-list { display: flex; flex-wrap: wrap; gap: 5px; max-width: 260px }
+.alert-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: .75rem; font-weight: 700; line-height: 1.35 }
+.alert-chip.high { background: var(--bad-soft); color: #a1262d }
+.alert-chip.medium { background: var(--warn-soft); color: #7d5200 }
+.alert-chip.ok { background: var(--ok-soft); color: var(--ok) }
+
+/* Asistencia */
+.attendance-tabs { display: inline-flex; gap: 4px; margin: 0 0 16px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft) }
+.attendance-tabs button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border: 0; border-radius: 7px; background: none; color: var(--muted); font-weight: 700; cursor: pointer }
+.attendance-tabs button.active { background: var(--pasta, var(--navy)); color: #fff }
+.attendance-actions > select { flex: 1 1 220px }
+.attendance-actions .tracking-hint { flex: 1 1 280px; margin: 0 }
+.schedule-row { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin: 0 0 12px; padding: 10px 14px; border-radius: var(--radius-md, 8px); background: var(--surface-soft); color: var(--ink); font-size: .875rem }
+.schedule-row > svg { color: var(--tinta, #2340a8) }
+.schedule-row label { display: inline-flex; align-items: center; gap: 6px }
+.schedule-row input { width: auto; min-height: 36px; padding: 4px 8px }
+.schedule-row input[type="number"] { width: 64px }
+.attendance-counts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px }
+.attendance-counts span { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: .8125rem }
+.attendance-counts .asistio svg { color: var(--ok) } .attendance-counts .retardo svg { color: var(--warn) }
+.attendance-counts .falto svg { color: var(--bad) } .attendance-counts .justifico svg { color: var(--tinta, #2340a8) }
+.attendance-table td { vertical-align: middle }
+.attendance-num { width: 48px; color: var(--muted); font-variant-numeric: tabular-nums }
+.attendance-source { min-width: 150px }
+.conn { display: inline-flex; align-items: center; gap: 6px; font-size: .8125rem; font-weight: 600 }
+.conn:before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor }
+.conn.on { color: var(--ok) } .conn.off { color: var(--muted) }
+.attendance-buttons { display: grid; grid-template-columns: repeat(4, minmax(64px, 1fr)); gap: 6px; max-width: 340px }
+.attendance-buttons button { display: grid; justify-items: center; gap: 2px; min-height: 52px; padding: 6px 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--muted); font-size: .75rem; font-weight: 600; cursor: pointer; transition: background .15s, border-color .15s, color .15s }
+.attendance-buttons button:hover { border-color: var(--linea-fuerte, #c8d2e4); color: var(--ink) }
+.attendance-buttons button.asistio.active { border-color: var(--ok); background: var(--ok); color: #fff }
+.attendance-buttons button.retardo.active { border-color: #d59b00; background: #ffd34d; color: #4d3500 }
+.attendance-buttons button.falto.active { border-color: var(--bad); background: var(--bad); color: #fff }
+.attendance-buttons button.justifico.active { border-color: var(--tinta, #2340a8); background: var(--tinta, #2340a8); color: #fff }
+/* Estado sugerido por la conexión: mismo color, pero en contorno hasta que el docente lo confirma. */
+.attendance-buttons button.active.auto { background: var(--surface); border-width: 2px; border-style: dashed }
+.attendance-buttons button.asistio.active.auto { color: var(--ok) }
+.attendance-buttons button.retardo.active.auto { color: #7d5200; border-color: #d59b00 }
+.attendance-buttons button.falto.active.auto { color: var(--bad) }
+.attendance-summary td:not(:first-child), .attendance-summary th:not(:first-child) { text-align: center }
+.attendance-summary .progress-cell { margin: 0 auto; max-width: 110px }
+
+@media (max-width: 1000px) {
+  .live-grid { grid-template-columns: 1fr }
+  .tracking-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+}
+@media (max-width: 760px) {
+  .tracking-page .list-toolbar { flex-direction: column; gap: 10px }
+  .tracking-hint-side { text-align: left }
+  .tracking-filters > select, .tracking-filters .search, .attendance-actions > button { flex: 1 1 100% }
+  .tracking-stats strong { font-size: 1.4rem }
+  .live-card { padding: 14px }
+  .feed-list { max-height: none }
+  .progress-table table { min-width: 0 }
+  .progress-table .ra-col { width: auto; text-align: right }
+  .alert-list { justify-content: flex-end }
+  .attendance-tabs { display: flex }
+  .attendance-tabs button { flex: 1; justify-content: center }
+  /* Lista en tarjetas: nombre arriba, conexión y botones grandes abajo para tocar con el dedo. */
+  .attendance-table table, .attendance-table tbody, .attendance-table tr, .attendance-table td { display: block; width: 100% }
+  .attendance-table thead { display: none }
+  .attendance-table tr { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin-bottom: 10px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-md, 8px); background: var(--surface) }
+  .attendance-table td { padding: 0; border: 0 }
+  .attendance-table .attendance-num { grid-row: span 2; width: auto; padding-top: 2px }
+  .attendance-table td:last-child { grid-column: 1 / -1; margin-top: 6px }
+  .attendance-buttons { max-width: none }
+  .attendance-summary td:not(:first-child) { text-align: right }
+}
+@media (prefers-reduced-motion: reduce) { .tracking-live i { animation: none } }
+.tracking-filters .tracking-check { display: inline-flex; flex-direction: row; align-items: center; margin: 0 }
+@media (max-width: 760px) {
+  .attendance-actions > .primary { flex: 1 1 100% }
+  .attendance-actions > .secondary { flex: 1 1 calc(50% - 5px) }
+}
+/* Resumen por R.A. en una sola línea: solo se usa en celular, en PC cada R.A. tiene su columna. */
+.progress-table td.ra-strip { display: none }
+@media (max-width: 760px) {
+  .table-wrap.progress-table td.ra-col { display: none }
+  .table-wrap.progress-table td.ra-strip { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px }
+  .ra-strip span { display: inline-flex; align-items: baseline; white-space: nowrap; padding: 2px 7px; border-radius: 999px; background: var(--surface-soft); font-size: .75rem; font-weight: 700; font-variant-numeric: tabular-nums }
+  .ra-strip small { margin-right: 4px; color: var(--muted); font-weight: 600 }
+  .progress-table .progress-cell { min-width: 120px }
+}

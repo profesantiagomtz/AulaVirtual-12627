@@ -228,6 +228,7 @@ export default function IntegratedCourseMaterial({ code, session, onBack, onProg
         material_code: code,
         completed_steps: Array.from({ length: done }, (_, index) => `paso-${index + 1}`),
         completed_at: completed ? new Date().toISOString() : null,
+        ...(total ? { total_steps: total } : {}),
         updated_at: new Date().toISOString(),
       }
       if (!supabase || session?.preview || session?.role === 'teacher') {
@@ -243,7 +244,12 @@ export default function IntegratedCourseMaterial({ code, session, onBack, onProg
         persisted.current = Promise.resolve({ done, completed })
         setProgress(next)
         onProgressUpdate?.(record)
-        const { error } = await supabase.from('learning_progress').upsert({ student_id: session.id, ...record }, { onConflict: 'student_id,material_code' })
+        let { error } = await supabase.from('learning_progress').upsert({ student_id: session.id, ...record }, { onConflict: 'student_id,material_code' })
+        // Antes de correr supabase/seguimiento_asistencia.sql no existe total_steps; se guarda sin él.
+        if (error && /total_steps/.test(error.message || '')) {
+          const { total_steps: _total, ...withoutTotal } = record
+          ;({ error } = await supabase.from('learning_progress').upsert({ student_id: session.id, ...withoutTotal }, { onConflict: 'student_id,material_code' }))
+        }
         setMessage(error ? 'El contenido funciona, pero no se pudo sincronizar el avance. Revisa tu conexión.' : completed ? '¡R.A. completado! Ya puedes continuar con la actividad de evaluación.' : 'Avance guardado automáticamente.')
       }, 500)
     }
