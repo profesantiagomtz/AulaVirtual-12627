@@ -40,3 +40,7 @@ select '242401', id, 10 from public.groups where code='401';
 ## Alcance de esta primera versión
 
 La interfaz y el modelo de seguridad ya cubren perfiles, grupos, materiales, evaluaciones, preguntas, entregas, calificaciones y registro de consulta de recursos. El modo demostración permite revisar toda la experiencia visual. Al conectar Supabase, el inicio de sesión utiliza autenticación real; las operaciones de demostración deben sustituirse por las consultas indicadas por las tablas del esquema durante la siguiente integración.
+
+## Seguimiento en vivo, avance y asistencia
+
+Las secciones **En vivo**, **Avance** y **Asistencia** del panel docente necesitan correr una sola vez `supabase/seguimiento_asistencia.sql` en el SQL Editor. Desde ese momento la plataforma registra cada minuto quién está conectado y qué está viendo, el avance en cada material y las entregas. El pase de lista se llena solo con los alumnos que se conectaron durante el horario de la clase (sin horario, cuenta cualquier conexión del día) y el docente puede ajustar cada alumno: asistió, retardo, faltó o justificó.

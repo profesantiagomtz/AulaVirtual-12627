@@ -1,13 +1,14 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, Award, BookOpen, CalendarDays, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, FileText, GraduationCap, KeyRound,
-  LayoutDashboard, Lock, LogOut, Menu, Palette, Plus, Search, Settings, TrendingUp, Unlock, Upload, Users, X
+  ArrowLeft, Award, BookOpen, CalendarCheck, CalendarDays, ChartLine, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, FileText, GraduationCap, KeyRound,
+  LayoutDashboard, Lock, LogOut, Menu, Palette, Plus, Radio, Search, Settings, TrendingUp, Unlock, Upload, Users, X
 } from 'lucide-react'
 import { courses } from './data/academic'
 import * as demo from './data/demo'
 import { isSupabaseReady, supabase } from './lib/supabase'
 import { uploadSubmissionFile } from './lib/upload'
+import { useActivityDetail, useStudentTracking } from './lib/tracking'
 import { NavSignal, ProgressStrip, studentSignals, useSectionVisits } from './components/StudentSignals'
 import { CourseChips, RaCourseMap, Schedule, StudentGrades, TeacherGrades, WeekPlan, assessmentState, itemBelongsToCourse, progressCodeFor } from './components/CoursePlan'
 
@@ -19,6 +20,9 @@ const MtcsActivity = lazy(() => import('./components/MtcsActivity'))
 const MtcsMaterialView = lazy(() => import('./components/MtcsActivity').then(module => ({ default: module.MtcsMaterialView })))
 const IntegratedCourseMaterial = lazy(() => import('./components/IntegratedCourseMaterial'))
 const msiiDocx = () => import('./lib/msii-docx')
+const LiveNow = lazy(() => import('./components/Tracking').then(module => ({ default: module.LiveNow })))
+const ProgressTracker = lazy(() => import('./components/Tracking').then(module => ({ default: module.ProgressTracker })))
+const Attendance = lazy(() => import('./components/Tracking').then(module => ({ default: module.Attendance })))
 
 function LazyView({ children }) {
   return <Suspense fallback={<div className="loading-state">Cargando contenido…</div>}>{children}</Suspense>
@@ -30,6 +34,9 @@ const navItems = [
   { id: 'materiales', label: 'Material', icon: BookOpen },
   { id: 'evaluaciones', label: 'Tareas', icon: ClipboardCheck },
   { id: 'notas', label: 'Notas', icon: Award },
+  { id: 'envivo', label: 'En vivo', icon: Radio },
+  { id: 'avance', label: 'Avance', icon: ChartLine },
+  { id: 'asistencia', label: 'Asistencia', icon: CalendarCheck },
   { id: 'cronograma', label: 'Cronograma', icon: CalendarDays },
   { id: 'alumnos', label: 'Alumnos', icon: Users },
 ]
@@ -340,6 +347,7 @@ function Dashboard({ session, onLogout }) {
   const [learningProgress, setLearningProgress] = useState([])
   const [teacherNotes, setTeacherNotes] = useState([])
   const [selectedAssessment, setSelectedAssessment] = useState(null)
+  const [selectedStudent, setSelectedStudent] = useState(null)
   const [studentCourseFilter, setStudentCourseFilter] = useState('Todos')
   const themeStorageKey = `aula-virtual-theme:${session.id || session.email}`
   const [studentTheme, setStudentTheme] = useState(() => localStorage.getItem(themeStorageKey) || 'clasico')
@@ -416,7 +424,8 @@ function Dashboard({ session, onLogout }) {
 
   function loadDemoData() {
     setGroupList(demo.groups.map(group => ({ id: group.id, code: group.name, semester: group.semester, career: group.career, students: group.students })))
-    setStudentList(demo.students.map(student => ({ id: student.id, name: student.name, email: student.email, enrollment: null, group: student.group })))
+    setStudentList(demo.students.map(student => ({ id: student.id, name: student.name, email: student.email, enrollment: student.enrollment || null, group: student.group })))
+    setLearningProgress(demo.demoLearningProgress())
     setMaterialList([...integratedMaterials, ...demo.materials.map(material => ({ ...material, description: '', published: true }))])
     setAssessmentList(demo.assessments.map(assessment => ({ ...assessment, groupId: assessment.group, drafts: 0, submissionDetails: [] })))
     setLoading(false)
@@ -444,6 +453,7 @@ function Dashboard({ session, onLogout }) {
     if (error) { setDataError(error.message); return }
     await loadData(); saved(nextStatus === 'published' ? 'Actividad publicada para los alumnos' : 'Actividad bloqueada para los alumnos')
   }
+  useStudentTracking(session, isTeacher ? null : studentNavItems.find(item => item.id === view)?.label)
   const signalCourses = isTeacher ? [] : assignedCourses
   const baseSignals = studentSignals({ session, courses: signalCourses, materials: materialList, assessments: assessmentList, learningProgress, isLocked: assessmentIsLocked })
   const visits = useSectionVisits(session, isTeacher ? null : view, baseSignals.gradedIds)
@@ -459,7 +469,7 @@ function Dashboard({ session, onLogout }) {
       <div className="side-brand"><div className="side-brand-symbol"><GraduationCap size={25} /></div><span>Aula <b>Virtual</b><small>{isTeacher ? 'Gestión docente' : 'Espacio del alumno'}</small></span><button className="icon-btn close-menu" onClick={() => setMobileMenu(false)}><X /></button></div>
       <span className="side-section-label">{isTeacher ? 'Gestión académica' : 'Mi aprendizaje'}</span>
       <nav>{(isTeacher ? navItems : studentNavItems).map(({ id, label, icon: Icon }) =>
-        <button key={id} className={view === id ? 'active' : ''} aria-current={view === id ? 'page' : undefined} onClick={() => { if (!isTeacher && id === 'materiales') setStudentCourseFilter('Todos'); setSelectedAssessment(null); setView(id); setMobileMenu(false) }}><Icon size={19} /><span>{isTeacher && id === 'modulos' ? 'Módulos' : label}</span>{signals && view !== id && <NavSignal signal={signals.nav[id]} />}{view === id && <i />}</button>
+        <button key={id} className={view === id ? 'active' : ''} aria-current={view === id ? 'page' : undefined} onClick={() => { if (!isTeacher && id === 'materiales') setStudentCourseFilter('Todos'); setSelectedAssessment(null); setSelectedStudent(null); setView(id); setMobileMenu(false) }}><Icon size={19} /><span>{isTeacher && id === 'modulos' ? 'Módulos' : label}</span>{signals && view !== id && <NavSignal signal={signals.nav[id]} />}{view === id && <i />}</button>
       )}</nav>
       <div className="side-bottom">
         {isTeacher && <button className={view === 'configuracion' ? 'active' : ''} onClick={() => { setView('configuracion'); setMobileMenu(false) }}><Settings size={19} />Configuración</button>}
@@ -483,7 +493,10 @@ function Dashboard({ session, onLogout }) {
         {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} learningProgress={learningProgress} setView={setView} onAdd={() => setModal('assessment')} onRefresh={loadData} onToggle={toggleAssessment} initialSelected={selectedAssessment} onClearSelected={() => setSelectedAssessment(null)} />}
         {view === 'notas' && (isTeacher ? <TeacherGrades courses={assignedCourses} students={studentList} assessments={assessmentList} /> : <StudentGrades courses={assignedCourses} assessments={assessmentList} session={session} />)}
         {view === 'cronograma' && <Schedule courses={assignedCourses} session={session} isTeacher={isTeacher} />}
-        {view === 'alumnos' && isTeacher && <Students students={studentList} groups={groupList} assessments={assessmentList} learningProgress={learningProgress} onRefresh={loadData} />}
+        {view === 'envivo' && isTeacher && <LazyView><LiveNow students={studentList} groups={groupList} /></LazyView>}
+        {view === 'avance' && isTeacher && <LazyView><ProgressTracker courses={assignedCourses} students={studentList} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} onOpenStudent={student => { setSelectedStudent(student); setView('alumnos'); window.scrollTo({ top: 0 }) }} /></LazyView>}
+        {view === 'asistencia' && isTeacher && <LazyView><Attendance courses={assignedCourses} students={studentList} /></LazyView>}
+        {view === 'alumnos' && isTeacher && <Students students={studentList} groups={groupList} assessments={assessmentList} learningProgress={learningProgress} onRefresh={loadData} initialSelected={selectedStudent} onClearSelected={() => setSelectedStudent(null)} />}
         {view === 'configuracion' && isTeacher && <SettingsPage session={session} groups={groupList} />}
         </>}
       </main>
@@ -665,6 +678,7 @@ function Materials({ items, groups, courses, session, isTeacher, assessments = [
   const [courseFilter, setCourseFilter] = useState(initialCourse)
   const [selectedMaterial, setSelectedMaterial] = useState(null)
   useEffect(() => { setCourseFilter(initialCourse) }, [initialCourse])
+  useActivityDetail(selectedMaterial?.title)
   const shownCourses = courseFilter === 'Todos' ? courses : courses.filter(course => course.code === courseFilter)
   const visibleItems = isTeacher ? items : items.filter(item => item.published)
   const visibleAssessments = assessments.map(item => ({ ...item, locked: !isTeacher && assessmentIsLocked(item, learningProgress) }))
@@ -692,6 +706,7 @@ function Materials({ items, groups, courses, session, isTeacher, assessments = [
 
 function Assessments({ items, session, isTeacher, learningProgress = [], setView, onAdd, onRefresh, onToggle, initialSelected, onClearSelected }) {
   const [selected, setSelected] = useState(initialSelected || null)
+  useActivityDetail(isTeacher ? null : selected?.title)
   function clearSelected() { setSelected(null); onClearSelected?.() }
   if (selected && isTeacher) return <AssessmentResults assessment={selected} onBack={clearSelected} onRefresh={onRefresh} />
   if (selected) {
@@ -926,10 +941,12 @@ function MsiiActivity({ assessment, session, onBack }) {
 
 function AssignedValue({ label, value }) { return <div className="assigned-value"><span>{label}</span><strong>{value}</strong></div> }
 
-function Students({ students, groups, assessments, learningProgress = [], onRefresh }) {
+function Students({ students, groups, assessments, learningProgress = [], onRefresh, initialSelected, onClearSelected }) {
   const [query, setQuery] = useState('')
   const [group, setGroup] = useState('Todos')
-  const [selectedStudent, setSelectedStudent] = useState(null)
+  const [selectedStudent, setSelectedStudentState] = useState(initialSelected || null)
+  useEffect(() => { if (initialSelected) setSelectedStudentState(initialSelected) }, [initialSelected])
+  function setSelectedStudent(student) { setSelectedStudentState(student); if (!student) onClearSelected?.() }
   const [resetStudent, setResetStudent] = useState(null)
   const rows = useMemo(() => students.filter(s => (group === 'Todos' || s.group === group) && `${s.name} ${s.email}`.toLowerCase().includes(query.toLowerCase())), [query, group])
   function progressFor(student) {
