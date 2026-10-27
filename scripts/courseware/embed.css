@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,500..800&family=Lexend:wght@400;500;600;700&display=swap");
 :root{--exb:var(--ex-bg)}
 html.embed body{background:var(--bg)}
 html.embed .top{background:transparent;border-bottom:0;padding:8px 14px;position:static}
@@ -18,3 +19,15 @@ html.embed .hero2{background:linear-gradient(135deg,var(--pri),color-mix(in srgb
 html.embed .fnav{background:linear-gradient(transparent,var(--bg) 24%)}
 @media (min-width:1000px){html.embed .top{display:none}html.embed .reader .body{max-width:none;grid-template-columns:250px minmax(0,1fr);gap:20px;padding:0 20px}html.embed .reader #side{width:auto;top:0;height:calc(100vh - 72px);padding-top:14px}html.embed .reader main{padding-top:18px}}
 @media (max-width:640px){html.embed .tp{display:none}html.embed .top{padding:8px 12px 0}html.embed .tabs3{margin:8px 12px 0}html.embed .tabs3 small{display:none}html.embed .tabs3 button{flex-direction:column;gap:1px;text-align:center;padding:7px 2px}html.embed .tabs3 b{font-size:12.5px}html.embed .lesson{padding:18px 16px}}
+/* Tema Cuaderno de la plataforma: misma tipografía, portada lisa de pasta y pestaña resaltada. */
+html.embed[data-skin="cuaderno"] body{font-family:"Lexend",system-ui,sans-serif;background-color:var(--bg);background-image:linear-gradient(#e6ecf6 1px,transparent 1px),linear-gradient(90deg,#e6ecf6 1px,transparent 1px);background-size:24px 24px}
+html.embed[data-skin="cuaderno"] h1,html.embed[data-skin="cuaderno"] h2,html.embed[data-skin="cuaderno"] h3{font-family:"Bricolage Grotesque","Lexend",sans-serif;font-stretch:88%;letter-spacing:-.01em}
+html.embed[data-skin="cuaderno"] .hero2{background:var(--pasta,var(--pri));border-radius:12px}
+html.embed[data-skin="cuaderno"] .hero2 h1{font-weight:800;font-stretch:82%}
+html.embed[data-skin="cuaderno"] .lesson{border-radius:8px;border:1px solid var(--line);box-shadow:0 1px 0 #c8d2e4}
+html.embed[data-skin="cuaderno"] .tabs3{border-radius:8px}
+html.embed[data-skin="cuaderno"] .tabs3 button{border-radius:6px}
+html.embed[data-skin="cuaderno"] .tabs3 button.on{background:var(--marca,var(--card));color:var(--pasta,var(--ink));box-shadow:none;border-radius:3px 9px 4px 10px/7px 4px 8px 5px}
+html.embed[data-skin="cuaderno"] .sl.on{box-shadow:inset 3px 0 0 var(--marca,var(--pri)),0 1px 0 #c8d2e4}
+html.embed[data-skin="cuaderno"] :is(.sh,.kick,.co-l,.dgh,.hero2 small,.path h2,.apoyo h2,.deliv h2){text-transform:none;letter-spacing:0;font-size:13px}
+html.embed[data-skin="cuaderno"] :is(.path h2,.apoyo h2,.deliv h2){font-size:15px;color:var(--pasta,var(--ink))}
