@@ -1,0 +1,29 @@
+/* Revisión con IA (componente AiReview): hoja de cuaderno con anotaciones en pluma roja del profe. */
+.ai-review{margin-top:12px;padding:14px;border:1px solid var(--linea-fuerte,#c8d2e4);border-radius:10px;background:var(--papel,#f7f9fc);background-image:linear-gradient(var(--cuadro,#e6ecf6) 1px,transparent 1px),linear-gradient(90deg,var(--cuadro,#e6ecf6) 1px,transparent 1px);background-size:18px 18px}
+.ai-review-idle{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;background:#fff;background-image:none}
+.ai-review-idle small{color:var(--muted);font-size:.75rem}
+.individual-review-grid .ai-review-run,.ai-review-run{margin:0;border-color:var(--tinta,#2340a8);color:var(--tinta,#2340a8);font-weight:700}
+.ai-review-run svg{color:var(--roja,#c8323a)}
+.ai-review header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ai-review header span{display:flex;align-items:center;gap:6px;flex:1;color:var(--tinta,#2340a8);font-size:.8125rem;font-weight:800}
+.ai-review header span svg{color:var(--roja,#c8323a)}
+.ai-review header strong{padding:2px 10px;border:2px solid var(--roja,#c8323a);border-radius:999px;color:var(--roja,#c8323a);font-family:var(--font-display);font-size:1.15rem;font-variant-numeric:tabular-nums;transform:rotate(-3deg);background:#fff}
+.ai-level{padding:2px 8px;border-radius:6px;background:var(--marcatextos,#ffe14d);color:#3d3200;font-size:.75rem}
+.ai-level-insuficiente,.ai-level-sin{background:#ffd9d6;color:#8a1f1f}
+.ai-review-summary{margin:0 0 10px;color:var(--ink);font-size:.8125rem;line-height:1.5}
+.ai-review-alerts{margin:0 0 10px;padding:0;list-style:none}
+.ai-review-alerts li{display:flex;gap:6px;margin-bottom:5px;padding:7px 9px;border-radius:7px;background:#fff3dc;color:#795d1b;font-size:.75rem;line-height:1.4}
+.ai-review-alerts svg{flex:0 0 auto;margin-top:1px}
+.ai-review-criteria{width:100%;min-width:0!important;table-layout:fixed;white-space:normal;margin-bottom:10px;border-collapse:collapse;background:#fff;border-radius:7px;overflow:hidden}
+.ai-review-criteria th,.ai-review-criteria td{padding:7px 9px;border-bottom:1px solid var(--cuadro,#e6ecf6);text-align:left;font-size:.75rem;vertical-align:top}
+.ai-review-criteria th{color:var(--navy);font-weight:700}
+.ai-review-criteria th small{display:block;margin-top:2px;color:var(--muted);font-weight:400;line-height:1.4}
+.ai-review-criteria td{width:58px;color:var(--roja,#c8323a);font-weight:800;text-align:right;white-space:nowrap}
+.ai-review-feedback{padding:10px 12px;border-left:3px solid var(--tinta,#2340a8);border-radius:0 7px 7px 0;background:#fff}
+.ai-review-feedback span{display:block;margin-bottom:4px;color:var(--muted);font-size:.75rem;font-weight:700}
+.ai-review-feedback p{margin:0;color:var(--tinta,#2340a8);font-size:.8125rem;line-height:1.55}
+.ai-review-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+.individual-review-grid .ai-review-actions .secondary,.ai-review-actions .secondary,.ai-review-actions .primary{margin:0;font-size:.75rem}
+.ai-review-error{width:100%;margin:6px 0 0;color:#a13d34;font-size:.75rem}
+.ai-review-note{display:block;margin-top:8px;color:var(--muted);font-size:.6875rem}
+@media (max-width:640px){.ai-review{padding:11px}.ai-review-actions>*{flex:1 1 100%}.ai-review header{flex-wrap:wrap}}

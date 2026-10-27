@@ -44,3 +44,15 @@ La interfaz y el modelo de seguridad ya cubren perfiles, grupos, materiales, eva
 ## Seguimiento en vivo, avance y asistencia
 
 Las secciones **En vivo**, **Avance** y **Asistencia** del panel docente necesitan correr una sola vez `supabase/seguimiento_asistencia.sql` en el SQL Editor. Desde ese momento la plataforma registra cada minuto quién está conectado y qué está viendo, el avance en cada material y las entregas. El pase de lista se llena solo con los alumnos que se conectaron durante el horario de la clase (sin horario, cuenta cualquier conexión del día) y el docente puede ajustar cada alumno: asistió, retardo, faltó o justificó.
+
+## Revisión de entregas con IA
+
+En **Tareas** y en el expediente de cada alumno, el botón **Revisar con IA** propone una calificación sobre 60, el puntaje por criterio y una retroalimentación para el alumno. Es solo una sugerencia: el docente la pasa al campo con **Usar N puntos** y la guarda como siempre. Lee respuestas capturadas, documentos Word, PDF e imágenes; los archivos de Packet Tracer se marcan para revisión manual.
+
+Funciona con la Edge Function `supabase/functions/revisar-entrega`, que llama a la API de Claude desde el servidor. Para activarla una sola vez:
+
+1. Crea una clave en [console.anthropic.com](https://console.anthropic.com) (se paga por uso).
+2. En Supabase, **Edge Functions > Secrets**, agrega `ANTHROPIC_API_KEY` con esa clave. Nunca la pongas en el sitio ni en GitHub.
+3. Despliega la función: `supabase functions deploy revisar-entrega`.
+
+Solo cuentas con rol docente o administrador pueden usarla, y la función lee la entrega con la sesión del docente, así que las políticas de seguridad siguen aplicando. No guarda nada.
