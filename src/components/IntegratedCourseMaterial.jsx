@@ -172,9 +172,12 @@ function platformTheme() {
   const style = getComputedStyle(root)
   const get = name => style.getPropertyValue(name).trim()
   const dark = root.dataset.aulaTheme === 'oscuro'
+  const cuaderno = root.dataset.aulaTheme === 'clasico'
   return {
     type: 'aula-theme',
     dark,
+    // Con el tema Cuaderno, el material también toma su tipografía, la pasta y el marcatextos.
+    skin: cuaderno ? 'cuaderno' : null,
     vars: {
       '--bg': get('--surface-soft') || '#f4f6fa',
       '--card': get('--surface') || '#ffffff',
@@ -186,6 +189,8 @@ function platformTheme() {
       '--ok': get('--green') || '#1e8e4e',
       '--bad': get('--red') || '#c62f3a',
       '--amb': dark ? '#f2b53a' : (get('--gold') || '#f2a900'),
+      '--pasta': cuaderno ? get('--pasta') : '',
+      '--marca': cuaderno ? get('--marcatextos') : '',
     },
   }
 }
