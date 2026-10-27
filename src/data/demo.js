@@ -7,11 +7,20 @@ export const groups = [
 export const materials = [
   { id: 2, title: 'Riesgos de seguridad informática', type: 'Presentación', group: '310', unit: 'R.A. 1.1', date: '25 sep' },
   { id: 3, title: 'Configuración de comunicación en red', type: 'Video', group: '511', unit: 'R.A. 1.1', date: '22 sep' },
+  { id: 'demo-mtcs-ra22', title: 'MTCS · Material didáctico R.A. 2.2', description: 'Principios y tecnologías de confidencialidad', type: 'Interactivo', group: '511', unit: 'R.A. 2.2', url: 'courseware://MTCS-RA-2.2', date: 'Integrado', system: true },
 ]
+
+// Fechas relativas a hoy para que la vista sin conexión muestre tareas próximas y vencidas.
+const dueIn = days => { const date = new Date(Date.now() + days * 86400000); date.setHours(23, 59, 0, 0); return date.toISOString() }
+const dueLabel = days => new Date(Date.now() + days * 86400000).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
 
 export const assessments = [
   { id: 2, title: 'R.A. 1.1 Seguridad informática', group: '310', due: '08 oct', submissions: 14, total: 30, average: 76, status: 'Activa' },
   { id: 3, title: 'R.A. 1.1 Documentos digitales', group: '311', due: '26 sep', submissions: 22, total: 22, average: 88, status: 'Cerrada' },
+  { id: 'demo-asin-21', title: 'R.A. 2.1 Instala y configura herramientas de seguridad', group: '310', due: dueLabel(3), dueAt: dueIn(3), submissions: 9, total: 30, status: 'Activa' },
+  { id: 'demo-msii-12', title: 'R.A. 1.2 Gestión de recursos del sistema operativo', group: '310', due: dueLabel(-2), dueAt: dueIn(-2), overdue: true, submissions: 21, total: 30, status: 'Activa' },
+  { id: 'demo-mtcs-21', title: 'R.A. 2.1 Presentación sobre fundamentos de ciberseguridad', group: '511', due: dueLabel(-1), dueAt: dueIn(-1), overdue: true, submissions: 14, total: 20, status: 'Activa' },
+  { id: 'demo-mtcs-22', title: 'R.A. 2.2 Reporte de principios y tecnologías de confidencialidad', activityCode: 'MTCS-RA-2.2', group: '511', due: dueLabel(13), dueAt: dueIn(13), submissions: 0, total: 20, status: 'Activa' },
 ]
 
 export const students = [

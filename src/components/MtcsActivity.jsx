@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, BookOpen, CheckCircle2, Network, Save, Send, ShieldCheck, Terminal, Upload } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { uploadSubmissionFile } from '../lib/upload'
+import { assignmentFor, hash } from '../lib/mtcs-assignment'
+import PracticeCheck, { PracticeCheckButton, hasPracticeChecks } from './PracticeCheck'
 
 export const mtcsContent = {
   'MTCS-RA-1.1': {
@@ -157,67 +159,6 @@ export const mtcsContent = {
   },
 }
 
-function hash(text) {
-  let value = 2166136261
-  for (let index = 0; index < text.length; index += 1) value = Math.imul(value ^ text.charCodeAt(index), 16777619)
-  return value >>> 0
-}
-
-function assignmentFor(studentId, assessmentId, code) {
-  const seed = hash(`${studentId}-${assessmentId}-${code}`)
-  if (code === 'MTCS-RA-1.1') {
-    const places = ['laboratorio escolar', 'biblioteca', 'taller técnico', 'oficina administrativa']
-    return {
-      title: `Escenario ${String(seed % 997).padStart(3, '0')}`,
-      lines: [`Lugar: ${places[seed % places.length]}`, `Equipos cableados: ${12 + (seed % 9)}`, `Dispositivos inalámbricos: ${6 + (seed % 7)}`, `Servicios: archivos, impresión e Internet`, `Condición: dos zonas separadas y acceso para visitantes`],
-    }
-  }
-  if (code === 'MTCS-RA-1.2') {
-    const second = 20 + (seed % 170)
-    const hostA = 28 + (seed % 17)
-    const hostB = 12 + (seed % 9)
-    return {
-      title: `Datos de red ${String(seed % 997).padStart(3, '0')}`,
-      lines: [`Red base: 192.168.${second}.0/24`, `Subred A: ${hostA} hosts`, `Subred B: ${hostB} hosts`, `Equipo con falla: 192.168.${second}.${200 + (seed % 30)}/24`, `Gateway registrado en el equipo: 192.168.${second}.1`],
-    }
-  }
-  if (code === 'MTCS-RA-3.1') {
-    const places = ['laboratorio de cómputo', 'biblioteca escolar', 'cooperativa de ahorro', 'tienda en línea', 'consultorio médico', 'gimnasio']
-    const sets = [['letras minúsculas', 26], ['letras minúsculas y dígitos', 36], ['letras mayúsculas, minúsculas y dígitos', 62], ['letras, dígitos y símbolos', 94]]
-    const chars = sets[(seed >> 3) % sets.length]
-    return {
-      title: `Sistema ${String(seed % 997).padStart(3, '0')}`,
-      lines: [`Sistema: control de acceso de un ${places[seed % places.length]}`, `Usuarios registrados: ${20 + (seed % 80)}`, `Longitud de contraseña: ${6 + ((seed >> 5) % 7)} caracteres`, `Caracteres permitidos: ${chars[0]} (${chars[1]})`, `Intentos por segundo de un atacante: ${[1000, 100000, 1000000000][(seed >> 7) % 3]}`],
-    }
-  }
-  if (code === 'MTCS-RA-3.2') {
-    const places = ['laboratorio de cómputo', 'biblioteca escolar', 'cooperativa de ahorro', 'tienda en línea', 'consultorio médico', 'gimnasio']
-    const names = ['ana', 'luis', 'sofia', 'pedro', 'carla', 'diego', 'elena', 'marco', 'rosa', 'tomas']
-    const users = [0, 1, 2, 3].map((step) => names[(seed + step * 3) % names.length])
-    const log = Array.from({ length: 8 }, (_, index) => users[(seed >> (index + 2)) % users.length])
-    const fails = Array.from({ length: 6 }, (_, index) => ((seed >> (index * 3)) % 10) + 1)
-    return {
-      title: `Escenario ${String(seed % 997).padStart(3, '0')}`,
-      lines: [`Sistema: control de acceso de un ${places[seed % places.length]}`, `Usuarios autorizados: ${users.join(', ')} · Clave: Acceso${String(1000 + (seed % 9000))}`, `Intentos antes de bloquear la cuenta: ${3 + (seed % 3)}`, `Registros del día: ${log.join(', ')}`, `Intentos fallidos por equipo: ${fails.join(', ')} · sospechoso desde ${4 + ((seed >> 4) % 3)} fallos`],
-    }
-  }
-  if (code === 'MTCS-RA-2.2') {
-    const organizations = ['clínica dental con expedientes electrónicos', 'tienda en línea de refacciones', 'despacho contable con declaraciones de clientes', 'escuela con plataforma de calificaciones', 'cibercafé con servicio de impresión', 'farmacia con sistema de inventario y ventas']
-    const incidents = ['se cortó la energía y el servidor no volvió a encender', 'un ransomware cifró la carpeta compartida', 'se detectaron cambios no autorizados en precios o registros', 'el disco del servidor principal falló sin aviso', 'un empleado instaló software sin licencia que desactivó el antivirus']
-    return {
-      title: `Organización ${String(seed % 997).padStart(3, '0')}`,
-      lines: [`Organización: ${organizations[seed % organizations.length]}`, `Usuarios: ${5 + (seed % 26)} · Equipos: ${4 + (seed % 19)} · Servidores: ${1 + (seed % 2)}`, `Incidente reciente: ${incidents[seed % incidents.length]}`, `Tiempo máximo sin servicio aceptado: ${[1, 2, 4, 8][seed % 4]} h`],
-    }
-  }
-  const cases = [
-    'Un usuario abrió un archivo adjunto inesperado y después varios documentos dejaron de abrir.',
-    'Una cuenta con permisos administrativos fue compartida y se detectaron cambios fuera del horario laboral.',
-    'Un equipo sin actualizaciones se conectó a una red pública y comenzó a enviar tráfico inusual.',
-    'Una memoria USB desconocida fue conectada a un equipo que almacena información importante.',
-  ]
-  return { title: `Caso ${String(seed % 997).padStart(3, '0')}`, lines: [cases[seed % cases.length], 'Analiza únicamente la información disponible y señala también qué datos investigarías.'] }
-}
-
 const mtcsDeliverables = {
   'MTCS-RA-1.1': { label: 'Diagrama final de Packet Tracer', accept: '.pkt,application/octet-stream', extensions: ['pkt'], help: 'Archivo .pkt · máximo 20 MB' },
   'MTCS-RA-1.2': { label: 'Reporte final', accept: '.pdf,application/pdf', extensions: ['pdf'], help: 'Archivo PDF · máximo 20 MB' },
@@ -238,6 +179,7 @@ export default function MtcsActivity({ assessment, session, onBack }) {
   const [message, setMessage] = useState('')
   const [file, setFile] = useState(null)
   const [storedFile, setStoredFile] = useState({ path: '', name: '' })
+  const [checking, setChecking] = useState(false)
   const deliverable = mtcsDeliverables[assessment.activityCode]
 
   useEffect(() => {
@@ -273,7 +215,7 @@ export default function MtcsActivity({ assessment, session, onBack }) {
       uploaded = { path, name: file.name }
       setStoredFile(uploaded)
     }
-    const payload = { assessment_id: assessment.id, student_id: authData.user.id, answers: { activity: assessment.activityCode, assigned_case: assignment, responses: answers, ...(Object.keys(packetTracerFiles).length ? { packet_tracer: packetTracerFiles } : {}) }, file_path: uploaded.path || null, original_filename: uploaded.name || null, submitted_at: deliver ? new Date().toISOString() : null }
+    const payload = { assessment_id: assessment.id, student_id: authData.user.id, answers: { activity: assessment.activityCode, assigned_case: { title: assignment.title, lines: assignment.lines }, responses: answers, ...(Object.keys(packetTracerFiles).length ? { packet_tracer: packetTracerFiles } : {}) }, file_path: uploaded.path || null, original_filename: uploaded.name || null, submitted_at: deliver ? new Date().toISOString() : null }
     const { error } = await supabase.from('submissions').upsert(payload, { onConflict: 'assessment_id,student_id' })
     if (error) { setMessage(error.message || 'No fue posible guardar.'); setStatus('error'); return }
     setSubmitted(deliver)
@@ -290,7 +232,8 @@ export default function MtcsActivity({ assessment, session, onBack }) {
     <nav className="mtcs-tabs"><button className={tab === 'material' ? 'active' : ''} onClick={() => setTab('material')}><BookOpen size={17} /> Material y ejemplo</button><button className={tab === 'activity' ? 'active' : ''} onClick={() => setTab('activity')}><ShieldCheck size={17} /> Actividad</button></nav>
 
     {tab === 'material' ? <div className="mtcs-material"><div className="lesson-grid">{definition.lessons.map(([title, text]) => <article key={title}><span>{title.split('.')[0]}</span><div><h3>{title.replace(/^\d+\.\s*/, '')}</h3><p>{text}</p></div></article>)}</div><div className="worked-example"><strong>Ejemplo para comprender</strong><p>{definition.example}</p></div><button className="primary mtcs-continue" onClick={() => { setTab('activity'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Continuar a la actividad</button></div> : <div className="mtcs-activity">
-      <div className="assigned-case"><span className="eyebrow">Datos asignados</span><h2>{assignment.title}</h2><ul>{assignment.lines.map(line => <li key={line}>{line}</li>)}</ul></div>
+      <div className="assigned-case"><span className="eyebrow">Datos asignados</span><h2>{assignment.title}</h2><ul>{assignment.lines.map(line => <li key={line}>{line}</li>)}</ul>{hasPracticeChecks(assessment.activityCode) && <PracticeCheckButton onClick={() => setChecking(true)} />}</div>
+      {checking && <PracticeCheck code={assessment.activityCode} label={definition.label} assignment={assignment} session={session} onClose={() => setChecking(false)} />}
       <div className="stage-heading"><h2>{definition.taskTitle}</h2><p>{definition.taskIntro}</p></div>
       <fieldset disabled={submitted || status === 'saving'} className="mtcs-form">{definition.fields.map(([key, label], index) => <label key={key}><span><b>{index + 1}</b>{label}</span><textarea rows="4" value={answers[key] || ''} onChange={event => setAnswers(current => ({ ...current, [key]: event.target.value }))} placeholder="Escribe y explica tu respuesta…" /></label>)}</fieldset>
       {deliverable && <label className="mtcs-final-upload"><Upload size={22} /><span><strong>{file?.name || storedFile.name || deliverable.label}</strong><small>{deliverable.help}</small></span><input type="file" accept={deliverable.accept} disabled={submitted || status === 'saving'} onChange={event => setFile(event.target.files?.[0] || null)} /></label>}

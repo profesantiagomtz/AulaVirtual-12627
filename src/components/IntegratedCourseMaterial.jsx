@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, CheckCircle2, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { assignmentFor } from '../lib/mtcs-assignment'
+import PracticeCheck, { PracticeCheckButton, hasPracticeChecks } from './PracticeCheck'
 
 const courseMaterials = {
   'EDOA-RA-1.2': {
@@ -195,8 +197,12 @@ function platformTheme() {
   }
 }
 
-export default function IntegratedCourseMaterial({ code, session, onBack, onProgressUpdate }) {
+export default function IntegratedCourseMaterial({ code, session, assessment, onBack, onProgressUpdate }) {
   const material = courseMaterials[code]
+  const [checking, setChecking] = useState(false)
+  // «¿Voy bien?» usa los mismos datos asignados que la actividad de evaluación del R.A.
+  const checkAssessmentId = assessment?.id ?? (session?.preview ? 'vista-previa' : null)
+  const assignment = useMemo(() => hasPracticeChecks(code) && checkAssessmentId ? assignmentFor(session?.id, checkAssessmentId, code) : null, [code, checkAssessmentId, session?.id])
   const [progress, setProgress] = useState({ done: 0, total: 0, completed: false })
   const [message, setMessage] = useState('')
   const persisted = useRef(Promise.resolve({ done: 0, completed: false }))
@@ -276,9 +282,11 @@ export default function IntegratedCourseMaterial({ code, session, onBack, onProg
         <i><b style={{ width: `${percent ?? 0}%` }} /></i>
         <strong>{progress.completed ? <><CheckCircle2 size={15} /> Completado</> : percent === null ? `${progress.done} ${progress.done === 1 ? 'paso' : 'pasos'}` : `${percent}%`}</strong>
       </div>
+      {assignment && session?.role !== 'teacher' && <PracticeCheckButton compact onClick={() => setChecking(true)} />}
       <a className="icb-full" href={source} target="_blank" rel="noreferrer" title="Abrir en pantalla completa" aria-label="Abrir en pantalla completa"><ExternalLink size={16} /></a>
     </div>
     {message && <div className={message.startsWith('El contenido') ? 'form-error' : 'submission-success'}>{message}</div>}
+    {checking && <PracticeCheck code={code} label={`${material.course} · ${material.label}`} assignment={assignment} session={session} onClose={() => setChecking(false)} />}
     <div className="integrated-course-frame"><iframe ref={frame} onLoad={sendTheme} title={`${material.course} ${material.label}`} src={source} /></div>
   </section>
 }
