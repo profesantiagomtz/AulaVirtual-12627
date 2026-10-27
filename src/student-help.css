@@ -1,0 +1,181 @@
+/* Recordatorio de pendientes al entrar y «¿Voy bien?» de las prácticas MTCS.
+   Usa los colores del tema activo (Cuaderno, oscuro, etc.); las animaciones respetan prefers-reduced-motion. */
+
+/* ── Recordatorio de pendientes ─────────────────────────────── */
+.reminder-backdrop {
+  position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 20px;
+  background: rgba(9, 18, 40, .5); backdrop-filter: blur(2px);
+  animation: help-fade .25s ease-out both;
+}
+.reminder {
+  position: relative; width: min(560px, 100%); max-height: calc(100vh - 40px); overflow: auto;
+  background: var(--surface, #fff); color: var(--ink); border-radius: var(--radius-lg, 14px);
+  border: 1px solid var(--line); border-top: 6px solid var(--navy);
+  box-shadow: 0 2px 0 var(--linea-fuerte, var(--line)), 0 24px 60px rgba(7, 20, 45, .28);
+  padding: 30px 26px 18px;
+  animation: reminder-in .45s cubic-bezier(.2, .9, .3, 1.15) both;
+}
+/* Cinta de marcatextos, como una nota pegada al cuaderno */
+.reminder-tape {
+  position: absolute; top: -14px; left: 50%; width: 112px; height: 24px; transform: translateX(-50%) rotate(-2deg);
+  background: var(--marcatextos, var(--gold)); opacity: .82; border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .12);
+}
+.reminder-close { position: absolute; top: 12px; right: 12px; color: var(--muted) }
+.reminder header small { display: block; color: var(--muted); font-size: .8rem; margin-bottom: 4px }
+.reminder header small::first-letter { text-transform: uppercase }
+.reminder header h2 { font-size: 1.35rem; line-height: 1.2; margin: 0 28px 6px 0 }
+.reminder header p { color: var(--muted); font-size: .9rem; margin: 0 0 16px }
+.reminder-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px }
+.reminder-list li {
+  --tone: var(--navy-2, var(--navy));
+  display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 12px;
+  padding: 11px 12px; border: 1px solid var(--line); border-left: 4px solid var(--tone); border-radius: var(--radius-md, 10px);
+  background: color-mix(in srgb, var(--tone) 6%, var(--surface, #fff));
+  animation: reminder-item .4s ease-out both; animation-delay: calc(.12s + var(--i) * .06s);
+}
+.reminder-list li.bad { --tone: var(--red, #c62f3a) }
+.reminder-list li.warn { --tone: #b07800 }
+.reminder-list li.good { --tone: var(--green, #17845b) }
+.reminder-icon { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: var(--tone); background: color-mix(in srgb, var(--tone) 14%, var(--surface, #fff)) }
+.reminder-list strong { display: block; font-size: .9rem; line-height: 1.3 }
+.reminder-list small { display: block; color: var(--muted); font-size: .78rem; margin-top: 2px; line-height: 1.35 }
+.reminder-list li.bad small { color: var(--red, #c62f3a); font-weight: 600 }
+.reminder-bar { display: block; height: 5px; margin-top: 6px; border-radius: 99px; background: color-mix(in srgb, var(--tone) 15%, var(--surface, #fff)); overflow: hidden; max-width: 220px }
+.reminder-bar b { display: block; height: 100%; background: var(--tone); border-radius: inherit }
+.reminder-list button { min-height: 38px; padding: 8px 12px; font-size: .8rem; white-space: nowrap; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; font-weight: 700 }
+.reminder-list button.secondary { width: auto; margin: 0 }
+.reminder-more { margin: 10px 2px 0; color: var(--muted); font-size: .8rem }
+.reminder footer { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line) }
+.reminder footer .text-btn { font-size: .88rem; padding: 8px 10px; color: var(--navy-2, var(--navy)) }
+.reminder footer span { color: var(--muted); font-size: .75rem }
+
+@media (max-width: 560px) {
+  .reminder-backdrop { place-items: end center; padding: 0 }
+  .reminder { width: 100%; max-height: 88vh; border-radius: 18px 18px 0 0; padding: 28px 16px 16px; animation-name: sheet-in }
+  .reminder-list li { grid-template-columns: 34px 1fr; padding: 10px }
+  .reminder-icon { width: 34px; height: 34px }
+  .reminder-list button { grid-column: 2; justify-self: start; min-height: 40px }
+  .reminder footer { flex-direction: column; align-items: stretch; text-align: center }
+}
+
+/* ── «¿Voy bien?» ───────────────────────────────────────────── */
+.voybien-trigger {
+  display: inline-flex; align-items: center; gap: 10px; margin-top: 14px;
+  border: 1px solid var(--navy-2, var(--navy)); border-radius: 10px; padding: 9px 14px;
+  background: var(--surface, #fff); color: var(--navy-2, var(--navy)); font-weight: 700; text-align: left;
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--marcatextos, var(--gold)) 85%, transparent);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.voybien-trigger:hover { transform: translateY(-1px); box-shadow: 0 5px 0 color-mix(in srgb, var(--marcatextos, var(--gold)) 85%, transparent) }
+.voybien-trigger span { font-size: .9rem; line-height: 1.15 }
+.voybien-trigger small { display: block; font-size: .72rem; font-weight: 500; color: var(--muted) }
+.voybien-trigger.compact { margin: 0 0 0 auto; flex: none; padding: 7px 12px }
+.integrated-course-bar .voybien-trigger.compact + .icb-full { margin-left: 0 }
+@media (max-width: 760px) {
+  .voybien-trigger.compact small { display: none }
+}
+
+body.voybien-open { overflow: hidden }
+.voybien-backdrop { position: fixed; inset: 0; z-index: 1200; background: rgba(9, 18, 40, .45); display: flex; justify-content: flex-end; animation: help-fade .2s ease-out both }
+.voybien {
+  width: min(560px, 100%); height: 100%; display: flex; flex-direction: column; outline: none;
+  background: var(--surface, #fff); color: var(--ink); border-left: 1px solid var(--line);
+  box-shadow: -18px 0 50px rgba(7, 20, 45, .22);
+  animation: drawer-in .35s cubic-bezier(.2, .9, .3, 1) both;
+}
+.voybien-head { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: start; padding: 20px 20px 14px; border-bottom: 1px solid var(--line) }
+.voybien-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--marcatextos, var(--gold)); color: var(--pasta, var(--navy)) }
+.voybien-head small { color: var(--muted); font-size: .78rem; font-weight: 700 }
+.voybien-head h2 { font-size: 1.35rem; margin: 0 0 3px }
+.voybien-head p { margin: 0; color: var(--muted); font-size: .85rem; line-height: 1.4 }
+.voybien-data { margin: 12px 20px 0; border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; background: var(--surface-soft, #f4f6fa) }
+.voybien-data summary { cursor: pointer; font-weight: 700; font-size: .85rem; color: var(--navy-2, var(--navy)) }
+.voybien-data ul { margin: 8px 0 2px; padding-left: 18px; font-size: .82rem; line-height: 1.5 }
+.voybien-tabs { display: flex; gap: 6px; padding: 12px 20px 0; overflow-x: auto; scrollbar-width: none }
+.voybien-tabs button { flex: none; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--surface, #fff); color: var(--muted); border-radius: 99px; padding: 7px 13px; font-size: .82rem; font-weight: 700 }
+.voybien-tabs button.active { background: var(--navy); border-color: var(--navy); color: #fff }
+.voybien-tabs button.ok:not(.active) { color: var(--green); border-color: var(--green) }
+.voybien-tabs button.fix:not(.active) { color: #9a6a00; border-color: #e0b44a }
+.voybien-body { flex: 1; overflow-y: auto; padding: 14px 20px 6px; overscroll-behavior: contain }
+.voybien-body h3 { font-size: 1rem; margin: 0 0 12px }
+.voybien-checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px }
+.voybien-check { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--surface, #fff); transition: border-color .2s ease, background-color .2s ease }
+.voybien-check.ok { border-color: color-mix(in srgb, var(--green) 55%, var(--line)); background: color-mix(in srgb, var(--green) 5%, var(--surface, #fff)) }
+.voybien-check.fix { border-color: #e0b44a; background: color-mix(in srgb, #f2b53a 8%, var(--surface, #fff)) }
+.voybien-q { display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: start; margin-bottom: 9px }
+.voybien-q b { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: .75rem; background: var(--surface-soft, #eef2f8); color: var(--navy-2, var(--navy)) }
+.voybien-check.ok .voybien-q b { background: var(--green); color: #fff }
+.voybien-check.fix .voybien-q b { background: #f2b53a; color: #3a2a00 }
+.voybien-q label { font-size: .9rem; font-weight: 600; line-height: 1.35 }
+.voybien-check input:not([type=radio]), .voybien-check textarea, .voybien-check select { width: 100%; font-size: 16px }
+.voybien-check textarea { resize: vertical; min-height: 110px }
+.voybien-check .mono { font-family: Consolas, 'Cascadia Mono', 'Courier New', monospace; font-size: 14px }
+.voybien-number { display: flex; align-items: center; gap: 8px; max-width: 220px }
+.voybien-number span { color: var(--muted); font-weight: 700 }
+.voybien-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
+.voybien-stack { display: grid; gap: 8px }
+.voybien-options { display: grid; gap: 6px }
+.voybien-options label { display: flex; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; cursor: pointer; font-size: .86rem; background: var(--surface, #fff) }
+.voybien-options label.picked { border-color: var(--navy-2, var(--navy)); box-shadow: inset 3px 0 var(--navy-2, var(--navy)) }
+.voybien-options input { width: 17px; height: 17px; margin: 0; accent-color: var(--navy-2, var(--navy)) }
+.voybien-result { display: flex; gap: 7px; align-items: flex-start; margin: 9px 0 0; font-size: .84rem; line-height: 1.4; animation: result-in .3s ease-out both }
+.voybien-result svg { flex: none; margin-top: 2px }
+.voybien-result.ok { color: var(--green) }
+.voybien-result.fix { color: var(--ink) }
+.voybien-result.fix svg { color: #b07800 }
+.voybien-items { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; animation: result-in .3s ease-out both }
+.voybien-items li { display: flex; gap: 7px; align-items: flex-start; font-size: .84rem; line-height: 1.35 }
+.voybien-items li svg { flex: none; margin-top: 2px }
+.voybien-items li.ok svg { color: var(--green) }
+.voybien-items li.fix svg { color: #b07800 }
+.voybien-items li b { font-weight: 600 }
+.voybien-items li small { display: block; color: var(--muted); font-size: .8rem; margin-top: 1px }
+.voybien-foot { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--line); background: var(--surface, #fff) }
+.voybien-foot .primary { flex: none; min-height: 44px; padding: 10px 16px; border-radius: 10px; display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: .88rem; width: auto }
+.voybien-summary { flex: 1; font-size: .82rem; color: var(--muted); line-height: 1.35 }
+.voybien-summary span { display: inline-flex; gap: 6px; align-items: flex-start; flex-wrap: wrap }
+.voybien-summary svg { flex: none; margin-top: 1px }
+.voybien-summary.ok { color: var(--green) }
+.voybien-summary.fix { color: var(--ink) }
+.voybien-summary.fix svg { color: #b07800 }
+.voybien-note { margin: 0; padding: 0 20px 14px; color: var(--muted); font-size: .72rem; background: var(--surface, #fff) }
+
+@media (max-width: 640px) {
+  .voybien-backdrop { align-items: flex-end }
+  .voybien { height: 94vh; border-radius: 18px 18px 0 0; border-left: 0; animation-name: sheet-in }
+  .voybien-head { padding: 16px 16px 12px; grid-template-columns: 38px 1fr auto }
+  .voybien-icon { width: 38px; height: 38px }
+  .voybien-data { margin: 10px 16px 0 }
+  .voybien-tabs { padding: 10px 16px 0 }
+  .voybien-body { padding: 12px 16px 6px }
+  .voybien-foot { flex-direction: column; align-items: stretch; padding: 10px 16px }
+  .voybien-foot .primary { width: 100%; justify-content: center }
+  .voybien-note { padding: 0 16px 12px; text-align: center }
+}
+
+@keyframes help-fade { from { opacity: 0 } }
+@keyframes reminder-in { from { opacity: 0; transform: translateY(18px) scale(.97) } }
+@keyframes reminder-item { from { opacity: 0; transform: translateX(-8px) } }
+@keyframes sheet-in { from { transform: translateY(100%) } }
+@keyframes drawer-in { from { transform: translateX(100%) } }
+@keyframes result-in { from { opacity: 0; transform: translateY(-3px) } }
+
+@media (prefers-reduced-motion: reduce) {
+  .reminder-backdrop, .reminder, .reminder-list li, .voybien-backdrop, .voybien, .voybien-result, .voybien-items { animation: none }
+  .voybien-trigger, .voybien-check { transition: none }
+}
+
+/* Tema oscuro: la tinta azul se aclara para que se lea sobre fondo oscuro. */
+html[data-aula-theme="oscuro"] .voybien-trigger, html[data-aula-theme="oscuro"] .voybien-data summary,
+html[data-aula-theme="oscuro"] .voybien-q b, html[data-aula-theme="oscuro"] .reminder footer .text-btn { color: var(--blue); border-color: var(--blue) }
+html[data-aula-theme="oscuro"] .reminder { border-top-color: var(--blue) }
+html[data-aula-theme="oscuro"] .reminder-list li { --tone: var(--blue) }
+html[data-aula-theme="oscuro"] .reminder-list li.warn { --tone: #f2b53a }
+html[data-aula-theme="oscuro"] .voybien-icon { color: #07131f }
+
+/* Las etiquetas y casillas globales son columnas con margen; aquí van en renglón. */
+.voybien .voybien-options label { flex-direction: row; text-align: left; margin: 0; font-weight: 500; gap: 9px }
+.voybien .voybien-options input { flex: none; padding: 0; border: 0; min-height: 0 }
+.voybien .voybien-q label { display: block; margin: 0; font-size: .9rem }
+.voybien-check input:not([type=radio]), .voybien-check textarea, .voybien-check select { background: var(--surface, #fff); color: var(--ink) }

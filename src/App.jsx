@@ -10,6 +10,7 @@ import { isSupabaseReady, supabase } from './lib/supabase'
 import { uploadSubmissionFile } from './lib/upload'
 import { useActivityDetail, useStudentTracking } from './lib/tracking'
 import { NavSignal, ProgressStrip, studentSignals, useSectionVisits } from './components/StudentSignals'
+import { FRESH_LOGIN_KEY, PendingReminder, pendingItems, usePendingReminder } from './components/PendingReminder'
 import { CourseChips, RaCourseMap, Schedule, StudentGrades, TeacherGrades, WeekPlan, assessmentState, itemBelongsToCourse, progressCodeFor } from './components/CoursePlan'
 
 // Los contenidos de cada materia se descargan solo cuando el alumno los abre.
@@ -268,12 +269,12 @@ function Login({ onLogin }) {
           semester: profile.groups?.semester || null,
           mustChangePassword: Boolean(passwordState?.must_change_password),
         }
-        localStorage.setItem('aula-session', JSON.stringify(session)); onLogin(session)
+        localStorage.setItem('aula-session', JSON.stringify(session)); sessionStorage.setItem(FRESH_LOGIN_KEY, '1'); onLogin(session)
       } else {
         const session = mode === 'teacher'
           ? { email: email || 'docente@institucional.edu.mx', role: 'teacher', name: 'Profr. Santiago' }
           : { email, role: 'student', name: fullName || 'Alumno', group: '310', semester: 3 }
-        localStorage.setItem('aula-session', JSON.stringify(session)); onLogin(session)
+        localStorage.setItem('aula-session', JSON.stringify(session)); sessionStorage.setItem(FRESH_LOGIN_KEY, '1'); onLogin(session)
       }
       navigate('/panel')
     } catch (err) { setError(err.message || 'No fue posible iniciar sesión') }
@@ -349,6 +350,7 @@ function Dashboard({ session, onLogout }) {
   const [selectedAssessment, setSelectedAssessment] = useState(null)
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [studentCourseFilter, setStudentCourseFilter] = useState('Todos')
+  const [materialRequest, setMaterialRequest] = useState(null)
   const themeStorageKey = `aula-virtual-theme:${session.id || session.email}`
   const [studentTheme, setStudentTheme] = useState(() => localStorage.getItem(themeStorageKey) || 'clasico')
   const [themeSurprise, setThemeSurprise] = useState(null)
@@ -458,6 +460,16 @@ function Dashboard({ session, onLogout }) {
   const baseSignals = studentSignals({ session, courses: signalCourses, materials: materialList, assessments: assessmentList, learningProgress, isLocked: assessmentIsLocked })
   const visits = useSectionVisits(session, isTeacher ? null : view, baseSignals.gradedIds)
   const signals = isTeacher ? null : studentSignals({ session, courses: signalCourses, materials: materialList, assessments: assessmentList, learningProgress, isLocked: assessmentIsLocked, visits })
+  const reminderItems = isTeacher || loading ? [] : pendingItems({ session, courses: assignedCourses, materials: materialList, assessments: assessmentList, learningProgress, isLocked: assessmentIsLocked, signals })
+  const [reminderOpen, closeReminder] = usePendingReminder(session, !isTeacher && !loading && !dataError, reminderItems.length)
+  function goFromReminder(target) {
+    closeReminder()
+    setMobileMenu(false)
+    setSelectedAssessment(target.assessment || null)
+    if (target.material) { setStudentCourseFilter('Todos'); setMaterialRequest({ id: target.material.id, at: Date.now() }) }
+    setView(target.view)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
   const pageTitle = studentPreview ? 'Vista del alumno' : view === 'configuracion' ? 'Configuración' : isTeacher && view === 'modulos' ? 'Módulos' : (isTeacher ? navItems : studentNavItems).find(i => i.id === view)?.label || 'Inicio'
   const previewGroupData = groupList.find(group => group.code === previewGroup)
   const previewSession = { id: `preview-${previewGroup}`, email: 'vista.previa@tam.conalep.edu.mx', role: 'student', name: `Estudiante de prueba ${previewGroup}`, group: previewGroup, semester: previewGroupData?.semester || null, preview: true }
@@ -489,7 +501,7 @@ function Dashboard({ session, onLogout }) {
         {view === 'inicio' && (isTeacher ? <TeacherHome session={session} setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} teacherNotes={teacherNotes} onRefresh={loadData} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} setView={setView} onOpenCourse={code => { setStudentCourseFilter(code); setView('materiales') }} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} />)}
         {view === 'modulos' && (isTeacher ? <TeacherModules session={session} courses={assignedCourses} students={studentList} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} teacherNotes={teacherNotes} onRefresh={loadData} setView={setView} /> : <Modules courses={assignedCourses} session={session} setView={setView} />)}
         {view === 'materiales' && signals && <ProgressStrip signals={signals} setView={id => { setSelectedAssessment(null); setView(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />}
-        {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} assessments={isTeacher ? assessmentList : assessmentList.filter(item => item.status === 'Activa')} students={studentList} learningProgress={learningProgress} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} initialCourse={studentCourseFilter} onAdd={() => setModal('material')} onToggle={toggleMaterial} onProgressUpdate={progress => setLearningProgress(current => [...current.filter(item => item.material_code !== progress.material_code), progress])} />}
+        {view === 'materiales' && <Materials items={materialList} groups={groupList} courses={assignedCourses} session={session} isTeacher={isTeacher} assessments={isTeacher ? assessmentList : assessmentList.filter(item => item.status === 'Activa')} students={studentList} learningProgress={learningProgress} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} initialCourse={studentCourseFilter} materialRequest={isTeacher ? null : materialRequest} onMaterialRequestHandled={() => setMaterialRequest(null)} onAdd={() => setModal('material')} onToggle={toggleMaterial} onProgressUpdate={progress => setLearningProgress(current => [...current.filter(item => item.material_code !== progress.material_code), progress])} />}
         {view === 'evaluaciones' && <Assessments items={assessmentList} session={session} isTeacher={isTeacher} learningProgress={learningProgress} setView={setView} onAdd={() => setModal('assessment')} onRefresh={loadData} onToggle={toggleAssessment} initialSelected={selectedAssessment} onClearSelected={() => setSelectedAssessment(null)} />}
         {view === 'notas' && (isTeacher ? <TeacherGrades courses={assignedCourses} students={studentList} assessments={assessmentList} /> : <StudentGrades courses={assignedCourses} assessments={assessmentList} session={session} />)}
         {view === 'cronograma' && <Schedule courses={assignedCourses} session={session} isTeacher={isTeacher} />}
@@ -503,6 +515,7 @@ function Dashboard({ session, onLogout }) {
     </div>
     {!isTeacher && <nav className="student-mobile-nav" aria-label="Navegación del alumno">{studentNavItems.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? 'active' : ''} onClick={() => { if (id === 'materiales') setStudentCourseFilter('Todos'); setSelectedAssessment(null); setView(id); setMobileMenu(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }}><span className="mobile-nav-icon"><Icon size={20} />{view !== id && <NavSignal signal={signals?.nav[id]} />}</span><span>{label}</span></button>)}</nav>}
     {mobileMenu && <div className="overlay mobile" onClick={() => setMobileMenu(false)} />}
+    {reminderOpen && reminderItems.length > 0 && <PendingReminder session={session} items={reminderItems} onGo={goFromReminder} onClose={closeReminder} />}
     {modal === 'material' && <MaterialModal groups={groupList} onClose={() => setModal(null)} onSave={async (item) => {
       if (demoBlocked()) return
       const { data: authData } = await supabase.auth.getUser()
@@ -674,9 +687,11 @@ function TeacherModules({ session, courses, students, materials, assessments, le
   return <section className="teacher-modules-page"><div className="list-toolbar"><div><span className="eyebrow">Control académico</span><h1>Módulos asignados</h1><p>Abra cualquier módulo para consultar alumnos, progreso, evidencias y notas privadas.</p></div></div><div className="module-insight-grid expanded">{metrics.map(metric => <ModuleInsight key={metric.key} metric={metric} onOpen={() => setSelectedCourse(metric)} onMaterials={() => setView('materiales')} onAssessments={() => setView('evaluaciones')} />)}</div><div className="panel module-comparison"><PanelTitle title="Comparación general" /><div className="comparison-grid"><div><h3>Porcentaje de entregas</h3><ModuleBarChart metrics={metrics} field="completion" suffix="%" /></div><div><h3>Promedio registrado</h3><ModuleBarChart metrics={metrics} field="average" suffix="/60" /></div></div></div></section>
 }
 
-function Materials({ items, groups, courses, session, isTeacher, assessments = [], students = [], learningProgress = [], onOpenAssessment, initialCourse = 'Todos', onAdd, onToggle, onProgressUpdate }) {
+function Materials({ items, groups, courses, session, isTeacher, assessments = [], students = [], learningProgress = [], onOpenAssessment, initialCourse = 'Todos', materialRequest = null, onMaterialRequestHandled, onAdd, onToggle, onProgressUpdate }) {
   const [courseFilter, setCourseFilter] = useState(initialCourse)
   const [selectedMaterial, setSelectedMaterial] = useState(null)
+  // El recordatorio de pendientes puede pedir que se abra un material directamente.
+  useEffect(() => { const material = materialRequest && items.find(item => item.id === materialRequest.id); if (material) { openMaterial(material); onMaterialRequestHandled?.() } }, [materialRequest?.at])
   useEffect(() => { setCourseFilter(initialCourse) }, [initialCourse])
   useActivityDetail(selectedMaterial?.title)
   const shownCourses = courseFilter === 'Todos' ? courses : courses.filter(course => course.code === courseFilter)
@@ -695,7 +710,7 @@ function Materials({ items, groups, courses, session, isTeacher, assessments = [
   }
   if (selectedMaterial?.url === 'edoa://EDOA-RA-1.1' || selectedMaterial?.url === 'edoa://EDOA-WORD-U1') return <LazyView><EdoaMaterial code="EDOA-RA-1.1" session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
   if (selectedMaterial?.url?.startsWith('edoa://')) return <LazyView><EdoaAdvancedMaterial code={selectedMaterial.url.replace('edoa://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
-  if (selectedMaterial?.url?.startsWith('courseware://')) return <LazyView><IntegratedCourseMaterial code={selectedMaterial.url.replace('courseware://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
+  if (selectedMaterial?.url?.startsWith('courseware://')) return <LazyView><IntegratedCourseMaterial code={selectedMaterial.url.replace('courseware://', '')} session={session} assessment={assessments.find(item => item.activityCode === selectedMaterial.url.replace('courseware://', ''))} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
   if (selectedMaterial) return <LazyView><MtcsMaterialView code={selectedMaterial.url.replace('mtcs://', '')} session={session} onProgressUpdate={onProgressUpdate} onBack={() => setSelectedMaterial(null)} /></LazyView>
   return <section className="panel page-panel"><div className="list-toolbar"><div><span className="eyebrow">{isTeacher ? 'Material didáctico' : `Grupo ${session.group}`}</span><h1>Material</h1><p>{isTeacher ? 'Organizado por resultado de aprendizaje, con horas, ponderación y fechas del programa.' : 'Cada materia está dividida por R.A. Abre el que está en curso, completa el material en orden y al final entrega su actividad.'}</p></div>{isTeacher && <button className="primary" onClick={onAdd}><Upload size={18} />Publicar material</button>}</div>
     <CourseChips courses={courses} value={courseFilter} onChange={setCourseFilter} allLabel="Todas" showGroup={isTeacher} />
