@@ -182,7 +182,7 @@ export function StudentGrades({ courses, assessments, session }) {
   const earned = rows.reduce((sum, row) => sum + (row.points || 0), 0)
   const evaluated = rows.filter(row => row.points !== null).reduce((sum, row) => sum + row.ra.weight, 0)
   return <section className="panel page-panel">
-    <div className="list-toolbar"><div><span className="eyebrow">GRUPO {session.group}</span><h1>Mis notas</h1><p>Cada R.A. vale un porcentaje de tu calificación final. Aquí ves cuánto llevas.</p></div></div>
+    <div className="list-toolbar"><div><span className="eyebrow">Grupo {session.group}</span><h1>Mis notas</h1><p>Cada R.A. vale un porcentaje de tu calificación final. Aquí ves cuánto llevas.</p></div></div>
     <CourseChips courses={courses} value={course.code} onChange={setCourseCode} />
     <div className="grade-summary">
       <div><span>Puntos acumulados</span><strong>{earned.toFixed(1)}<small> / 100</small></strong></div>
@@ -207,7 +207,7 @@ export function TeacherGrades({ courses, students, assessments }) {
     return { student, rows, total: rows.reduce((sum, row) => sum + (row.points || 0), 0) }
   })
   return <section className="panel page-panel">
-    <div className="list-toolbar"><div><span className="eyebrow">CONTROL DE CALIFICACIONES</span><h1>Notas</h1><p>Puntos por R.A. según la ponderación del programa. Las actividades se califican sobre 60.</p></div></div>
+    <div className="list-toolbar"><div><span className="eyebrow">Control de calificaciones</span><h1>Notas</h1><p>Puntos por R.A. según la ponderación del programa. Las actividades se califican sobre 60.</p></div></div>
     <CourseChips courses={courses} value={course.code} onChange={setCourseKey} showGroup />
     {groupStudents.length ? <div className="table-wrap grade-matrix"><table><thead><tr><th>Alumno</th>{plan?.ra.map(ra => <th key={ra.code} title={ra.title}>{ra.code}<small>{ra.weight}%</small></th>)}<th>Total</th></tr></thead><tbody>
       {table.map(({ student, rows, total }) => <tr key={student.id}><td>{student.name}</td>{rows.map(row => <td key={row.ra.code} className={row.points === null ? (row.sent ? 'pending' : 'empty') : ''}>{row.points !== null ? row.points.toFixed(1) : row.sent ? '●' : '—'}</td>)}<td><b>{total.toFixed(1)}</b></td></tr>)}
@@ -229,7 +229,7 @@ export function Schedule({ courses, session, isTeacher }) {
   const shown = courseCode === 'Todos' ? courses : courses.filter(course => course.code === courseCode)
   const upcoming = shown.flatMap(course => (planFor(course)?.ra || []).filter(ra => ra.ae && ra.ae >= today).map(ra => ({ course, ra }))).sort((a, b) => a.ra.ae.localeCompare(b.ra.ae)).slice(0, 6)
   return <section className="panel page-panel">
-    <div className="list-toolbar"><div><span className="eyebrow">{isTeacher ? 'PLANEACIÓN DEL PERIODO' : `GRUPO ${session.group}`}</span><h1>Cronograma</h1><p>Fechas de cada resultado de aprendizaje y de sus actividades de evaluación.</p></div></div>
+    <div className="list-toolbar"><div><span className="eyebrow">{isTeacher ? 'Planeación del periodo' : `Grupo ${session.group}`}</span><h1>Cronograma</h1><p>Fechas de cada resultado de aprendizaje y de sus actividades de evaluación.</p></div></div>
     <CourseChips courses={courses} value={courseCode} onChange={setCourseCode} allLabel="Todas" showGroup={isTeacher} />
     <div className="schedule-next"><h3>Próximas evaluaciones</h3>{upcoming.length ? <ul>{upcoming.map(({ course, ra }) => { const days = daysUntil(ra.ae); return <li key={`${course.code}-${ra.code}`}><span className="schedule-date"><b>{parseDay(ra.ae).getDate()}</b>{parseDay(ra.ae).toLocaleDateString('es-MX', { month: 'short' }).replace('.', '')}</span><div><strong>{course.code} · R.A. {ra.code}</strong><small>{ra.title}</small></div><span className={`ra-badge ${days <= 3 ? 'bad' : days <= 7 ? 'warn' : 'muted'}`}>{days === 0 ? 'Hoy' : days === 1 ? 'Mañana' : `En ${days} días`}</span></li> })}</ul> : <p className="ra-empty">No hay evaluaciones próximas.</p>}</div>
     {shown.map(course => {
