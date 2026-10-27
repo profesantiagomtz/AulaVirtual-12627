@@ -527,15 +527,12 @@ function Dashboard({ session, onLogout }) {
 }
 
 function TeacherHome({ session, setView, groups, students, materials, assessments, learningProgress, teacherNotes, onRefresh, onOpenAssessment }) {
-  const [moduleFilter, setModuleFilter] = useState('Todos')
   const [selectedCourse, setSelectedCourse] = useState(null)
   const activeAssessments = assessments.filter(item => item.status === 'Activa')
-  const submitted = assessments.reduce((sum, item) => sum + item.submissions, 0)
   const drafts = assessments.reduce((sum, item) => sum + item.drafts, 0)
   const today = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()).replace(/^./, letter => letter.toLocaleUpperCase('es-MX'))
   const recent = assessments.flatMap(assessment => assessment.submissionDetails.map(submission => ({ ...submission, assessment: assessment.title, group: assessment.group, date: submission.submitted_at || submission.started_at }))).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5)
   const metrics = buildModuleMetrics(courses, students, materials, assessments)
-  const filteredMetrics = moduleFilter === 'Todos' ? metrics : metrics.filter(item => item.code === moduleFilter)
   const pendingDeliveries = activeAssessments.reduce((sum, item) => sum + Math.max(0, item.total - item.submissions), 0)
   const ungraded = assessments.reduce((sum, item) => sum + item.submissionDetails.filter(submission => submission.submitted_at && submission.score === null).length, 0)
   const blockedMaterials = materials.filter(item => !item.published).length
@@ -545,25 +542,76 @@ function TeacherHome({ session, setView, groups, students, materials, assessment
     pending: Math.max(0, item.total - item.submissions),
   })).sort((a, b) => b.ungraded - a.ungraded || Number(b.overdue) - Number(a.overdue) || b.drafts - a.drafts || learningSequence(a) - learningSequence(b))
   if (selectedCourse) return <ModuleStudentTracker session={session} course={selectedCourse} students={students.filter(student => student.group === selectedCourse.group)} assessments={assessments} learningProgress={learningProgress} teacherNotes={teacherNotes} onRefresh={onRefresh} onBack={() => setSelectedCourse(null)} />
-  return <>
-    <section className="teacher-command-hero command-center"><div><span className="eyebrow">{today}</span><h1>{greeting()}, profe</h1><p>Este es el trabajo que requiere su atención. Los indicadores se actualizan automáticamente.</p><div className="command-context"><span><b>{students.length}</b> alumnos</span><span><b>{groups.length}</b> grupos</span><span><b>{materials.filter(item => item.published).length}</b> materiales visibles</span></div></div><div className="command-actions"><button onClick={() => setView('alumnos')}><Users size={17} />Directorio</button><button onClick={() => setView('materiales')}><BookOpen size={17} />Gestionar materiales</button><button onClick={() => setView('evaluaciones')}><ClipboardCheck size={17} />Revisar evaluaciones</button></div></section>
-    <section className="teacher-action-grid">
-      <button className={ungraded ? 'urgent' : 'clear'} onClick={() => setView('evaluaciones')}><span><FileText size={20} /></span><div><small>Por calificar</small><strong>{ungraded}</strong><p>{ungraded ? 'Entregas que esperan su revisión' : 'No hay entregas pendientes'}</p></div><ChevronRight size={19} /></button>
-      <button className={drafts ? 'warning' : 'clear'} onClick={() => setView('evaluaciones')}><span><TrendingUp size={20} /></span><div><small>En proceso</small><strong>{drafts}</strong><p>{drafts ? 'Alumnos con avances guardados' : 'No hay borradores activos'}</p></div><ChevronRight size={19} /></button>
-      <button onClick={() => setView('evaluaciones')}><span><ClipboardCheck size={20} /></span><div><small>Faltan por entregar</small><strong>{pendingDeliveries}</strong><p>En evaluaciones actualmente activas</p></div><ChevronRight size={19} /></button>
-      <button className={blockedMaterials ? 'info' : 'clear'} onClick={() => setView('materiales')}><span><Lock size={20} /></span><div><small>Preparados</small><strong>{blockedMaterials}</strong><p>Materiales ocultos hasta que decida publicarlos</p></div><ChevronRight size={19} /></button>
+  const [day, month, weekday] = (() => { const now = new Date(); return [now.getDate(), now.toLocaleDateString('es-MX', { month: 'long' }), now.toLocaleDateString('es-MX', { weekday: 'long' })] })()
+  const next = workQueue[0]
+  const agenda = ungraded
+    ? `Tiene ${ungraded} ${ungraded === 1 ? 'entrega' : 'entregas'} esperando calificación.`
+    : next ? `Lo más próximo es ${next.title}, del grupo ${next.group}, con entrega el ${next.due}. Van ${next.submissions} de ${next.total}.`
+    : 'No hay entregas ni evaluaciones que atender hoy.'
+  const learnersIn = metric => new Set(learningProgress.filter(item => item.material_code?.startsWith(`${metric.code}-`) && students.some(student => student.id === item.student_id && student.group === metric.group)).map(item => item.student_id)).size
+  const ledger = [
+    { label: 'Por calificar', value: ungraded, note: ungraded ? 'Entregas que esperan su revisión' : 'Nada pendiente', tone: ungraded ? 'urgent' : '', view: 'evaluaciones' },
+    { label: 'En proceso', value: drafts, note: drafts ? 'Alumnos con avance guardado' : 'Sin borradores', tone: '', view: 'evaluaciones' },
+    { label: 'Faltan por entregar', value: pendingDeliveries, note: 'En evaluaciones activas', tone: pendingDeliveries ? 'warn' : '', view: 'evaluaciones' },
+    { label: 'Preparados', value: blockedMaterials, note: 'Materiales ocultos a los alumnos', tone: '', view: 'materiales' },
+  ]
+  return <div className="lux">
+    <section className="lux-cover" aria-labelledby="lux-greeting">
+      <div className="lux-date" aria-label={today}><strong>{day}</strong><span>{weekday}</span><span>{month}</span></div>
+      <div className="lux-cover-body">
+        <h1 id="lux-greeting">{greeting()}, profe.</h1>
+        <p className="lux-agenda">{agenda}</p>
+        <div className="lux-cover-actions">
+          <button className="lux-primary" onClick={() => next && !ungraded ? onOpenAssessment(next) : setView('evaluaciones')}><ClipboardCheck size={17} />{ungraded ? 'Calificar entregas' : next ? 'Abrir evaluación' : 'Revisar evaluaciones'}</button>
+          <button onClick={() => setView('alumnos')}><Users size={16} />Directorio</button>
+          <button onClick={() => setView('materiales')}><BookOpen size={16} />Materiales</button>
+        </div>
+      </div>
+      <dl className="lux-census">
+        <div><dt>alumnos</dt><dd>{students.length}</dd></div>
+        <div><dt>grupos</dt><dd>{groups.length}</dd></div>
+        <div><dt>módulos</dt><dd>{metrics.length}</dd></div>
+        <div><dt>materiales visibles</dt><dd>{materials.filter(item => item.published).length}</dd></div>
+      </dl>
+      <i className="lux-ribbon" aria-hidden="true" />
     </section>
-    <section className="dashboard-work-grid">
-      <div className="panel work-queue"><PanelTitle title="Bandeja de trabajo" action="Ver evaluaciones" onClick={() => setView('evaluaciones')} /><p className="section-intro">Prioridad calculada con entregas sin calificar, fechas y avances guardados.</p>{workQueue.length ? <div className="work-queue-list">{workQueue.slice(0, 6).map(item => <button key={item.id} onClick={() => onOpenAssessment(item)}><div className="queue-code">{item.activityCode?.split('-')[0] || 'ACT'}<small>Gpo. {item.group}</small></div><div><strong>{item.title}</strong><span>{item.ungraded ? `${item.ungraded} por calificar` : item.drafts ? `${item.drafts} avances guardados` : `${item.submissions}/${item.total} entregas`}</span></div><div className="queue-status"><b className={item.ungraded ? 'needs-review' : item.overdue ? 'late' : ''}>{item.ungraded ? 'Por revisar' : item.overdue ? 'Fecha vencida' : 'Activa'}</b><small>{item.due}</small></div><ChevronRight size={17} /></button>)}</div> : <EmptyState text="No hay evaluaciones activas." />}</div>
-      <div className="panel chart-panel"><PanelTitle title="Ritmo de entrega" /><p className="section-intro">Porcentaje entregado por módulo respecto a lo asignado.</p><ModuleBarChart metrics={metrics} field="completion" suffix="%" /><div className="chart-summary"><span><b>{activeAssessments.length}</b> evaluaciones activas</span><span><b>{submitted}</b> entregas recibidas</span></div></div>
+
+    <section className="lux-ledger" aria-label="Orden del día">
+      {ledger.map(item => <button key={item.label} className={item.tone} onClick={() => setView(item.view)}><span>{item.label}</span><strong>{item.value}</strong><small>{item.note}</small></button>)}
     </section>
-    <section className="dashboard-toolbar"><div><strong>Panorama por módulo</strong><span>Las gráficas se calculan con alumnos, actividades y calificaciones reales.</span></div><select value={moduleFilter} onChange={event => setModuleFilter(event.target.value)}><option value="Todos">Todos los módulos</option>{metrics.map(item => <option key={item.key} value={item.code}>{item.code} · Grupo {item.group}</option>)}</select></section>
-    <section className="module-insight-grid">{filteredMetrics.map(metric => <ModuleInsight key={metric.key} metric={metric} onOpen={() => setSelectedCourse(metric)} onMaterials={() => setView('materiales')} onAssessments={() => setView('evaluaciones')} />)}</section>
-    <section className="two-cols teacher-lower-grid">
-      <div className="panel"><PanelTitle title="Actividad reciente" action="Ver alumnos" onClick={() => setView('alumnos')} />{recent.length ? <div className="recent-list">{recent.map(item => <Activity key={item.id} initials={(item.student?.name || 'Alumno').split(' ').slice(0, 2).map(part => part[0]).join('')} title={item.student?.name || 'Alumno'} meta={`${item.submitted_at ? 'Entregó' : 'Guardó avance'} · ${item.assessment} · Grupo ${item.group}`} color={item.submitted_at ? 'green' : 'blue'} />)}</div> : <EmptyState text="Todavía no hay actividad de alumnos registrada." />}</div>
-      <div className="panel"><PanelTitle title="Avance por grupo" /><div className="group-progress">{groups.map(group => { const activeStudents = new Set(assessments.filter(item => item.group === group.code).flatMap(item => item.submissionDetails.map(submission => submission.student_id))).size; const progress = group.students ? Math.round(activeStudents / group.students * 100) : 0; return <div className="progress-row" key={group.id}><div><strong>Grupo {group.code}</strong><span>{group.students} {group.students === 1 ? 'alumno' : 'alumnos'} · {group.semester}º semestre</span></div><div className="progress-meta"><b>{activeStudents ? `${activeStudents} con actividad` : 'Sin actividad'}</b><div className="bar"><i style={{ width: `${progress}%` }} /></div></div></div> })}</div></div>
+
+    <section className="lux-modules">
+      <header className="lux-heading"><h2>Módulos</h2><p>Abra un módulo para ver el expediente de cada alumno.</p></header>
+      <ol>{metrics.map(metric => { const learners = learnersIn(metric); return <li key={metric.key}>
+        <button className="lux-module" onClick={() => setSelectedCourse(metric)}>
+          <span className="lux-tab">{metric.code}</span>
+          <span className="lux-module-name"><strong>{metric.name}</strong><small>Grupo {metric.group}, {metric.students} {metric.students === 1 ? 'alumno' : 'alumnos'}</small></span>
+          <span className="lux-module-meter"><small>{learners} de {metric.students} estudiando</small><i><b style={{ width: `${metric.students ? Math.round(learners / metric.students * 100) : 0}%` }} /></i></span>
+          <span className="lux-figure" data-label="Entregas"><b>{metric.possible ? `${metric.completion}%` : '—'}</b><small>entregas</small></span>
+          <span className="lux-figure" data-label="Materiales"><b>{metric.publishedMaterials}/{metric.materials}</b><small>materiales</small></span>
+          <span className="lux-figure" data-label="Promedio"><b>{metric.hasScores ? metric.average : '—'}</b><small>promedio</small></span>
+          <ChevronRight size={18} className="lux-chevron" />
+        </button>
+      </li> })}</ol>
     </section>
-  </>
+
+    <section className="lux-desk">
+      <div className="lux-sheet">
+        <header className="lux-heading"><h2>Bandeja de trabajo</h2><button className="text-btn" onClick={() => setView('evaluaciones')}>Ver evaluaciones<ChevronRight size={15} /></button></header>
+        {workQueue.length ? <ul className="lux-queue">{workQueue.slice(0, 6).map(item => <li key={item.id}><button onClick={() => onOpenAssessment(item)}>
+          <span className="lux-queue-code">{item.activityCode?.split('-')[0] || 'Act.'}<small>{item.group}</small></span>
+          <span><strong>{item.title}</strong><small>{item.ungraded ? `${item.ungraded} por calificar` : item.drafts ? `${item.drafts} avances guardados` : `${item.submissions} de ${item.total} entregas`}</small></span>
+          <span className={`lux-state ${item.ungraded ? 'urgent' : item.overdue ? 'late' : ''}`}>{item.ungraded ? 'Por revisar' : item.overdue ? 'Vencida' : `Cierra ${item.due}`}</span>
+        </button></li>)}</ul> : <EmptyState text="No hay evaluaciones activas. Publique una desde Tareas." />}
+      </div>
+      <div className="lux-sheet">
+        <header className="lux-heading"><h2>Actividad reciente</h2><button className="text-btn" onClick={() => setView('alumnos')}>Ver alumnos<ChevronRight size={15} /></button></header>
+        {recent.length ? <ul className="lux-feed">{recent.map(item => <li key={item.id}><span className={`lux-dot ${item.submitted_at ? 'done' : ''}`} /><span><strong>{item.student?.name || 'Alumno'}</strong><small>{item.submitted_at ? 'Entregó' : 'Guardó avance en'} {item.assessment}, grupo {item.group}</small></span></li>)}</ul> : <p className="lux-empty">Cuando un alumno entregue o guarde avance, aparecerá aquí.</p>}
+        <h3 className="lux-subheading">Grupos</h3>
+        <ul className="lux-groups">{groups.map(group => { const active = new Set(assessments.filter(item => item.group === group.code).flatMap(item => item.submissionDetails.map(submission => submission.student_id))).size; return <li key={group.id}><strong>{group.code}</strong><span>{group.students} alumnos, {group.semester}º semestre</span><b>{active ? `${active} con entregas` : 'Sin entregas'}</b></li> })}</ul>
+      </div>
+    </section>
+  </div>
 }
 
 function ModuleStudentTracker({ session, course, students, assessments, learningProgress, teacherNotes, onRefresh, onBack }) {
