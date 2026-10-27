@@ -255,6 +255,6 @@ export function WeekPlan({ courses, onOpenCourse }) {
   if (!rows.length) return null
   return <section className="panel week-plan"><div className="panel-title"><h3>Esta semana en tus materias</h3></div><div className="week-plan-list">{rows.map(({ course, ra, next }) => {
     const days = ra.ae ? daysUntil(ra.ae) : null
-    return <button key={`${course.code}-${course.group}`} onClick={() => onOpenCourse?.(course.code)}><div className="module-code">{course.code}</div><div><strong>R.A. {ra.code} · {ra.title}</strong><small>{next ? `Próxima clase: ${longDate(next)}` : 'Sin clases programadas'}</small></div>{days !== null && days >= 0 && <span className={`ra-badge ${days <= 3 ? 'bad' : days <= 7 ? 'warn' : 'muted'}`}>A.E. {days === 0 ? 'hoy' : `en ${days} d`}</span>}<ChevronRight size={17} /></button>
+    return <button key={`${course.code}-${course.group}`} onClick={() => onOpenCourse?.(course.code)}><div className="module-code">{course.code}</div><div><strong>R.A. {ra.code} · {ra.title}</strong><small>{next ? `Próxima clase: ${longDate(next)}` : 'Sin clases programadas'}</small></div>{days !== null && days >= 0 && <span className={`ra-badge ${days <= 3 ? 'bad' : days <= 7 ? 'warn' : 'muted'}`}>Evaluación {days === 0 ? 'hoy' : days === 1 ? 'mañana' : `en ${days} días`}</span>}<ChevronRight size={17} /></button>
   })}</div></section>
 }
