@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, CheckCircle2, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { assignmentFor } from '../lib/mtcs-assignment'
+import { hasState, markSynced, materialStatePrefix, readMaterialState, shouldRestore, writeMaterialState } from '../lib/material-state'
 import PracticeCheck, { PracticeCheckButton, hasPracticeChecks } from './PracticeCheck'
 
 const courseMaterials = {
@@ -208,19 +209,55 @@ export default function IntegratedCourseMaterial({ code, session, assessment, on
   const persisted = useRef(Promise.resolve({ done: 0, completed: false }))
   const frame = useRef(null)
   const source = useMemo(() => material ? new URL(`${material.file}?student=${encodeURIComponent(session?.id || 'preview')}`, document.baseURI).href : '', [material, session?.id])
+  const syncs = Boolean(material && supabase && !session?.preview && session?.role !== 'teacher')
+  const prefix = useMemo(() => material && session?.id ? materialStatePrefix(material.file, session.id) : '', [material, session?.id])
+  // El material se abre hasta recuperar su estado desde Supabase; así no arranca vacío.
+  const [ready, setReady] = useState(!syncs)
+  const lastSaved = useRef('')
+  const stateColumn = useRef(true)
 
   useEffect(() => {
-    if (!material || !supabase || session?.preview || session?.role === 'teacher') return undefined
+    if (!syncs) { setReady(true); return undefined }
     let active = true
-    persisted.current = supabase.from('learning_progress').select('completed_steps, completed_at').eq('student_id', session.id).eq('material_code', code).maybeSingle().then(({ data }) => {
+    setReady(false)
+    const giveUp = setTimeout(() => { if (active) setReady(true) }, 5000)
+    const query = columns => supabase.from('learning_progress').select(columns).eq('student_id', session.id).eq('material_code', code).maybeSingle()
+    persisted.current = query('completed_steps, completed_at, updated_at, state').then(async result => {
+      // Antes de correr supabase/progreso_material.sql no existe la columna state.
+      if (result.error && /state/.test(result.error.message || '')) { stateColumn.current = false; result = await query('completed_steps, completed_at, updated_at') }
+      const data = result.data
       const steps = Array.isArray(data?.completed_steps) ? data.completed_steps : []
       const stored = { done: steps.length, completed: Boolean(data?.completed_at) }
+      if (active && shouldRestore(prefix, data) && writeMaterialState(prefix, data.state)) markSynced(prefix, data.updated_at)
+      lastSaved.current = JSON.stringify(readMaterialState(prefix))
       // El total de pasos no se guarda; se conoce hasta que el material envía su avance.
       if (active && data) setProgress({ ...stored, total: 0 })
       return stored
-    })
-    return () => { active = false }
-  }, [code, material, session?.id, session?.preview, session?.role])
+    }).catch(() => ({ done: 0, completed: false })).finally(() => { clearTimeout(giveUp); if (active) setReady(true) })
+    return () => { active = false; clearTimeout(giveUp) }
+  }, [code, prefix, session?.id, syncs])
+
+  // Copia a Supabase el estado completo del material si cambió desde la última vez.
+  const saveState = useCallback(async () => {
+    if (!syncs || !stateColumn.current || !prefix) return
+    const state = readMaterialState(prefix)
+    const snapshot = JSON.stringify(state)
+    if (!hasState(state) || snapshot === lastSaved.current) return
+    const updatedAt = new Date().toISOString()
+    const { data, error } = await supabase.from('learning_progress').update({ state, updated_at: updatedAt }).eq('student_id', session.id).eq('material_code', code).select('id')
+    if (error && /state/.test(error.message || '')) { stateColumn.current = false; return }
+    if (!error && data?.length) { lastSaved.current = snapshot; markSynced(prefix, updatedAt) }
+  }, [code, prefix, session?.id, syncs])
+
+  // Los simuladores guardan sin avisar a la plataforma: se respalda cada 20 s, al cambiar de pestaña y al salir.
+  useEffect(() => {
+    if (!syncs) return undefined
+    const interval = setInterval(saveState, 20000)
+    const onHide = () => { if (document.visibilityState === 'hidden') saveState() }
+    document.addEventListener('visibilitychange', onHide)
+    window.addEventListener('pagehide', saveState)
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onHide); window.removeEventListener('pagehide', saveState); saveState() }
+  }, [saveState, syncs])
 
   useEffect(() => {
     let timer
@@ -237,31 +274,35 @@ export default function IntegratedCourseMaterial({ code, session, assessment, on
         ...(total ? { total_steps: total } : {}),
         updated_at: new Date().toISOString(),
       }
-      if (!supabase || session?.preview || session?.role === 'teacher') {
+      if (!syncs) {
         setProgress(next)
         if (session?.role !== 'teacher') onProgressUpdate?.(record)
         return
       }
       clearTimeout(timer)
       timer = setTimeout(async () => {
-        // El material guarda su estado en el navegador; en otro equipo inicia vacío y no debe borrar el avance guardado.
+        // Si el estado no se pudo recuperar (sin conexión), el material inicia vacío y no debe borrar el avance guardado.
         const stored = await persisted.current
         if (!completed && (stored.completed || done < stored.done)) return
         persisted.current = Promise.resolve({ done, completed })
         setProgress(next)
         onProgressUpdate?.(record)
-        let { error } = await supabase.from('learning_progress').upsert({ student_id: session.id, ...record }, { onConflict: 'student_id,material_code' })
-        // Antes de correr supabase/seguimiento_asistencia.sql no existe total_steps; se guarda sin él.
-        if (error && /total_steps/.test(error.message || '')) {
-          const { total_steps: _total, ...withoutTotal } = record
-          ;({ error } = await supabase.from('learning_progress').upsert({ student_id: session.id, ...withoutTotal }, { onConflict: 'student_id,material_code' }))
+        const state = readMaterialState(prefix)
+        const withState = stateColumn.current && hasState(state) ? { ...record, state } : record
+        let { error } = await supabase.from('learning_progress').upsert({ student_id: session.id, ...withState }, { onConflict: 'student_id,material_code' })
+        // Columnas que quizá aún no existen: total_steps (seguimiento_asistencia.sql) y state (progreso_material.sql).
+        if (error && /total_steps|state/.test(error.message || '')) {
+          if (/state/.test(error.message || '')) stateColumn.current = false
+          const { total_steps: _total, state: _state, ...basic } = withState
+          ;({ error } = await supabase.from('learning_progress').upsert({ student_id: session.id, ...basic }, { onConflict: 'student_id,material_code' }))
         }
+        if (!error && withState.state && stateColumn.current) { lastSaved.current = JSON.stringify(state); markSynced(prefix, record.updated_at) }
         setMessage(error ? 'El contenido funciona, pero no se pudo sincronizar el avance. Revisa tu conexión.' : completed ? '¡R.A. completado! Ya puedes continuar con la actividad de evaluación.' : 'Avance guardado automáticamente.')
       }, 500)
     }
     window.addEventListener('message', receive)
     return () => { window.removeEventListener('message', receive); clearTimeout(timer) }
-  }, [code, onProgressUpdate, session?.id, session?.preview, session?.role])
+  }, [code, onProgressUpdate, prefix, session?.id, session?.role, syncs])
 
   const sendTheme = () => frame.current?.contentWindow?.postMessage(platformTheme(), window.location.origin)
   useEffect(() => {
@@ -287,6 +328,6 @@ export default function IntegratedCourseMaterial({ code, session, assessment, on
     </div>
     {message && <div className={message.startsWith('El contenido') ? 'form-error' : 'submission-success'}>{message}</div>}
     {checking && <PracticeCheck code={code} label={`${material.course} · ${material.label}`} assignment={assignment} session={session} onClose={() => setChecking(false)} />}
-    <div className="integrated-course-frame"><iframe ref={frame} onLoad={sendTheme} title={`${material.course} ${material.label}`} src={source} /></div>
+    <div className="integrated-course-frame">{ready ? <iframe ref={frame} onLoad={sendTheme} title={`${material.course} ${material.label}`} src={source} /> : <p className="icb-loading">Recuperando tu avance…</p>}</div>
   </section>
 }
