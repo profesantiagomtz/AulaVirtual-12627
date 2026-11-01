@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Award, BookOpen, CalendarCheck, CalendarDays, ChartLine, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, FileText, GraduationCap, KeyRound,
-  LayoutDashboard, Lock, LogOut, Menu, Palette, Plus, Radio, Search, Settings, TrendingUp, Unlock, Upload, Users, X
+  LayoutDashboard, Lock, LogOut, Menu, Palette, Plus, Radio, Search, Settings, Trash2, TrendingUp, Unlock, Upload, Users, X
 } from 'lucide-react'
 import { courses } from './data/academic'
 import * as demo from './data/demo'
@@ -203,6 +203,94 @@ function ResetPasswordModal({ student, onClose }) {
     ? <div className="reset-result"><p>Nueva contraseña temporal de <b>{student.name}</b>:</p><div className="temp-password"><code>{result}</code><button type="button" className="secondary small" onClick={() => navigator.clipboard?.writeText(result)}>Copiar</button></div><p className="muted">Dásela al alumno. Al entrar con ella, el aula le pedirá crear una propia.</p><div className="modal-actions"><button type="button" className="primary" onClick={onClose}>Listo</button></div></div>
     : <form onSubmit={submit}><p>Se asignará una contraseña temporal a <b>{student.name}</b> ({student.email}) y se le pedirá cambiarla al entrar. La anterior dejará de funcionar.</p><label>Contraseña temporal (opcional)<input value={password} onChange={e => setPassword(e.target.value)} placeholder="Vacío = se genera una" /></label>{error && <div className="form-error">{error}</div>}<ModalActions onClose={onClose} label={busy ? 'Restableciendo…' : 'Restablecer'} disabled={busy} /></form>}
   </Modal>
+}
+
+const plainName = value => String(value || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+function likelyDuplicate(student, others) {
+  const name = plainName(student.name)
+  const firstTwo = name.split(' ').slice(0, 2).join(' ')
+  return others.find(item => plainName(item.name) === name) || others.find(item => item.group === student.group && plainName(item.name).startsWith(firstTwo)) || null
+}
+
+function DeleteStudentModal({ student, students, onClose, onDone }) {
+  const others = useMemo(() => students.filter(item => item.id !== student.id).sort((a, b) => a.name.localeCompare(b.name, 'es')), [students, student.id])
+  const suggested = useMemo(() => likelyDuplicate(student, others), [student, others])
+  const [summary, setSummary] = useState(null)
+  const [targetId, setTargetId] = useState(suggested?.id || '')
+  const [confirm, setConfirm] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState(null)
+  useEffect(() => {
+    if (!isSupabaseReady) { setSummary({}); return }
+    supabase.rpc('student_account_summary', { p_student: student.id }).then(({ data, error: summaryError }) => {
+      if (summaryError) setError(/function|schema cache/i.test(summaryError.message) ? 'Falta ejecutar supabase/eliminar_alumno.sql en Supabase.' : summaryError.message)
+      else setSummary(data || {})
+    })
+  }, [student.id])
+  const target = others.find(item => item.id === targetId) || null
+  const matches = confirm.trim().toLowerCase() === String(student.email || '').trim().toLowerCase()
+  const n = key => Number(summary?.[key] || 0)
+  const work = summary ? [
+    [n('entregadas'), 'entregas enviadas'], [n('en_proceso'), 'entregas en proceso'], [n('calificadas'), 'con calificación'], [n('avance'), 'materiales con avance'],
+    [n('practicas_edoa'), 'prácticas EDOA'], [n('asistencias'), 'registros de asistencia'], [n('notas'), 'notas privadas'], [n('archivos'), 'archivos subidos'],
+  ] : []
+  const hasWork = work.some(([value]) => value > 0)
+  async function submit(e) {
+    e.preventDefault()
+    setError('')
+    if (!isSupabaseReady) { setError('Modo demostración: no se eliminan cuentas.'); return }
+    if (!matches) { setError('Escribe el correo exacto de la cuenta para confirmar.'); return }
+    setBusy(true)
+    try {
+      let moved = null
+      if (target) {
+        const { data, error: moveError } = await supabase.rpc('transfer_student_work', { p_from: student.id, p_to: target.id })
+        if (moveError) throw moveError
+        moved = data
+      }
+      const { data: files, error: deleteError } = await supabase.rpc('delete_student_account', { p_student: student.id, p_confirm_email: confirm.trim(), p_transferred_to: target?.id || null })
+      if (deleteError) throw deleteError
+      let filesLeft = 0
+      for (let i = 0; i < (files || []).length; i += 100) {
+        const chunk = files.slice(i, i + 100)
+        const { error: removeError } = await supabase.storage.from('submissions').remove(chunk)
+        if (removeError) filesLeft += chunk.length
+      }
+      setResult({ moved, files: (files || []).length - filesLeft, filesLeft })
+      onDone?.()
+    } catch (err) { setError(err.message || 'No se pudo eliminar la cuenta') }
+    finally { setBusy(false) }
+  }
+  if (result) return <Modal title="Cuenta eliminada" onClose={onClose}><div className="delete-account">
+    <p>Se eliminó la cuenta <b>{student.email}</b> de {student.name}. Ya no puede entrar con ella.</p>
+    {result.moved && <p>Se pasó a <b>{target.email}</b>: {result.moved.entregas} entregas, {result.moved.avance} materiales con avance, {result.moved.practicas_edoa} prácticas EDOA y {result.moved.asistencias} asistencias.</p>}
+    <p className="muted">Archivos borrados del almacenamiento: {result.files}.{result.filesLeft ? ` ${result.filesLeft} no se pudieron borrar (no afectan a nadie).` : ''}</p>
+    <div className="modal-actions"><button type="button" className="primary" onClick={onClose}>Listo</button></div>
+  </div></Modal>
+  return <Modal title="Eliminar cuenta de alumno" onClose={onClose}><form className="delete-account" onSubmit={submit}>
+    <p>Vas a eliminar la cuenta de <b>{student.name}</b> ({student.email}), grupo {student.group}. <b>No se puede deshacer.</b></p>
+    {!summary && !error && <p className="muted">Revisando qué tiene esta cuenta…</p>}
+    {summary && <div className={`delete-summary ${hasWork ? 'has-work' : ''}`}>
+      <strong>{hasWork ? 'Esta cuenta tiene trabajo guardado:' : 'Esta cuenta no tiene trabajo guardado.'}</strong>
+      {hasWork && <ul>{work.filter(([value]) => value > 0).map(([value, label]) => <li key={label}><b>{value}</b> {label}</li>)}</ul>}
+      {summary.ultimo_acceso && <small>Último acceso: {new Date(summary.ultimo_acceso).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</small>}
+    </div>}
+    <label>Antes de borrar, pasar su trabajo a otra cuenta
+      <select value={targetId} onChange={e => setTargetId(e.target.value)}>
+        <option value="">No pasar nada (se borra todo)</option>
+        {others.map(item => <option key={item.id} value={item.id}>{item.name} · {item.group} · {item.email}{item.id === suggested?.id ? '  (posible duplicada)' : ''}</option>)}
+      </select>
+    </label>
+    <p className="muted delete-help">{target
+      ? <>Lo que <b>{target.name}</b> todavía no tenga (entregas, avance, prácticas, asistencia y notas) se pasa a <b>{target.email}</b>. Si ya tiene la misma actividad, se conserva la suya. Sus archivos se conservan.</>
+      : <>Se borran la cuenta de acceso, sus entregas, avance, asistencia, notas privadas y archivos.</>}</p>
+    <label>Para confirmar, escribe el correo de la cuenta que se elimina
+      <input value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Correo de la cuenta" autoComplete="off" spellCheck="false" />
+    </label>
+    {error && <div className="form-error">{error}</div>}
+    <div className="modal-actions"><button type="button" className="secondary" onClick={onClose}>Cancelar</button><button className="primary danger" disabled={busy || !matches || !summary}><Trash2 size={16} />{busy ? 'Eliminando…' : 'Eliminar cuenta'}</button></div>
+  </form></Modal>
 }
 
 function Login({ onLogin }) {
@@ -967,7 +1055,8 @@ function Students({ students, groups, assessments, learningProgress = [], edoaPr
   useEffect(() => { if (initialSelected) setSelectedStudentState(initialSelected) }, [initialSelected])
   function setSelectedStudent(student) { setSelectedStudentState(student); if (!student) onClearSelected?.() }
   const [resetStudent, setResetStudent] = useState(null)
-  const rows = useMemo(() => students.filter(s => (group === 'Todos' || s.group === group) && `${s.name} ${s.email}`.toLowerCase().includes(query.toLowerCase())), [query, group])
+  const [deleteStudent, setDeleteStudent] = useState(null)
+  const rows = useMemo(() => students.filter(s => (group === 'Todos' || s.group === group) && `${s.name} ${s.email}`.toLowerCase().includes(query.toLowerCase())), [students, query, group])
   function progressFor(student) {
     const submissions = assessments.filter(item => item.group === student.group).flatMap(item => item.submissionDetails).filter(item => item.student?.email === student.email)
     const delivered = submissions.filter(item => item.submitted_at)
@@ -981,7 +1070,7 @@ function Students({ students, groups, assessments, learningProgress = [], edoaPr
     return { label: parts.join(' · ') || (submissions.length ? 'En proceso' : '—'), average: scores.length ? `${Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length)} / 60` : '—' }
   }
   if (selectedStudent) return <StudentRecord student={selectedStudent} assessments={assessments.filter(item => item.group === selectedStudent.group)} learningProgress={learningProgress.filter(item => item.student_id === selectedStudent.id)} edoaPractices={edoaPractices.filter(item => item.student_id === selectedStudent.id)} onBack={() => setSelectedStudent(null)} onRefresh={onRefresh} />
-  return <section className="panel page-panel"><div className="list-toolbar"><div><h1>Alumnos registrados</h1><p>Cuentas reales creadas en Aula Virtual, organizadas por grupo.</p></div></div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar alumno…" /></div><select value={group} onChange={e => setGroup(e.target.value)}><option>Todos</option>{groups.map(item => <option key={item.id}>{item.code}</option>)}</select></div><div className="table-wrap"><table><thead><tr><th>Alumno</th><th>Grupo</th><th>Matrícula</th><th>Cuenta</th><th>Progreso</th><th>Promedio</th><th /></tr></thead><tbody>{rows.map(student => { const progress = progressFor(student); return <tr key={student.id}><td data-label="Alumno"><div className="student-cell"><div className="avatar small">{student.name.split(' ').slice(0,2).map(part => part[0]).join('')}</div><div><strong>{student.name}</strong><span>{student.email}</span></div></div></td><td data-label="Grupo">{student.group}</td><td data-label="Matrícula">{student.enrollment || 'Sin matrícula'}</td><td data-label="Cuenta"><span className="tag active">Registrada</span></td><td data-label="Progreso">{progress.label}</td><td data-label="Promedio">{progress.average}</td><td><div className="table-actions"><button className="lock-btn" onClick={() => setResetStudent(student)} title="Restablecer contraseña"><KeyRound size={15} />Contraseña</button><button className="text-btn" onClick={() => setSelectedStudent(student)}>Ver expediente <ChevronRight size={15} /></button></div></td></tr> })}</tbody></table></div><p className="muted reset-help">¿Un alumno olvidó su contraseña? Toca <b>Contraseña</b> en su renglón: se le asigna una temporal al instante y la ves aquí para dársela.</p>{resetStudent && <ResetPasswordModal student={resetStudent} onClose={() => setResetStudent(null)} />}</section>
+  return <section className="panel page-panel"><div className="list-toolbar"><div><h1>Alumnos registrados</h1><p>Cuentas reales creadas en Aula Virtual, organizadas por grupo.</p></div></div><div className="filters"><div className="search"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar alumno…" /></div><select value={group} onChange={e => setGroup(e.target.value)}><option>Todos</option>{groups.map(item => <option key={item.id}>{item.code}</option>)}</select></div><div className="table-wrap"><table><thead><tr><th>Alumno</th><th>Grupo</th><th>Matrícula</th><th>Cuenta</th><th>Progreso</th><th>Promedio</th><th /></tr></thead><tbody>{rows.map(student => { const progress = progressFor(student); return <tr key={student.id}><td data-label="Alumno"><div className="student-cell"><div className="avatar small">{student.name.split(' ').slice(0,2).map(part => part[0]).join('')}</div><div><strong>{student.name}</strong><span>{student.email}</span></div></div></td><td data-label="Grupo">{student.group}</td><td data-label="Matrícula">{student.enrollment || 'Sin matrícula'}</td><td data-label="Cuenta"><span className="tag active">Registrada</span></td><td data-label="Progreso">{progress.label}</td><td data-label="Promedio">{progress.average}</td><td><div className="table-actions"><button className="lock-btn" onClick={() => setResetStudent(student)} title="Restablecer contraseña"><KeyRound size={15} />Contraseña</button><button className="lock-btn danger-btn" onClick={() => setDeleteStudent(student)} title="Eliminar cuenta"><Trash2 size={15} />Eliminar</button><button className="text-btn" onClick={() => setSelectedStudent(student)}>Ver expediente <ChevronRight size={15} /></button></div></td></tr> })}</tbody></table></div><p className="muted reset-help">¿Un alumno olvidó su contraseña? Toca <b>Contraseña</b> en su renglón: se le asigna una temporal al instante y la ves aquí para dársela. ¿Cuenta duplicada? Toca <b>Eliminar</b>: puedes pasar su trabajo a la cuenta buena antes de borrarla.</p>{resetStudent && <ResetPasswordModal student={resetStudent} onClose={() => setResetStudent(null)} />}{deleteStudent && <DeleteStudentModal student={deleteStudent} students={students} onClose={() => setDeleteStudent(null)} onDone={onRefresh} />}</section>
 }
 
 function evidenceReview(assessment, submission) {

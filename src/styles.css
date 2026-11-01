@@ -411,3 +411,6 @@ html[data-aula-theme="oscuro"] .progress-strip button b{color:color-mix(in srgb,
   .progress-strip button.attention:before{opacity:.45}
   .progress-strip button{transition:none}
 }
+/* Eliminar cuenta de alumno */
+.lock-btn.danger-btn{color:#a63b35;border-color:#efc9c5}.lock-btn.danger-btn:hover{background:#fff0ef;border-color:#a63b35}.modal .primary.danger,:root[data-aula-theme] .modal .primary.danger{background:#a63b35}.modal .primary.danger:hover:not(:disabled),:root[data-aula-theme] .modal .primary.danger:hover:not(:disabled){background:#8c2f2a}
+.delete-account p{font-size:.88rem;line-height:1.55}.delete-summary{background:#f4f8f6;border:1px solid #d5e6dd;border-radius:8px;padding:12px 14px;margin:12px 0;font-size:.85rem}.delete-summary.has-work{background:#fff7ea;border-color:#f0d7a8}.delete-summary ul{margin:8px 0 4px;padding-left:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:3px 14px}.delete-summary small{display:block;color:var(--muted);margin-top:6px}.delete-account select{width:100%}.delete-help{font-size:.8rem!important;margin:-6px 0 4px}
