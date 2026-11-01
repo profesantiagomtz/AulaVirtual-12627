@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AlarmClock, CalendarCheck, Check, CheckCircle2, ClipboardList, Download, Eye, FileCheck2, LogIn, PenLine, Search, Send, Sparkles, TrendingUp, Trophy, X } from 'lucide-react'
-import { isSupabaseReady, supabase } from '../lib/supabase'
+import { fetchAllRows, isSupabaseReady, supabase } from '../lib/supabase'
 import * as demo from '../data/demo'
 import { CourseChips, gradeRows, itemBelongsToCourse, planFor, progressCodeFor, raStatus, shortDate } from './CoursePlan'
 
@@ -186,7 +186,7 @@ export function ProgressTracker({ courses, students, materials, assessments, lea
     if (!isSupabaseReady) return undefined
     const refresh = async () => {
       if (document.visibilityState === 'hidden') return
-      const { data, error } = await supabase.from('learning_progress').select('student_id, material_code, completed_steps, total_steps, completed_at, updated_at')
+      const { data, error } = await fetchAllRows(() => supabase.from('learning_progress').select('student_id, material_code, completed_steps, total_steps, completed_at, updated_at').order('id'))
       if (!error && data) setProgressRows(data)
     }
     refresh()
