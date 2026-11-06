@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AlarmClock, CalendarCheck, Check, CheckCircle2, ClipboardList, Download, Eye, FileCheck2, LogIn, PenLine, Search, Send, Sparkles, TrendingUp, Trophy, X } from 'lucide-react'
 import { fetchAllRows, isSupabaseReady, supabase } from '../lib/supabase'
 import * as demo from '../data/demo'
+import { compareStudents } from '../lib/names'
 import { CourseChips, gradeRows, itemBelongsToCourse, planFor, progressCodeFor, raStatus, shortDate } from './CoursePlan'
 
 // Seguimiento docente: quién está en línea, avance real por alumno y pase de lista automático.
@@ -11,7 +12,7 @@ const ONLINE_MS = 150000
 const todayKey = () => new Date().toLocaleDateString('en-CA')
 const initials = name => name.split(' ').slice(0, 2).map(part => part[0]).join('')
 const prettyCode = code => String(code || '').replace(/^([A-Z]{4})-RA-(\d\.\d)$/, '$1 R.A. $2').replace('EDOA-WORD-U1', 'EDOA R.A. 1.1')
-const sortByName = (a, b) => a.name.localeCompare(b.name, 'es')
+const sortByName = compareStudents
 
 function ago(value, now = Date.now()) {
   if (!value) return 'nunca'
@@ -166,16 +167,16 @@ export function buildProgressRows({ course, courses, students, materials, assess
 }
 
 const sorters = {
-  atencion: (a, b) => Number(b.attention) - Number(a.attention) || b.alerts.length - a.alerts.length || a.progress - b.progress,
-  menor: (a, b) => a.progress - b.progress,
-  mayor: (a, b) => b.progress - a.progress,
+  atencion: (a, b) => Number(b.attention) - Number(a.attention) || b.alerts.length - a.alerts.length || a.progress - b.progress || sortByName(a.student, b.student),
+  menor: (a, b) => a.progress - b.progress || sortByName(a.student, b.student),
+  mayor: (a, b) => b.progress - a.progress || sortByName(a.student, b.student),
   nombre: (a, b) => sortByName(a.student, b.student),
 }
 
 export function ProgressTracker({ courses, students, materials, assessments, learningProgress, onOpenStudent }) {
   const [courseCode, setCourseCode] = useState(courses[0]?.code)
   const [query, setQuery] = useState('')
-  const [order, setOrder] = useState('atencion')
+  const [order, setOrder] = useState('nombre')
   const [progressRows, setProgressRows] = useState(learningProgress)
   const [attendance, setAttendance] = useState([])
   const tracking = useTracking(60000)
@@ -214,7 +215,7 @@ export function ProgressTracker({ courses, students, materials, assessments, lea
     </div>
     <div className="tracking-filters">
       <div className="search"><Search size={18} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar nombre, correo o matrícula" /></div>
-      <select value={order} onChange={event => setOrder(event.target.value)} aria-label="Ordenar"><option value="atencion">Ordenar: necesitan atención primero</option><option value="menor">Ordenar: menor avance</option><option value="mayor">Ordenar: mayor avance</option><option value="nombre">Ordenar: por nombre</option></select>
+      <select value={order} onChange={event => setOrder(event.target.value)} aria-label="Ordenar"><option value="nombre">Ordenar: por apellido (A-Z)</option><option value="atencion">Ordenar: necesitan atención primero</option><option value="menor">Ordenar: menor avance</option><option value="mayor">Ordenar: mayor avance</option></select>
     </div>
     <p className="tracking-hint">Toca el nombre de un alumno para ver su <b>expediente completo</b>. Las columnas {plan?.ra[0]?.code} a {plan?.ra.at(-1)?.code} son el % de avance en el material de cada R.A.</p>
     {shown.length ? <div className="table-wrap progress-table"><table><thead><tr><th>Alumno</th><th>Avance</th><th>Nota</th><th>Tareas</th><th>Último acceso</th><th>Tiempo</th>{plan?.ra.map(ra => <th key={ra.code} className="ra-col" title={ra.title}>{ra.code}</th>)}<th>Alertas</th></tr></thead><tbody>
@@ -283,7 +284,7 @@ export function Attendance({ courses, students }) {
   const [missing, setMissing] = useState(false)
   const [message, setMessage] = useState('')
   const [draftSchedule, setDraftSchedule] = useState(null)
-  const roster = useMemo(() => students.filter(student => student.group === course?.group).sort((a, b) => a.name.localeCompare(b.name, 'es')), [students, course?.group])
+  const roster = useMemo(() => students.filter(student => student.group === course?.group).sort(compareStudents), [students, course?.group])
 
   useEffect(() => { setDay(sessions[0] || today) }, [course?.code])
 

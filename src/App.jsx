@@ -7,6 +7,7 @@ import {
 import { courses } from './data/academic'
 import * as demo from './data/demo'
 import { fetchAllRows, isSupabaseReady, supabase } from './lib/supabase'
+import { compareStudents } from './lib/names'
 import { uploadSubmissionFile } from './lib/upload'
 import { useActivityDetail, useStudentTracking } from './lib/tracking'
 import { NavSignal, ProgressStrip, studentSignals, useSectionVisits } from './components/StudentSignals'
@@ -213,7 +214,7 @@ function likelyDuplicate(student, others) {
 }
 
 function DeleteStudentModal({ student, students, onClose, onDone }) {
-  const others = useMemo(() => students.filter(item => item.id !== student.id).sort((a, b) => a.name.localeCompare(b.name, 'es')), [students, student.id])
+  const others = useMemo(() => students.filter(item => item.id !== student.id).sort(compareStudents), [students, student.id])
   const suggested = useMemo(() => likelyDuplicate(student, others), [student, others])
   const [summary, setSummary] = useState(null)
   const [targetId, setTargetId] = useState(suggested?.id || '')
@@ -500,13 +501,13 @@ function Dashboard({ session, onLogout }) {
       if (firstError) throw firstError
       const directory = (studentResult.data || []).map(student => ({ ...student, group_code: student.groups?.code || 'Sin asignar', active: true }))
       setGroupList((groupResult.data || []).map(group => ({ ...group, students: directory.filter(student => student.group_code === group.code).length })))
-      setStudentList(directory.map(student => ({ id: student.id, name: formatPersonName(student.full_name), email: student.email, enrollment: student.enrollment_number, group: student.group_code })))
+      setStudentList(directory.map(student => ({ id: student.id, name: formatPersonName(student.full_name), email: student.email, enrollment: student.enrollment_number, group: student.group_code })).sort(compareStudents))
       const databaseMaterials = (materialResult.data || []).map(material => ({ id: material.id, title: material.title, description: material.description, unit: material.unit || 'Sin unidad', type: material.resource_type === 'file' ? 'Archivo' : material.resource_type, url: material.resource_url, published: material.published, group: material.groups?.code || 'Todos', date: new Date(material.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) }))
       setMaterialList([...integratedMaterials, ...databaseMaterials.filter(material => !integratedMaterials.some(integrated => integrated.url === material.url))])
       setAssessmentList((assessmentResult.data || []).map(assessment => {
         const submissions = assessment.submissions || []
         const scored = submissions.filter(item => item.score !== null)
-        return { id: assessment.id, title: assessment.title, instructions: assessment.instructions, activityCode: assessment.activity_code, group: assessment.groups?.code || '—', groupId: assessment.group_id, due: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha límite', dueAt: assessment.due_at, overdue: Boolean(assessment.due_at && new Date(assessment.due_at) < new Date() && assessment.status === 'published'), submissions: submissions.filter(item => item.submitted_at).length, drafts: submissions.filter(item => !item.submitted_at).length, submissionDetails: submissions.map(item => ({ ...item, assignment: item.assessment_assignments?.variant || null, student: item.profiles ? { name: formatPersonName(item.profiles.full_name), email: item.profiles.email, enrollment: item.profiles.enrollment_number } : null })), total: directory.filter(student => student.group_code === assessment.groups?.code).length, average: scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.score), 0) / scored.length) : null, status: assessment.status === 'published' ? 'Activa' : assessment.status === 'closed' ? 'Cerrada' : 'Borrador' }
+        return { id: assessment.id, title: assessment.title, instructions: assessment.instructions, activityCode: assessment.activity_code, group: assessment.groups?.code || '—', groupId: assessment.group_id, due: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha límite', dueAt: assessment.due_at, overdue: Boolean(assessment.due_at && new Date(assessment.due_at) < new Date() && assessment.status === 'published'), submissions: submissions.filter(item => item.submitted_at).length, drafts: submissions.filter(item => !item.submitted_at).length, submissionDetails: submissions.map(item => ({ ...item, assignment: item.assessment_assignments?.variant || null, student: item.profiles ? { name: formatPersonName(item.profiles.full_name), email: item.profiles.email, enrollment: item.profiles.enrollment_number } : null })).sort((a, b) => compareStudents(a.student, b.student)), total: directory.filter(student => student.group_code === assessment.groups?.code).length, average: scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.score), 0) / scored.length) : null, status: assessment.status === 'published' ? 'Activa' : assessment.status === 'closed' ? 'Cerrada' : 'Borrador' }
       }).sort((a, b) => a.group.localeCompare(b.group, 'es', { numeric: true }) || learningSequence(a) - learningSequence(b) || a.title.localeCompare(b.title, 'es')))
       setLearningProgress(progressResult.data || [])
       setTeacherNotes(notesResult.data || [])
@@ -518,7 +519,7 @@ function Dashboard({ session, onLogout }) {
 
   function loadDemoData() {
     setGroupList(demo.groups.map(group => ({ id: group.id, code: group.name, semester: group.semester, career: group.career, students: group.students })))
-    setStudentList(demo.students.map(student => ({ id: student.id, name: student.name, email: student.email, enrollment: student.enrollment || null, group: student.group })))
+    setStudentList(demo.students.map(student => ({ id: student.id, name: student.name, email: student.email, enrollment: student.enrollment || null, group: student.group })).sort(compareStudents))
     setLearningProgress(demo.demoLearningProgress())
     setMaterialList([...integratedMaterials, ...demo.materials.map(material => ({ ...material, description: '', published: true }))])
     setAssessmentList(demo.assessments.map(assessment => ({ ...assessment, groupId: assessment.group, drafts: 0, submissionDetails: [] })))
