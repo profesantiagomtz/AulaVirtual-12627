@@ -37,3 +37,9 @@ export function compareStudents(a, b) {
   if (!a?.name || !b?.name) return Number(!a?.name) - Number(!b?.name)
   return compareNames(a.name, b.name) || String(a.id || a.email || '').localeCompare(String(b.id || b.email || ''))
 }
+
+// «Nombre(s) Paterno Materno» → «Paterno Materno Nombre(s)», como en una lista de asistencia.
+export function surnameFirst(name = '') {
+  const { paterno, materno, nombres } = nameParts(name)
+  return [paterno, materno, nombres].filter(Boolean).join(' ')
+}
