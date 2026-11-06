@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AlarmClock, CalendarCheck, Check, CheckCircle2, ClipboardList, Download, Eye, FileCheck2, LogIn, PenLine, Search, Send, Sparkles, TrendingUp, Trophy, X } from 'lucide-react'
 import { fetchAllRows, isSupabaseReady, supabase } from '../lib/supabase'
 import * as demo from '../data/demo'
+import { compareStudents, surnameFirst } from '../lib/names'
 import { CourseChips, gradeRows, itemBelongsToCourse, planFor, progressCodeFor, raStatus, shortDate } from './CoursePlan'
 
 // Seguimiento docente: quién está en línea, avance real por alumno y pase de lista automático.
@@ -11,7 +12,7 @@ const ONLINE_MS = 150000
 const todayKey = () => new Date().toLocaleDateString('en-CA')
 const initials = name => name.split(' ').slice(0, 2).map(part => part[0]).join('')
 const prettyCode = code => String(code || '').replace(/^([A-Z]{4})-RA-(\d\.\d)$/, '$1 R.A. $2').replace('EDOA-WORD-U1', 'EDOA R.A. 1.1')
-const sortByName = (a, b) => a.name.localeCompare(b.name, 'es')
+const sortByName = compareStudents
 
 function ago(value, now = Date.now()) {
   if (!value) return 'nunca'
@@ -166,16 +167,16 @@ export function buildProgressRows({ course, courses, students, materials, assess
 }
 
 const sorters = {
-  atencion: (a, b) => Number(b.attention) - Number(a.attention) || b.alerts.length - a.alerts.length || a.progress - b.progress,
-  menor: (a, b) => a.progress - b.progress,
-  mayor: (a, b) => b.progress - a.progress,
+  atencion: (a, b) => Number(b.attention) - Number(a.attention) || b.alerts.length - a.alerts.length || a.progress - b.progress || sortByName(a.student, b.student),
+  menor: (a, b) => a.progress - b.progress || sortByName(a.student, b.student),
+  mayor: (a, b) => b.progress - a.progress || sortByName(a.student, b.student),
   nombre: (a, b) => sortByName(a.student, b.student),
 }
 
 export function ProgressTracker({ courses, students, materials, assessments, learningProgress, onOpenStudent }) {
   const [courseCode, setCourseCode] = useState(courses[0]?.code)
   const [query, setQuery] = useState('')
-  const [order, setOrder] = useState('atencion')
+  const [order, setOrder] = useState('nombre')
   const [progressRows, setProgressRows] = useState(learningProgress)
   const [attendance, setAttendance] = useState([])
   const tracking = useTracking(60000)
@@ -214,7 +215,7 @@ export function ProgressTracker({ courses, students, materials, assessments, lea
     </div>
     <div className="tracking-filters">
       <div className="search"><Search size={18} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar nombre, correo o matrícula" /></div>
-      <select value={order} onChange={event => setOrder(event.target.value)} aria-label="Ordenar"><option value="atencion">Ordenar: necesitan atención primero</option><option value="menor">Ordenar: menor avance</option><option value="mayor">Ordenar: mayor avance</option><option value="nombre">Ordenar: por nombre</option></select>
+      <select value={order} onChange={event => setOrder(event.target.value)} aria-label="Ordenar"><option value="nombre">Ordenar: por apellido (A-Z)</option><option value="atencion">Ordenar: necesitan atención primero</option><option value="menor">Ordenar: menor avance</option><option value="mayor">Ordenar: mayor avance</option></select>
     </div>
     <p className="tracking-hint">Toca el nombre de un alumno para ver su <b>expediente completo</b>. Las columnas {plan?.ra[0]?.code} a {plan?.ra.at(-1)?.code} son el % de avance en el material de cada R.A.</p>
     {shown.length ? <div className="table-wrap progress-table"><table><thead><tr><th>Alumno</th><th>Avance</th><th>Nota</th><th>Tareas</th><th>Último acceso</th><th>Tiempo</th>{plan?.ra.map(ra => <th key={ra.code} className="ra-col" title={ra.title}>{ra.code}</th>)}<th>Alertas</th></tr></thead><tbody>
@@ -283,7 +284,7 @@ export function Attendance({ courses, students }) {
   const [missing, setMissing] = useState(false)
   const [message, setMessage] = useState('')
   const [draftSchedule, setDraftSchedule] = useState(null)
-  const roster = useMemo(() => students.filter(student => student.group === course?.group).sort((a, b) => a.name.localeCompare(b.name, 'es')), [students, course?.group])
+  const roster = useMemo(() => students.filter(student => student.group === course?.group).sort(compareStudents), [students, course?.group])
 
   useEffect(() => { setDay(sessions[0] || today) }, [course?.code])
 
@@ -356,8 +357,8 @@ export function Attendance({ courses, students }) {
     const counted = entries.filter(Boolean).length
     return { student, ...total, counted, rate: counted ? Math.round((total.asistio + total.retardo + total.justifico) / counted * 100) : null }
   })
-  const exportList = () => csvDownload(`asistencia-${course.code}-${course.group}-${day}.csv`, [['No.', 'Alumno', 'Matrícula', 'Asistencia', 'Origen'], ...list.map((item, index) => [index + 1, item.student.name, item.student.enrollment || '', statusInfo[item.status]?.label || 'Sin pasar', item.record ? 'Manual' : 'Automático'])])
-  const exportSummary = () => csvDownload(`asistencia-resumen-${course.code}-${course.group}.csv`, [['Alumno', 'Matrícula', 'Asistencias', 'Retardos', 'Faltas', 'Justificadas', 'Clases', '% asistencia'], ...summary.map(row => [row.student.name, row.student.enrollment || '', row.asistio, row.retardo, row.falto, row.justifico, row.counted, row.rate ?? ''])])
+  const exportList = () => csvDownload(`asistencia-${course.code}-${course.group}-${day}.csv`, [['No.', 'Apellidos y nombre', 'Matrícula', 'Asistencia', 'Origen'], ...list.map((item, index) => [index + 1, surnameFirst(item.student.name), item.student.enrollment || '', statusInfo[item.status]?.label || 'Sin pasar', item.record ? 'Manual' : 'Automático'])])
+  const exportSummary = () => csvDownload(`asistencia-resumen-${course.code}-${course.group}.csv`, [['Apellidos y nombre', 'Matrícula', 'Asistencias', 'Retardos', 'Faltas', 'Justificadas', 'Clases', '% asistencia'], ...summary.map(row => [surnameFirst(row.student.name), row.student.enrollment || '', row.asistio, row.retardo, row.falto, row.justifico, row.counted, row.rate ?? ''])])
 
   return <section className="panel page-panel tracking-page">
     <div className="list-toolbar"><div><span className="eyebrow">Seguimiento</span><h1>{tab === 'lista' ? 'Pase de lista' : 'Resumen de asistencia'}</h1><p>La lista se llena sola con los alumnos que se conectaron durante la clase. Ajuste lo que haga falta.</p></div><span className="tracking-hint-side">Lista del grupo {course.group}, en orden alfabético</span></div>
@@ -397,7 +398,7 @@ export function Attendance({ courses, students }) {
       {list.length ? <div className="table-wrap attendance-table"><table><thead><tr><th>No.</th><th>Apellidos y nombre</th><th>Conexión</th><th>Asistencia</th></tr></thead><tbody>
         {list.map((item, index) => <tr key={item.student.id}>
           <td className="attendance-num">{index + 1}</td>
-          <td><strong>{item.student.name}</strong><small>{item.student.enrollment || item.student.email}</small></td>
+          <td><strong>{surnameFirst(item.student.name)}</strong><small>{item.student.enrollment || item.student.email}</small></td>
           <td className="attendance-source">{item.auto.first !== undefined ? <span className="conn on">Entró {minuteLabel(item.auto.first)}</span> : item.auto.outside !== undefined ? <span className="conn off">Fuera de clase ({minuteLabel(item.auto.outside)})</span> : <span className="conn off">Sin conexión</span>}{item.record ? <small>Manual</small> : item.auto.status ? <small>Automático</small> : null}</td>
           <td><div className="attendance-buttons">{Object.entries(statusInfo).map(([key, info]) => { const Icon = info.icon; return <button key={key} className={`${key} ${item.status === key ? 'active' : ''} ${item.status === key && !item.record ? 'auto' : ''}`} aria-pressed={item.status === key} onClick={() => mark(item, key)}><Icon size={17} /><span>{info.label}</span></button> })}</div></td>
         </tr>)}
@@ -406,7 +407,7 @@ export function Attendance({ courses, students }) {
       <div className="tracking-filters attendance-actions"><span className="tracking-hint">{sessions.length} clase{sessions.length === 1 ? '' : 's'} desde el {shortDate(plan?.sessions?.[0])}. Las clases sin pase de lista guardado usan el estado automático.</span><button className="secondary" onClick={exportSummary}><Download size={17} />Descargar resumen</button></div>
       <div className="table-wrap attendance-summary"><table><thead><tr><th>Alumno</th><th>Asistencias</th><th>Retardos</th><th>Faltas</th><th>Justificadas</th><th>% asistencia</th></tr></thead><tbody>
         {summary.map(row => <tr key={row.student.id} className={row.rate !== null && row.rate < 80 ? 'needs-attention' : ''}>
-          <td data-label="Alumno"><strong>{row.student.name}</strong><small>{row.student.enrollment || row.student.email}</small></td>
+          <td data-label="Alumno"><strong>{surnameFirst(row.student.name)}</strong><small>{row.student.enrollment || row.student.email}</small></td>
           <td data-label="Asistencias">{row.asistio}</td><td data-label="Retardos">{row.retardo}</td><td data-label="Faltas">{row.falto}</td><td data-label="Justificadas">{row.justifico}</td>
           <td data-label="% asistencia">{row.rate === null ? '—' : <div className="progress-cell"><b>{row.rate} %</b><span><i style={{ width: `${row.rate}%` }} /></span></div>}</td>
         </tr>)}
