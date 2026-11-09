@@ -3,6 +3,7 @@ import { AlarmClock, CalendarCheck, Check, CheckCircle2, ClipboardList, Download
 import { fetchAllRows, isSupabaseReady, supabase } from '../lib/supabase'
 import * as demo from '../data/demo'
 import { compareStudents, surnameFirst } from '../lib/names'
+import { withStateSteps } from '../lib/material-state'
 import { CourseChips, gradeRows, itemBelongsToCourse, planFor, progressCodeFor, raStatus, shortDate } from './CoursePlan'
 
 // Seguimiento docente: quién está en línea, avance real por alumno y pase de lista automático.
@@ -187,8 +188,8 @@ export function ProgressTracker({ courses, students, materials, assessments, lea
     if (!isSupabaseReady) return undefined
     const refresh = async () => {
       if (document.visibilityState === 'hidden') return
-      const { data, error } = await fetchAllRows(() => supabase.from('learning_progress').select('student_id, material_code, completed_steps, total_steps, completed_at, updated_at').order('id'))
-      if (!error && data) setProgressRows(data)
+      const { data, error } = await fetchAllRows(() => supabase.from('learning_progress').select('student_id, material_code, completed_steps, total_steps, completed_at, updated_at, state').order('id'))
+      if (!error && data) setProgressRows(withStateSteps(data))
     }
     refresh()
     const timer = window.setInterval(refresh, 60000)
