@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { assignmentFor } from '../lib/mtcs-assignment'
 import { countDone, hasState, markSynced, materialStatePrefix, readMaterialState, shouldRestore, writeMaterialState } from '../lib/material-state'
 import PracticeCheck, { PracticeCheckButton, hasPracticeChecks } from './PracticeCheck'
+import { assessmentForcedOpen } from '../data/open-assessments'
 
 const courseMaterials = {
   'EDOA-RA-1.2': {
@@ -208,7 +209,7 @@ export default function IntegratedCourseMaterial({ code, session, assessment, on
   const [message, setMessage] = useState('')
   const persisted = useRef(Promise.resolve({ done: 0, completed: false }))
   const frame = useRef(null)
-  const source = useMemo(() => material ? new URL(`${material.file}?student=${encodeURIComponent(session?.id || 'preview')}${session?.preview || session?.role === 'teacher' ? '&preview=1' : ''}`, document.baseURI).href : '', [material, session?.id, session?.preview, session?.role])
+  const source = useMemo(() => material ? new URL(`${material.file}?student=${encodeURIComponent(session?.id || 'preview')}${session?.preview || session?.role === 'teacher' ? '&preview=1' : ''}${assessment && assessmentForcedOpen(assessment.activityCode, assessment.group) ? '&abierta=1' : ''}`, document.baseURI).href : '', [material, session?.id, session?.preview, session?.role, assessment])
   const syncs = Boolean(material && supabase && !session?.preview && session?.role !== 'teacher')
   const prefix = useMemo(() => material && session?.id ? materialStatePrefix(material.file, session.id) : '', [material, session?.id])
   // El material se abre hasta recuperar su estado desde Supabase; así no arranca vacío.

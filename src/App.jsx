@@ -15,6 +15,8 @@ import { NavSignal, ProgressStrip, studentSignals, useSectionVisits } from './co
 import { FRESH_LOGIN_KEY, PendingReminder, pendingItems, usePendingReminder } from './components/PendingReminder'
 import { CourseChips, RaCourseMap, Schedule, StudentGrades, TeacherGrades, WeekPlan, assessmentState, itemBelongsToCourse, progressCodeFor } from './components/CoursePlan'
 
+import { assessmentForcedOpen } from './data/open-assessments'
+
 // Los contenidos de cada materia se descargan solo cuando el alumno los abre.
 const AsinActivity = lazy(() => import('./components/AsinActivity'))
 const EdoaMaterial = lazy(() => import('./components/EdoaMaterial'))
@@ -92,6 +94,7 @@ function assessmentRequiresProgress(activityCode = '') {
 function assessmentIsLocked(assessment, learningProgress = []) {
   // En la vista del alumno del docente todo se muestra desbloqueado para poder revisarlo.
   if (assessment.previewUnlocked) return false
+  if (assessmentForcedOpen(assessment.activityCode, assessment.group)) return false
   if (assessment.activityCode === 'EDOA-UNIT-1') return !['EDOA-RA-1.1', 'EDOA-RA-1.2', 'EDOA-RA-1.3'].every(code => learningProgress.some(progress => progress.material_code === code && progress.completed_at))
   return assessmentRequiresProgress(assessment.activityCode) && !learningProgress.some(progress => progress.material_code === materialCodeForActivity(assessment.activityCode) && progress.completed_at)
 }
