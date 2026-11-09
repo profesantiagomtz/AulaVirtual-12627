@@ -48,7 +48,7 @@ function stageComplete(stage, answers) {
   return [...answers.questionnaires.users, ...answers.questionnaires.administrators].every(item => item.text.trim() && item.type)
 }
 
-export default function AsinActivity({ assessment, onBack }) {
+export default function AsinActivity({ assessment, session, onBack }) {
   const [assignment, setAssignment] = useState(null)
   const [answers, setAnswers] = useState(initialAnswers)
   const [stage, setStage] = useState(1)
@@ -61,6 +61,7 @@ export default function AsinActivity({ assessment, onBack }) {
   useEffect(() => {
     let active = true
     async function loadActivity() {
+      if (session?.preview) { setStatus('ready'); return }
       try {
         const { data: assignmentData, error: assignmentError } = await supabase.rpc('get_or_create_asin_assignment', { p_assessment_id: assessment.id })
         if (assignmentError) throw assignmentError
@@ -83,7 +84,7 @@ export default function AsinActivity({ assessment, onBack }) {
     }
     loadActivity()
     return () => { active = false }
-  }, [assessment.id])
+  }, [assessment.id, session?.preview])
 
   async function save(submit = false) {
     if (submit && !completed.every(Boolean)) {
@@ -91,6 +92,7 @@ export default function AsinActivity({ assessment, onBack }) {
       setStatus('error')
       return
     }
+    if (session?.preview) { setMessage('Vista previa: aquí no se guarda ni se entrega nada.'); setStatus('ready'); return }
     try {
       setStatus('saving'); setMessage('')
       const { data, error } = await supabase.rpc('save_asin_progress', {

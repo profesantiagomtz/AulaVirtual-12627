@@ -89,6 +89,8 @@ function assessmentRequiresProgress(activityCode = '') {
 }
 
 function assessmentIsLocked(assessment, learningProgress = []) {
+  // En la vista del alumno del docente todo se muestra desbloqueado para poder revisarlo.
+  if (assessment.previewUnlocked) return false
   if (assessment.activityCode === 'EDOA-UNIT-1') return !['EDOA-RA-1.1', 'EDOA-RA-1.2', 'EDOA-RA-1.3'].every(code => learningProgress.some(progress => progress.material_code === code && progress.completed_at))
   return assessmentRequiresProgress(assessment.activityCode) && !learningProgress.some(progress => progress.material_code === materialCodeForActivity(assessment.activityCode) && progress.completed_at)
 }
@@ -590,7 +592,7 @@ function Dashboard({ session, onLogout }) {
       </header>
       <main className="content">
         {dataError && <div className="form-error data-error">{dataError} <button className="text-btn" onClick={loadData}>Reintentar</button></div>}
-        {loading ? <div className="loading-state">Cargando información real…</div> : studentPreview ? <StudentPreview session={previewSession} courses={courses.filter(course => course.group === previewGroup)} materials={materialList.filter(item => item.group === previewGroup && item.published)} assessments={assessmentList.filter(item => item.group === previewGroup && item.status === 'Activa').map(item => ({ ...item, submissionDetails: [] }))} /> : <>
+        {loading ? <div className="loading-state">Cargando información real…</div> : studentPreview ? <StudentPreview session={previewSession} courses={courses.filter(course => course.group === previewGroup)} materials={materialList.filter(item => item.group === previewGroup && item.published)} assessments={assessmentList.filter(item => item.group === previewGroup && item.status === 'Activa').map(item => ({ ...item, submissionDetails: [], previewUnlocked: true }))} /> : <>
         {view === 'inicio' && (isTeacher ? <TeacherHome session={session} setView={setView} groups={groupList} students={studentList} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} teacherNotes={teacherNotes} onRefresh={loadData} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} /> : <StudentHome session={session} courses={assignedCourses} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} setView={setView} onOpenCourse={code => { setStudentCourseFilter(code); setView('materiales') }} onOpenAssessment={assessment => { setSelectedAssessment(assessment); setView('evaluaciones') }} />)}
         {view === 'modulos' && (isTeacher ? <TeacherModules session={session} courses={assignedCourses} students={studentList} materials={materialList} assessments={assessmentList} learningProgress={learningProgress} teacherNotes={teacherNotes} onRefresh={loadData} setView={setView} /> : <Modules courses={assignedCourses} session={session} setView={setView} />)}
         {view === 'materiales' && signals && <ProgressStrip signals={signals} setView={id => { setSelectedAssessment(null); setView(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />}
@@ -758,7 +760,7 @@ function StudentPreview({ session, courses, materials, assessments }) {
   const openAssessment = assessment => { setPreviewSelected(assessment); setPreviewView('evaluaciones') }
   const signals = studentSignals({ session, courses, materials, assessments, learningProgress: previewProgress, isLocked: assessmentIsLocked, visits: { notas: Date.now(), cronograma: Date.now() } })
   return <div className="student-preview-shell">
-    <div className="preview-banner"><div><span className="eyebrow">Vista previa · Grupo {session.group}</span><strong>Así verá el alumno únicamente el contenido publicado.</strong></div><div className="preview-avatar">AD</div></div>
+    <div className="preview-banner"><div><span className="eyebrow">Vista previa · Grupo {session.group}</span><strong>Así verá el alumno únicamente el contenido publicado.</strong><small>Las actividades de evaluación aparecen desbloqueadas para que pueda revisarlas; nada de lo que haga aquí se guarda ni se entrega.</small></div><div className="preview-avatar">AD</div></div>
     <nav className="preview-nav">{studentNavItems.map(({ id, label, icon: Icon }) => <button key={id} className={previewView === id ? 'active' : ''} onClick={() => { if (id === 'materiales') setPreviewCourse('Todos'); setPreviewSelected(null); setPreviewView(id) }}><Icon size={17} />{label}{previewView !== id && <NavSignal signal={signals.nav[id]} />}</button>)}</nav>
     {previewView === 'materiales' && <ProgressStrip signals={signals} setView={setPreviewView} />}
     {previewView === 'inicio' && <StudentHome session={session} courses={courses} materials={materials} assessments={assessments} learningProgress={previewProgress} setView={setPreviewView} onOpenCourse={code => { setPreviewCourse(code); setPreviewView('materiales') }} onOpenAssessment={openAssessment} />}
@@ -818,7 +820,7 @@ function Assessments({ items, session, isTeacher, learningProgress = [], setView
   function clearSelected() { setSelected(null); onClearSelected?.() }
   if (selected && isTeacher) return <AssessmentResults assessment={selected} onBack={clearSelected} onRefresh={onRefresh} />
   if (selected) {
-    if (selected.activityCode === 'ASIN-RA-1.1') return <LazyView><AsinActivity assessment={selected} onBack={clearSelected} /></LazyView>
+    if (selected.activityCode === 'ASIN-RA-1.1') return <LazyView><AsinActivity assessment={selected} session={session} onBack={clearSelected} /></LazyView>
     if (selected.activityCode === 'MSII-RA-1.1') return <MsiiActivity assessment={selected} session={session} onBack={clearSelected} />
     if (selected.activityCode?.startsWith('MTCS-')) return <LazyView><MtcsActivity assessment={selected} session={session} onBack={clearSelected} /></LazyView>
     return <GenericActivity assessment={selected} session={session} onBack={clearSelected} />
@@ -861,7 +863,8 @@ function GenericActivity({ assessment, session, onBack }) {
   const [message, setMessage] = useState('')
   async function submit(event) {
     event.preventDefault()
-    if (!file || session.preview) return
+    if (session.preview) { setMessage('Vista previa: así entregará el alumno su archivo. Aquí no se sube nada.'); return }
+    if (!file) return
     setBusy(true); setMessage('')
     try {
       const extension = file.name.split('.').pop().toLowerCase()
@@ -957,6 +960,9 @@ function AnswerPreview({ answers }) {
 
 const equipmentLabels = { stationNumber: 'Número de PC', brandModel: 'Marca y modelo', operatingSystem: 'Sistema operativo', processor: 'Procesador', ram: 'Memoria RAM', storage: 'Almacenamiento', antivirus: 'Antivirus', network: 'Conectividad', observations: 'Observaciones' }
 
+// Datos de ejemplo para que el docente vea la actividad sin generar asignaciones reales.
+const previewMsiiAssignment = { id: 'vista-previa', variant: { equipment: 'Equipo 01', compare_os: 'Linux', decimal_number: '45', ascii_character: 'A', capacity: '500 GB' } }
+
 function MsiiActivity({ assessment, session, onBack }) {
   const [assignment, setAssignment] = useState(null)
   const [equipmentNumber, setEquipmentNumber] = useState('')
@@ -967,6 +973,7 @@ function MsiiActivity({ assessment, session, onBack }) {
   useEffect(() => {
     let active = true
     async function loadAssignment() {
+      if (session.preview) { setAssignment(previewMsiiAssignment); setEquipmentNumber('1'); setStatus('ready'); return }
       try {
         const { data, error } = await supabase.rpc('get_or_create_msii_assignment', { p_assessment_id: assessment.id })
         if (error) throw error
@@ -989,9 +996,12 @@ function MsiiActivity({ assessment, session, onBack }) {
       setStatus('working'); setMessage('')
       if (!equipmentNumber || Number(equipmentNumber) < 1) throw new Error('Escribe el número de la PC que estás utilizando.')
       const equipment = `Equipo ${String(Number(equipmentNumber)).padStart(2, '0')}`
-      const { data, error } = await supabase.rpc('set_current_equipment', { p_assessment_id: assessment.id, p_equipment: equipment })
-      if (error) throw error
-      const updatedAssignment = Array.isArray(data) ? data[0] : data
+      let updatedAssignment = { ...assignment, variant: { ...assignment.variant, equipment } }
+      if (!session.preview) {
+        const { data, error } = await supabase.rpc('set_current_equipment', { p_assessment_id: assessment.id, p_equipment: equipment })
+        if (error) throw error
+        updatedAssignment = Array.isArray(data) ? data[0] : data
+      }
       setAssignment(updatedAssignment)
       const { buildMsiiDocument, downloadBlob } = await msiiDocx()
       const blob = await buildMsiiDocument(updatedAssignment, session)
@@ -1003,6 +1013,7 @@ function MsiiActivity({ assessment, session, onBack }) {
 
   async function submitActivity(event) {
     event.preventDefault()
+    if (session.preview) { setMessage('Vista previa: así entregará el alumno su DOCX. Aquí no se sube nada.'); return }
     if (!file) return
     try {
       setStatus('working'); setMessage('')
