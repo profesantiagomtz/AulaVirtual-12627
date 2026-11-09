@@ -4,6 +4,8 @@
 export const OPEN_ASSESSMENTS = {
   // 2026-11-09: Profe autorizó abrir la evaluación 1.2 de ASIN y MSII al 310.
   '310': ['ASIN-RA-1.2', 'MSII-RA-1.2'],
+  // 2026-11-09: Profe autorizó abrir la evaluación 1.2 y 2.1 de MTCS al 511.
+  '511': ['MTCS-RA-1.2', 'MTCS-RA-2.1'],
 }
 
 export function assessmentForcedOpen(activityCode = '', group = '') {
