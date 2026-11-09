@@ -51,3 +51,24 @@ export function shouldRestore(prefix, remote) {
   const mark = lastSynced(prefix)
   return !mark || new Date(remote.updated_at) > new Date(mark)
 }
+
+// Cuántos pasos marca como hechos el estado guardado. Los materiales guardan cada actividad
+// resuelta con su número («"12":1») y cada práctica terminada como «"pr1":1»; es la misma
+// cuenta que envían como «done» a la plataforma.
+export function countDone(state) {
+  if (!hasState(state)) return 0
+  let main
+  try { main = typeof state[''] === 'string' ? JSON.parse(state['']) : null } catch { main = null }
+  if (!main || typeof main !== 'object') return 0
+  return Object.entries(main).filter(([key, value]) => /^(\d+|pr\d+)$/.test(key) && (value === 1 || value === true)).length
+}
+
+// El panel docente cuenta los pasos de completed_steps. Si el alumno trabajó con el material
+// en pantalla completa, el estado se respaldó pero el conteo no: se toma el mayor de los dos.
+export function withStateSteps(rows) {
+  return (rows || []).map(({ state, ...row }) => {
+    const steps = Array.isArray(row.completed_steps) ? row.completed_steps : []
+    const done = countDone(state)
+    return done > steps.length ? { ...row, completed_steps: Array.from({ length: done }, (_, index) => `paso-${index + 1}`) } : row
+  })
+}

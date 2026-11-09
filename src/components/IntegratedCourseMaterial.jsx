@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, CheckCircle2, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { assignmentFor } from '../lib/mtcs-assignment'
-import { hasState, markSynced, materialStatePrefix, readMaterialState, shouldRestore, writeMaterialState } from '../lib/material-state'
+import { countDone, hasState, markSynced, materialStatePrefix, readMaterialState, shouldRestore, writeMaterialState } from '../lib/material-state'
 import PracticeCheck, { PracticeCheckButton, hasPracticeChecks } from './PracticeCheck'
 
 const courseMaterials = {
@@ -215,6 +215,8 @@ export default function IntegratedCourseMaterial({ code, session, assessment, on
   const [ready, setReady] = useState(!syncs)
   const lastSaved = useRef('')
   const stateColumn = useRef(true)
+  // Pasos que ya tiene el estado guardado en Supabase: nunca se reemplaza por uno con menos.
+  const remoteDone = useRef(0)
 
   useEffect(() => {
     if (!syncs) { setReady(true); return undefined }
@@ -228,6 +230,7 @@ export default function IntegratedCourseMaterial({ code, session, assessment, on
       const data = result.data
       const steps = Array.isArray(data?.completed_steps) ? data.completed_steps : []
       const stored = { done: steps.length, completed: Boolean(data?.completed_at) }
+      remoteDone.current = countDone(data?.state)
       if (active && shouldRestore(prefix, data) && writeMaterialState(prefix, data.state)) markSynced(prefix, data.updated_at)
       lastSaved.current = JSON.stringify(readMaterialState(prefix))
       // El total de pasos no se guarda; se conoce hasta que el material envía su avance.
@@ -243,10 +246,25 @@ export default function IntegratedCourseMaterial({ code, session, assessment, on
     const state = readMaterialState(prefix)
     const snapshot = JSON.stringify(state)
     if (!hasState(state) || snapshot === lastSaved.current) return
+    // Si el material abrió vacío (red lenta al recuperar), no borra el avance que ya está en la nube.
+    const done = countDone(state)
+    if (done < remoteDone.current) return
     const updatedAt = new Date().toISOString()
-    const { data, error } = await supabase.from('learning_progress').update({ state, updated_at: updatedAt }).eq('student_id', session.id).eq('material_code', code).select('id')
+    const changes = { state, updated_at: updatedAt }
+    // En pantalla completa el material no puede avisar su avance: se cuenta desde su estado.
+    const stored = await persisted.current
+    if (done > stored.done) changes.completed_steps = Array.from({ length: done }, (_, index) => `paso-${index + 1}`)
+    const { data, error } = await supabase.from('learning_progress').update(changes).eq('student_id', session.id).eq('material_code', code).select('id')
     if (error && /state/.test(error.message || '')) { stateColumn.current = false; return }
-    if (!error && data?.length) { lastSaved.current = snapshot; markSynced(prefix, updatedAt) }
+    if (!error && data?.length) {
+      lastSaved.current = snapshot
+      remoteDone.current = done
+      markSynced(prefix, updatedAt)
+      if (changes.completed_steps) {
+        persisted.current = Promise.resolve({ done, completed: stored.completed })
+        setProgress(current => ({ ...current, done: Math.max(current.done, done) }))
+      }
+    }
   }, [code, prefix, session?.id, syncs])
 
   // Los simuladores guardan sin avisar a la plataforma: se respalda cada 20 s, al cambiar de pestaña y al salir.
@@ -288,7 +306,7 @@ export default function IntegratedCourseMaterial({ code, session, assessment, on
         setProgress(next)
         onProgressUpdate?.(record)
         const state = readMaterialState(prefix)
-        const withState = stateColumn.current && hasState(state) ? { ...record, state } : record
+        const withState = stateColumn.current && hasState(state) && countDone(state) >= remoteDone.current ? { ...record, state } : record
         let { error } = await supabase.from('learning_progress').upsert({ student_id: session.id, ...withState }, { onConflict: 'student_id,material_code' })
         // Columnas que quizá aún no existen: total_steps (seguimiento_asistencia.sql) y state (progreso_material.sql).
         if (error && /total_steps|state/.test(error.message || '')) {
@@ -296,7 +314,7 @@ export default function IntegratedCourseMaterial({ code, session, assessment, on
           const { total_steps: _total, state: _state, ...basic } = withState
           ;({ error } = await supabase.from('learning_progress').upsert({ student_id: session.id, ...basic }, { onConflict: 'student_id,material_code' }))
         }
-        if (!error && withState.state && stateColumn.current) { lastSaved.current = JSON.stringify(state); markSynced(prefix, record.updated_at) }
+        if (!error && withState.state && stateColumn.current) { lastSaved.current = JSON.stringify(state); remoteDone.current = countDone(state); markSynced(prefix, record.updated_at) }
         setMessage(error ? 'El contenido funciona, pero no se pudo sincronizar el avance. Revisa tu conexión.' : completed ? '¡R.A. completado! Ya puedes continuar con la actividad de evaluación.' : 'Avance guardado automáticamente.')
       }, 500)
     }

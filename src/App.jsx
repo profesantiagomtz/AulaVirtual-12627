@@ -9,6 +9,7 @@ import * as demo from './data/demo'
 import { fetchAllRows, isSupabaseReady, supabase } from './lib/supabase'
 import { compareStudents, surnameFirst } from './lib/names'
 import { uploadSubmissionFile } from './lib/upload'
+import { withStateSteps } from './lib/material-state'
 import { useActivityDetail, useStudentTracking } from './lib/tracking'
 import { NavSignal, ProgressStrip, studentSignals, useSectionVisits } from './components/StudentSignals'
 import { FRESH_LOGIN_KEY, PendingReminder, pendingItems, usePendingReminder } from './components/PendingReminder'
@@ -493,7 +494,7 @@ function Dashboard({ session, onLogout }) {
         isTeacher ? fetchAllRows(() => supabase.from('profiles').select('id, full_name, email, enrollment_number, group_id, groups(code)').eq('role', 'student').order('full_name').order('id')) : Promise.resolve({ data: [] }),
         isTeacher ? materialsQuery : materialsQuery.eq('published', true),
         supabase.from('assessments').select('id, title, instructions, activity_code, status, due_at, group_id, groups(code), submissions(id, student_id, score, started_at, submitted_at, answers, file_path, original_filename, assessment_assignments(variant), profiles!submissions_student_id_fkey(full_name, email, enrollment_number))').order('created_at', { ascending: false }),
-        fetchAllRows(() => supabase.from('learning_progress').select('student_id, material_code, completed_steps, completed_at, updated_at').order('id')),
+        fetchAllRows(() => supabase.from('learning_progress').select(`student_id, material_code, completed_steps, completed_at, updated_at${isTeacher ? ', state' : ''}`).order('id')),
         isTeacher ? supabase.from('teacher_student_notes').select('id, student_id, course_code, note, updated_at') : Promise.resolve({ data: [] }),
         isTeacher ? supabase.from('edoa_practice_submissions').select('id, student_id, practice_code, file_path, original_filename, submitted_at') : Promise.resolve({ data: [] }),
       ])
@@ -509,7 +510,7 @@ function Dashboard({ session, onLogout }) {
         const scored = submissions.filter(item => item.score !== null)
         return { id: assessment.id, title: assessment.title, instructions: assessment.instructions, activityCode: assessment.activity_code, group: assessment.groups?.code || '—', groupId: assessment.group_id, due: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha límite', dueAt: assessment.due_at, overdue: Boolean(assessment.due_at && new Date(assessment.due_at) < new Date() && assessment.status === 'published'), submissions: submissions.filter(item => item.submitted_at).length, drafts: submissions.filter(item => !item.submitted_at).length, submissionDetails: submissions.map(item => ({ ...item, assignment: item.assessment_assignments?.variant || null, student: item.profiles ? { name: formatPersonName(item.profiles.full_name), email: item.profiles.email, enrollment: item.profiles.enrollment_number } : null })).sort((a, b) => compareStudents(a.student, b.student)), total: directory.filter(student => student.group_code === assessment.groups?.code).length, average: scored.length ? Math.round(scored.reduce((sum, item) => sum + Number(item.score), 0) / scored.length) : null, status: assessment.status === 'published' ? 'Activa' : assessment.status === 'closed' ? 'Cerrada' : 'Borrador' }
       }).sort((a, b) => a.group.localeCompare(b.group, 'es', { numeric: true }) || learningSequence(a) - learningSequence(b) || a.title.localeCompare(b.title, 'es')))
-      setLearningProgress(progressResult.data || [])
+      setLearningProgress(withStateSteps(progressResult.data))
       setTeacherNotes(notesResult.data || [])
       // Si la tabla de prácticas de EDOA no existe, no se bloquea el resto del panel.
       setEdoaPractices(edoaPracticeResult.error ? [] : edoaPracticeResult.data || [])
