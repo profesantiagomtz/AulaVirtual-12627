@@ -208,7 +208,7 @@ export default function IntegratedCourseMaterial({ code, session, assessment, on
   const [message, setMessage] = useState('')
   const persisted = useRef(Promise.resolve({ done: 0, completed: false }))
   const frame = useRef(null)
-  const source = useMemo(() => material ? new URL(`${material.file}?student=${encodeURIComponent(session?.id || 'preview')}`, document.baseURI).href : '', [material, session?.id])
+  const source = useMemo(() => material ? new URL(`${material.file}?student=${encodeURIComponent(session?.id || 'preview')}${session?.preview || session?.role === 'teacher' ? '&preview=1' : ''}`, document.baseURI).href : '', [material, session?.id, session?.preview, session?.role])
   const syncs = Boolean(material && supabase && !session?.preview && session?.role !== 'teacher')
   const prefix = useMemo(() => material && session?.id ? materialStatePrefix(material.file, session.id) : '', [material, session?.id])
   // El material se abre hasta recuperar su estado desde Supabase; así no arranca vacío.
