@@ -14,11 +14,11 @@ BRAND_SUB = 'R.A. 1.2 · Direccionamiento y enrutamiento IPv4'
 HERO_KICK = 'MTCS-20 · R.A. 1.2'
 HERO_TITLE = 'Entiende cómo se identifican y se comunican los equipos de una red'
 HERO_TEXT = 'Aprende direcciones IPv4, máscaras, subredes, puerta de enlace, IPv6 y DHCP con el caso de un taller mecánico.'
-EV_SHORT = 'elabora tu reporte de direccionamiento y enrutamiento.'
+EV_SHORT = 'resuelve tu evaluación: divide tu red en 4 subredes.'
 EV_CARD = 'Reporte R.A. 1.2'
 RA = 'R.A. 1.2'
 GROUP = '511'
-TABS = {'d': ['Diagnostica', 'Calcula subredes y revisa gateways'], 'c': ['Construye', 'Prácticas y reporte']}
+TABS = {'d': ['Diagnostica', 'Calcula subredes y revisa gateways'], 'c': ['Construye', 'Prácticas y evaluación']}
 
 EXTRA_JS = r'''
 
@@ -26,7 +26,7 @@ function ip2n(s){var m=String(s).trim().match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\
 function n2ip(n){n=n>>>0;return [n>>>24,(n>>>16)&255,(n>>>8)&255,n&255].join(".")}
 function pmask(p){return p<=0?0:((0xFFFFFFFF<<(32-p))>>>0)}
 function bin32(n,p){var s="";for(var i=0;i<32;i++){var b=(n>>>(31-i))&1;s+=(i<p?"<b>"+b+"</b>":b)+(i%8==7&&i<31?".":"")}return s}
-function pSub(){K++;return '<article class="lesson"><header><span class="kick">🧮 Herramienta</span><h1>Calculadora de subredes</h1><p class="sub">Escribe una dirección IP y el prefijo. Verás la red, los hosts válidos y el broadcast.</p></header><style>.sbx input[type=text]{padding:11px;border:2px solid var(--line);border-radius:10px;font:17px Consolas,monospace;background:var(--card);color:var(--ink);width:100%}.sbx .row2{display:grid;grid-template-columns:2fr 1fr;gap:10px}.sbx label{font-weight:700;font-size:14px}.sbx .st3{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}.sbx .st3 div{background:var(--bg);border-radius:10px;padding:8px 10px;font-size:15px;font-family:Consolas,monospace}.sbx .st3 b{display:block;font:700 11.5px system-ui;letter-spacing:.05em;text-transform:uppercase;color:var(--mut)}.sbx .bn{font:13.5px/1.9 Consolas,monospace;background:var(--bg);border-radius:10px;padding:8px 10px;overflow-x:auto;white-space:nowrap}.sbx .bn b{color:var(--pri)}.sbx hr{border:0;border-top:1px solid var(--line);margin:14px 0}</style><div class="sbx"><div class="row2"><label>Dirección IP<input type="text" class="sip" value="192.168.10.25" inputmode="decimal" autocomplete="off"></label><label>Prefijo (/)<input type="text" class="spf" value="24" inputmode="numeric" autocomplete="off"></label></div><p class="sms" style="min-height:22px;margin:8px 0;color:var(--bad);font-weight:700"></p><div class="st3"><div><b>Máscara</b><span class="r1">—</span></div><div><b>Hosts utilizables</b><span class="r2">—</span></div><div><b>Dirección de red</b><span class="r3">—</span></div><div><b>Broadcast</b><span class="r4">—</span></div><div><b>Primer host</b><span class="r5">—</span></div><div><b>Último host</b><span class="r6">—</span></div></div><p style="margin:6px 0 4px;font-size:13px;color:var(--mut)">En negritas, los bits de la red; los demás son del host.</p><div class="bn r7"></div><hr><label>¿Cuántos hosts necesitas en la subred?<input type="text" class="sn" placeholder="Por ejemplo 28" inputmode="numeric" autocomplete="off"></label><p class="snr" style="margin:8px 0;font-weight:700"></p></div><p class="take"><b>Úsala para:</b> comprobar tus cálculos a mano antes de llenar la tabla de tu reporte.</p></article>'}
+function pSub(){K++;return '<article class="lesson"><header><span class="kick">🧮 Herramienta</span><h1>Calculadora de subredes</h1><p class="sub">Escribe una dirección IP y el prefijo. Verás la red, los hosts válidos y el broadcast.</p></header><style>.sbx input[type=text]{padding:11px;border:2px solid var(--line);border-radius:10px;font:17px Consolas,monospace;background:var(--card);color:var(--ink);width:100%}.sbx .row2{display:grid;grid-template-columns:2fr 1fr;gap:10px}.sbx label{font-weight:700;font-size:14px}.sbx .st3{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}.sbx .st3 div{background:var(--bg);border-radius:10px;padding:8px 10px;font-size:15px;font-family:Consolas,monospace}.sbx .st3 b{display:block;font:700 11.5px system-ui;letter-spacing:.05em;text-transform:uppercase;color:var(--mut)}.sbx .bn{font:13.5px/1.9 Consolas,monospace;background:var(--bg);border-radius:10px;padding:8px 10px;overflow-x:auto;white-space:nowrap}.sbx .bn b{color:var(--pri)}.sbx hr{border:0;border-top:1px solid var(--line);margin:14px 0}</style><div class="sbx"><div class="row2"><label>Dirección IP<input type="text" class="sip" value="192.168.10.25" inputmode="decimal" autocomplete="off"></label><label>Prefijo (/)<input type="text" class="spf" value="24" inputmode="numeric" autocomplete="off"></label></div><p class="sms" style="min-height:22px;margin:8px 0;color:var(--bad);font-weight:700"></p><div class="st3"><div><b>Máscara</b><span class="r1">—</span></div><div><b>Hosts utilizables</b><span class="r2">—</span></div><div><b>Dirección de red</b><span class="r3">—</span></div><div><b>Broadcast</b><span class="r4">—</span></div><div><b>Primer host</b><span class="r5">—</span></div><div><b>Último host</b><span class="r6">—</span></div></div><p style="margin:6px 0 4px;font-size:13px;color:var(--mut)">En negritas, los bits de la red; los demás son del host.</p><div class="bn r7"></div><hr><label>¿Cuántos hosts necesitas en la subred?<input type="text" class="sn" placeholder="Por ejemplo 28" inputmode="numeric" autocomplete="off"></label><p class="snr" style="margin:8px 0;font-weight:700"></p></div><p class="take"><b>Úsala para:</b> comprobar tus cálculos a mano antes de contestar tu evaluación.</p></article>'}
 function subInit(d){var w=d.querySelector(".sbx");if(!w)return;var a=w.querySelector(".sip"),b=w.querySelector(".spf"),n=w.querySelector(".sn"),ms=w.querySelector(".sms"),seen={};
  function q(c){return w.querySelector("."+c)}
  function calc(x){var ip=ip2n(a.value),p=parseInt(b.value,10);["r1","r2","r3","r4","r5","r6"].forEach(function(c){q(c).textContent="—"});q("r7").innerHTML="";
@@ -61,8 +61,8 @@ s0 = c.mark()
 c.L('🔧', 'Cada equipo necesita una dirección', 'De qué trata este R.A.', body(
     sp('En palabras sencillas', 'Para que dos computadoras se hablen, cada una necesita una <b>dirección IP</b>, como tu casa necesita una dirección para que llegue el correo. Una <b>máscara</b> dice qué parte de la dirección es la calle (la red) y cuál es el número de casa (el equipo).'),
     ex('Caso de las lecciones: Taller Mecánico Rápido', 'Tiene una oficina con 4 computadoras y una impresora, y un taller con una pantalla de diagnóstico y 3 tabletas. Todo cuelga de un solo switch y un solo router. Los de la oficina empiezan a ver la red lenta y el dueño quiere separar las dos áreas.'),
-    bk('Qué vas a hacer', '<b>1. Aprende</b> los conceptos con ejemplos. <b>2. Diagnostica</b> con una calculadora de subredes y un revisor de gateway. <b>3. Construye</b> tres prácticas que te preparan para tu reporte.'),
-    bk('Al final', 'Entregas un <b>reporte en PDF</b> con los datos de red que te asigna la plataforma en la actividad de evaluación.')),
+    bk('Qué vas a hacer', '<b>1. Aprende</b> los conceptos con ejemplos. <b>2. Diagnostica</b> con una calculadora de subredes y un revisor de gateway. <b>3. Construye</b> tres prácticas que te preparan para tu evaluación.'),
+    bk('Al final', 'Divides <b>tu propia red</b> en 4 subredes y contestas 7 respuestas cortas en la plataforma, más una <b>foto de tu cuaderno</b> con tu procedimiento.')),
     'Una dirección identifica al equipo; la máscara dice a qué red pertenece.')
 c.A('🔎', '¿Qué es cada dato?', 'Relaciona cada dato de red del taller con su función.', [
     ['192.168.10.25', 'Dirección IP', 'Identifica al equipo.'],
@@ -220,7 +220,7 @@ c.L('👩‍🏫', 'Guía para el docente', 'Sesiones sugeridas con tu cronogram
     bk('Bloque A · acceso e IP', 'Una sesión: capa de acceso, IPv4, máscara y reservadas. Pide a los alumnos escribir la dirección de red a mano y comprobarla con la calculadora.'),
     bk('Bloque B · subredes', 'Una o dos sesiones: tipos de comunicación y segmentación. <b>Práctica 1</b> en clase.'),
     bk('Bloque C · enrutamiento', 'Una sesión: gateway, recorrido del paquete, IPv6 y DHCP. <b>Práctica 2</b> y <b>3</b>.'),
-    bk('Evaluación', 'Actividad en la plataforma: un <b>reporte en PDF</b> con datos de red asignados a cada alumno (valor 60 puntos).')),
+    bk('Evaluación', 'Actividad en la plataforma: cada alumno divide su propia red en 4 subredes (7 respuestas cortas, 50 pts con revisión automática) y sube la foto de su cuaderno (10 pts que califica el docente).')),
     'Ajusta las sesiones a tu cronograma.')
 doc_end = c.mark() - 1
 
@@ -238,7 +238,7 @@ SEC = [
 ORDER = ['s0', 'a', 'b', 'c']
 
 CH = r'''
-s0:{k:"Introducción",l:"0",ic:"🔧",t:"Empieza aquí",d:"Dirección, máscara y gateway con el caso de un taller mecánico.",time:"20 min",obj:["Reconocer los datos de red de un equipo","Conocer el caso y la evidencia final"],sum:["IP = quién eres · Máscara = en qué red · Gateway = por dónde sales.","Entregas un reporte con los datos de red que te asigne la plataforma."],q:"¿Qué pasaría si dos equipos de una red tuvieran la misma dirección IP?"},
+s0:{k:"Introducción",l:"0",ic:"🔧",t:"Empieza aquí",d:"Dirección, máscara y gateway con el caso de un taller mecánico.",time:"20 min",obj:["Reconocer los datos de red de un equipo","Conocer el caso y la evidencia final"],sum:["IP = quién eres · Máscara = en qué red · Gateway = por dónde sales.","En la evaluación divides tu propia red en 4 subredes y subes la foto de tu cuaderno."],q:"¿Qué pasaría si dos equipos de una red tuvieran la misma dirección IP?"},
 a:{k:"Bloque A",l:"A",ic:"🔢",t:"Acceso e IP",d:"Capa de acceso, direcciones IPv4 y máscara.",time:"90 min",obj:["Explicar la función de la capa de acceso","Separar red y host con la máscara","Calcular hosts utilizables"],sum:["La MAC identifica a la tarjeta en la red local.","IPv4 tiene 32 bits en 4 octetos.","Hosts utilizables = 2^bits de host − 2."],q:"¿Por qué la primera y la última dirección de una red no se asignan a equipos?"},
 b:{k:"Bloque B",l:"B",ic:"✂️",t:"Comunicación y subredes",d:"Unicast, broadcast, multicast y segmentación.",time:"110 min",obj:["Distinguir unicast, broadcast y multicast","Elegir el prefijo que alcance","Calcular red, rango y broadcast de una subred"],sum:["Más broadcast hace más lenta la red.","Cada bit de host que quitas parte los hosts a la mitad.","La segunda subred empieza después del broadcast de la primera."],q:"¿Por qué conviene separar la oficina del taller en subredes distintas?"},
 c:{k:"Bloque C",l:"C",ic:"🚪",t:"Enrutamiento, IPv6 y DHCP",d:"Puerta de enlace, tabla de enrutamiento, IPv6 y configuración automática.",time:"90 min",obj:["Decidir si un envío es directo o por gateway","Explicar el recorrido de un paquete","Comparar IPv4 con IPv6 y explicar DHCP"],sum:["Otra red → gateway → router.","El gateway debe estar en la misma red que el equipo.","IPv6 usa 128 bits; DHCP asigna la configuración."],q:"¿Qué equipos de tu escuela deberían tener dirección fija y cuáles dinámica?"},
@@ -323,20 +323,19 @@ EVALUATION = {
     'ra': 'R.A. 1.2', 'title': 'Reporte de direccionamiento y enrutamiento',
     'data': [
         ('Resultado de aprendizaje', 'Configura el direccionamiento y enrutamiento IPv4 de una red con la finalidad de segmentarla y comunicarla.'),
-        ('Actividad de evaluación', 'Reporte en PDF con el direccionamiento y enrutamiento de los datos de red que te asigna la plataforma.'),
-        ('Evidencia', 'Reporte en PDF'),
+        ('Actividad de evaluación', 'Dividir la red asignada en 4 subredes: 7 respuestas cortas en la plataforma y foto del cuaderno con el procedimiento.'),
+        ('Evidencia', 'Respuestas en la plataforma y foto del cuaderno'),
         ('Valor', '60 puntos'),
         ('Entrega', 'En la actividad R.A. 1.2 de la plataforma. Si aún no entregas, consulta con tu docente.'),
     ],
-    'situation': 'En la actividad de evaluación de la plataforma tienes asignados una red base, la cantidad de hosts de dos subredes y un equipo con falla. Prepara un reporte en PDF con tus cálculos y explicaciones.',
-    'hint': 'Escribe tus cálculos a mano o en una tabla y compruébalos en la Calculadora de subredes antes de entregar.',
+    'situation': 'En la actividad de evaluación de la plataforma tienes tu propia red /24. Divídela en 4 subredes, contesta los datos de la subred que te toca y sube la foto de tu cuaderno con el procedimiento.',
+    'hint': 'Resuelve primero en tu cuaderno y compruébalo con la Calculadora de subredes. Tus datos son solo tuyos: copiar a un compañero no sirve.',
     'steps': [
-        ('Análisis de la red', ['Explica qué información dan la dirección de red y la máscara asignadas.']),
-        ('Subredes A y B', ['Calcula prefijo, máscara, red, primer host, último host y broadcast de cada una.']),
-        ('Asignación y gateway', ['Asigna direcciones a router, servidor y dos equipos por subred.', 'Indica la puerta de enlace de cada subred y su función.']),
-        ('Recorrido y diagnóstico', ['Explica el recorrido de un paquete de una subred a la otra.', 'Diagnostica el equipo con falla y propón una solución.']),
-        ('IPv6 y entrega', ['Explica dos razones para adoptar IPv6 y una diferencia con IPv4.', 'Guarda el reporte como PDF y súbelo en la actividad de la plataforma.']),
+        ('Prepara tu cuaderno', ['Escribe tu nombre, grupo y fecha, y copia tu red asignada.', 'Calcula la máscara: 4 subredes → /26 → 255.255.255.192.']),
+        ('Tabla de subredes', ['Haz una tabla con las 4 subredes: dirección de red, primer host, último host y broadcast (cada una de 64 direcciones).']),
+        ('Contesta en la plataforma', ['Escribe el prefijo, la máscara y los datos de la subred que te toca.', 'Indica a qué subred pertenece la IP que te dieron.']),
+        ('Entrega', ['Toma una foto clara de tu cuaderno y súbela.', 'Pulsa Entregar actividad: verás tu revisión automática.']),
     ],
-    'rubric': [('Análisis de la red', 10), ('Subredes A y B', 30), ('Asignación de direcciones', 15), ('Gateway y recorrido', 20), ('Diagnóstico', 15), ('IPv6', 10)],
-    'deliver': ['Un archivo PDF con tu reporte.', 'Se entrega en la actividad R.A. 1.2 de la plataforma.'],
+    'rubric': [('Prefijo y máscara', 10), ('Datos de tu subred (red, hosts y broadcast)', 32), ('Ubicar la IP en su subred', 8), ('Foto del cuaderno con procedimiento', 10)],
+    'deliver': ['7 respuestas cortas en la plataforma y la foto de tu cuaderno.', 'Se entrega en la actividad R.A. 1.2 de la plataforma.'],
 }

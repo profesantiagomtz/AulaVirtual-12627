@@ -14,11 +14,11 @@ BRAND_SUB = 'R.A. 2.1 · Fundamentos de ciberseguridad'
 HERO_KICK = 'MTCS-20 · R.A. 2.1'
 HERO_TITLE = 'Entiende cómo se protege la información y cómo la atacan'
 HERO_TEXT = 'Aprende qué es la ciberseguridad, sus principios, las amenazas más comunes y las formas de protegerte, con el caso de un gimnasio.'
-EV_SHORT = 'prepara tu presentación con el caso asignado.'
+EV_SHORT = 'analiza tu caso de seguridad en la evaluación.'
 EV_CARD = 'Presentación R.A. 2.1'
 RA = 'R.A. 2.1'
 GROUP = '511'
-TABS = {'d': ['Diagnostica', 'Detecta phishing y mide contraseñas'], 'c': ['Construye', 'Prácticas y presentación']}
+TABS = {'d': ['Diagnostica', 'Detecta phishing y mide contraseñas'], 'c': ['Construye', 'Prácticas y evaluación']}
 
 EXTRA_JS = r'''
 var PHF=[["from","El remitente usa un dominio raro: <b>bancoazteka-seguro.com</b>, no el del banco.","Dominio falso"],["subj","El asunto mete <b>miedo y prisa</b> («URGENTE», «24 horas»).","Urgencia y amenaza"],["hi","Saluda con «Estimado cliente» en vez de tu nombre: es un mensaje masivo.","Saludo genérico"],["link","El enlace apunta a <b>bancoazteka-verifica.com</b>, no a la página oficial.","Enlace falso"],["pin","Ningún banco te pide tu <b>NIP</b> ni tu tarjeta por correo.","Pide datos secretos"],["att","Un archivo <b>.exe</b> adjunto es un programa: puede instalar malware.","Adjunto peligroso"]];
@@ -65,8 +65,8 @@ s0 = c.mark()
 c.L('💪', 'Tu información también vale oro', 'De qué trata este R.A.', body(
     sp('En palabras sencillas', 'La <b>ciberseguridad</b> es el conjunto de formas de proteger la información, los equipos y los servicios digitales de quien quiera robarlos, cambiarlos o dejarlos sin funcionar. Tú ya la usas: el bloqueo de tu celular, la contraseña de tu cuenta, no abrir un enlace raro.'),
     ex('Caso de las lecciones: Gimnasio Fuerza Joven', 'Guarda nombres, teléfonos y pagos de 400 socios, usa un torniquete con huella digital, ofrece wifi y publica promociones en redes sociales. Un día alguien roba la lista de socios y empiezan los mensajes falsos de «cobro». Vamos a entender qué pasó y cómo evitarlo.'),
-    bk('Qué vas a hacer', '<b>1. Aprende</b> los conceptos con ejemplos. <b>2. Diagnostica</b> con dos herramientas: un detective de phishing y un medidor de contraseñas. <b>3. Construye</b> tres prácticas que te preparan para tu presentación.'),
-    bk('Al final', 'Entregas una <b>presentación electrónica</b> (20 %) sobre el caso que te asigna la plataforma en la actividad de evaluación.')),
+    bk('Qué vas a hacer', '<b>1. Aprende</b> los conceptos con ejemplos. <b>2. Diagnostica</b> con dos herramientas: un detective de phishing y un medidor de contraseñas. <b>3. Construye</b> tres prácticas que te preparan para tu evaluación.'),
+    bk('Al final', 'Analizas <b>el caso que te toca</b> con 5 preguntas de opción y una respuesta breve en la plataforma, y subes una <b>foto de tu cuaderno</b>.')),
     'Proteger lo digital es cuidar a las personas que están detrás.')
 c.A('🔎', '¿Amenaza, vulnerabilidad o riesgo?', 'Clasifica cada frase del caso del gimnasio.', [
     ['La lista de socios está en una hoja de cálculo sin contraseña', 'Vulnerabilidad', 'Es una debilidad que alguien podría aprovechar.'],
@@ -407,7 +407,7 @@ c.L('👩‍🏫', 'Guía para el docente', 'Sesiones sugeridas con tu cronogram
     bk('Bloque B · principios', 'Una sesión: confidencialidad, integridad, disponibilidad, estado de los datos, contramedidas y marco NIST.'),
     bk('Bloque C · amenazas y ataques', 'Una sesión: malware, código malicioso, ingeniería social y ciberataques. Usa el <b>Detective de phishing</b> en pantalla grande y deja que el grupo decida.'),
     bk('Bloque D · protección', 'Una sesión: cifrado, autenticación y autorización, controles y ocultamiento. <b>Práctica 2</b> con el medidor de contraseñas (nunca con contraseñas reales).'),
-    bk('Evaluación', 'Actividad con fecha en tu cronograma: <b>viernes 23-oct</b>. Los alumnos preparan una <b>presentación electrónica</b> (PPTX o PDF) con el caso asignado en la plataforma; la <b>Práctica 3</b> los lleva paso a paso. El material sirve de repaso y para quienes aún no entregan.')),
+    bk('Evaluación', 'Actividad con fecha en tu cronograma: <b>viernes 23-oct</b>. Cada alumno analiza un caso asignado en la plataforma: 5 preguntas de opción (50 pts con revisión automática), una respuesta breve y la foto de su cuaderno (10 pts que califica el docente). El material sirve de repaso y para quienes aún no entregan.')),
     'Las fechas vienen de tu cronograma 1-26/27; ajústalas si cambia.')
 doc_end = c.mark() - 1
 
@@ -426,7 +426,7 @@ SEC = [
 ORDER = ['s0', 'a', 'b', 'c', 'd']
 
 CH = r'''
-s0:{k:"Introducción",l:"0",ic:"💪",t:"Empieza aquí",d:"Amenaza, vulnerabilidad y riesgo con el caso de un gimnasio.",time:"20 min",obj:["Distinguir amenaza, vulnerabilidad y riesgo","Conocer el caso y la evidencia final"],sum:["Amenaza = lo que daña · Vulnerabilidad = la debilidad · Riesgo = posibilidad de daño.","Entregas una presentación con el caso asignado."],q:"¿Qué dato tuyo sería más grave que se filtrara: tu teléfono, tu foto o tu contraseña?"},
+s0:{k:"Introducción",l:"0",ic:"💪",t:"Empieza aquí",d:"Amenaza, vulnerabilidad y riesgo con el caso de un gimnasio.",time:"20 min",obj:["Distinguir amenaza, vulnerabilidad y riesgo","Conocer el caso y la evidencia final"],sum:["Amenaza = lo que daña · Vulnerabilidad = la debilidad · Riesgo = posibilidad de daño.","En la evaluación analizas un caso y subes la foto de tu cuaderno."],q:"¿Qué dato tuyo sería más grave que se filtrara: tu teléfono, tu foto o tu contraseña?"},
 a:{k:"Bloque A",l:"A",ic:"🛡️",t:"Ciberseguridad",d:"Concepto, delincuencia, amenazas internas y externas, vulnerabilidades y carreras.",time:"90 min",obj:["Explicar qué es la ciberseguridad","Clasificar amenazas internas y externas","Reconocer los tipos de vulnerabilidades"],sum:["Ciberseguridad = personas + procesos + tecnología.","Muchos incidentes empiezan por un error humano.","Se pueden cerrar las vulnerabilidades aunque no se controle a los atacantes."],q:"¿Qué vulnerabilidad humana crees que es la más común entre tus compañeros?"},
 b:{k:"Bloque B",l:"B",ic:"🔺",t:"Principios de seguridad",d:"Confidencialidad, integridad, disponibilidad, estado de los datos, contramedidas y marco NIST.",time:"100 min",obj:["Explicar la tríada CIA con ejemplos","Distinguir el estado de los datos","Clasificar contramedidas y funciones del marco"],sum:["CIA: secreto, exactitud y servicio.","Datos en reposo, en tránsito y en proceso.","Prevenir, detectar y corregir; NIST CSF tiene seis funciones."],q:"Piensa en tu cuenta de redes sociales: ¿qué principio te preocupa más proteger?",rev:[["Que alguien lea la lista de pagos sin permiso afecta…",["La confidencialidad","La disponibilidad","Ninguno"],0,"Alguien no autorizado vio información privada."],["Una amenaza interna accidental es…",["Un empleado que se equivoca","Un virus de internet","Un robo"],0,"Tiene acceso legítimo y se equivoca."]]},
 c:{k:"Bloque C",l:"C",ic:"🦠",t:"Amenazas, vulnerabilidades y ataques",d:"Malware, código malicioso, ingeniería social y ciberataques.",time:"100 min",obj:["Identificar tipos de malware","Reconocer señales de phishing","Relacionar cada ciberataque con su descripción"],sum:["Malware: virus, gusano, troyano, ransomware, spyware.","La ingeniería social engaña a las personas; busca urgencia y miedo.","DDoS satura; el diccionario prueba contraseñas comunes."],q:"¿Qué mensaje falso has recibido tú o alguien de tu familia?",rev:[["Un programa que cifra tus archivos y pide dinero es…",["Ransomware","Adware","Un gusano"],0,"Secuestra los archivos."],["Un control que restaura un respaldo es…",["Correctivo","Preventivo","Detectivo"],0,"Recupera lo perdido."]]},
@@ -511,7 +511,7 @@ PR = [
                      'En las diapositivas 5 a 7 anota amenazas, vulnerabilidades, el posible malware, engaño o ataque y tus controles.',
                      ['Revisa el diseño: una idea por diapositiva, letra grande y una imagen o esquema.', 'diseno'],
                      'Escribe la conclusión con 3 recomendaciones concretas en la diapositiva 8.']}},
-     'entrega': ['Tu presentación en borrador (PPTX o PDF). La versión final la subes en la actividad de evaluación.'],
+     'entrega': ['Tu presentación en borrador (PPTX o PDF). Te sirve de repaso antes de la evaluación.'],
      'rub': [['Estructura de 8 diapositivas', 25], ['Caso y recursos identificados', 20], ['Amenazas, vulnerabilidades y controles', 35], ['Diseño y conclusión', 20]]},
 ]
 
@@ -525,16 +525,14 @@ EVALUATION = {
         ('Ponderación', '20% (según el programa)'),
         ('Entrega', 'Fecha de tu cronograma: viernes 23 de octubre. Si aún no entregas, consulta con tu docente. Se entrega en la actividad R.A. 2.1 de la plataforma.'),
     ],
-    'situation': 'En la actividad de evaluación de la plataforma tienes asignado un caso con una situación de seguridad. Prepara una presentación de 8 diapositivas que explique los fundamentos de la ciberseguridad y los aplique a ese caso.',
-    'hint': 'Cada diapositiva debe mencionar los datos de TU caso. Una idea por diapositiva y letra que se lea desde el fondo del salón.',
+    'situation': 'En la actividad de evaluación de la plataforma tienes asignado un caso de seguridad. Identifica el principio afectado, el tipo de amenaza, la vulnerabilidad y los controles; contesta en la plataforma y sube la foto de tu cuaderno.',
+    'hint': 'Lee tu caso dos veces y subraya qué se dañó, quién lo causó y qué debilidad lo permitió. Tu caso y el orden de las opciones son solo tuyos.',
     'steps': [
-        ('Portada y concepto', ['Diapositiva 1: título de tu presentación y tus datos.', 'Diapositiva 2: explica qué es la ciberseguridad con tus propias palabras.']),
-        ('Principios (Bloque B)', ['Diapositiva 3: explica confidencialidad, integridad y disponibilidad con ejemplos.']),
-        ('El caso (Bloques A y B)', ['Diapositiva 4: resume el caso asignado e identifica los recursos que necesitan protección.', 'Diapositiva 5: identifica amenazas internas, externas y vulnerabilidades presentes.']),
-        ('Ataques (Bloque C)', ['Diapositiva 6: explica qué malware, engaño o ataque podría aprovechar esas debilidades.']),
-        ('Protección (Bloque D)', ['Diapositiva 7: propón autenticación, permisos, cifrado u otros controles adecuados.']),
-        ('Cierre y entrega', ['Diapositiva 8: conclusión y tres recomendaciones concretas.', 'Guarda tu presentación como PPTX o PDF y súbela en la actividad de la plataforma, junto con las respuestas escritas.']),
+        ('Lee tu caso', ['Copia tu caso en una línea en tu cuaderno, con tu nombre, grupo y fecha.']),
+        ('Analiza (Bloques A y B)', ['¿Qué principio se afectó más: confidencialidad, integridad o disponibilidad?', '¿La amenaza vino de dentro o de fuera? ¿Cuál fue la vulnerabilidad?']),
+        ('Protege (Bloque D)', ['Elige el control que lo habría prevenido y el que ayuda a detectarlo o corregirlo.', 'Escribe con tus palabras qué harías primero y por qué.']),
+        ('Entrega', ['Toma una foto clara de tu cuaderno y súbela.', 'Pulsa Entregar actividad: verás tu revisión automática.']),
     ],
-    'rubric': [('Portada y datos', 10), ('Concepto de ciberseguridad', 10), ('Principios con ejemplos', 20), ('Caso y recursos a proteger', 10), ('Amenazas y vulnerabilidades', 15), ('Malware, engaño o ataque', 10), ('Protección propuesta', 15), ('Conclusión y recomendaciones', 10)],
-    'deliver': ['Un archivo PPTX o PDF con tu presentación de 8 diapositivas.', 'Se entrega en la actividad R.A. 2.1 de la plataforma, junto con las secciones escritas.'],
+    'rubric': [('Principio afectado', 10), ('Amenaza interna o externa', 10), ('Vulnerabilidad', 10), ('Control preventivo', 10), ('Control detectivo o correctivo', 10), ('Respuesta breve y foto del cuaderno', 10)],
+    'deliver': ['5 respuestas de opción y una respuesta breve en la plataforma, más la foto de tu cuaderno.', 'Se entrega en la actividad R.A. 2.1 de la plataforma.'],
 }
