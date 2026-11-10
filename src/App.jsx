@@ -951,6 +951,7 @@ function AnswerPreview({ answers }) {
   const questions = [...(answers.questionnaires?.users || []), ...(answers.questionnaires?.administrators || [])]
   const responses = answers.responses || {}
   const packetTracer = Object.values(answers.packet_tracer || {})
+  if (answers.quiz?.version === 2) return <div className="answer-preview"><section><h4>Revisión automática · {answers.quiz.auto}/{answers.quiz.autoMax} pts</h4>{answers.assigned_case?.lines?.length > 0 && <article><strong>{answers.assigned_case.title || 'Datos asignados'}</strong><p>{answers.assigned_case.lines.join(' · ')}</p></article>}<div className="mtcs-answer-list">{answers.quiz.items.map((item, index) => <article key={item.key}><strong>{item.ok ? '✓' : '✗'} {index + 1}. {item.label}</strong><p>Respondió: {item.given || '—'}{!item.ok && ` · Correcta: ${item.expected}`}</p></article>)}{responses.first && <article><strong>Respuesta escrita (la califica usted)</strong><p>{responses.first}</p></article>}</div></section></div>
   const hasContent = risks.some(item => item.risk || item.description) || Object.values(equipment).some(Boolean) || questions.some(item => item.text) || Object.values(responses).some(Boolean) || packetTracer.length > 0
   if (!hasContent) return <div className="answer-preview empty">El alumno inició la actividad, pero todavía no ha capturado respuestas.</div>
   return <div className="answer-preview">
@@ -1111,6 +1112,11 @@ function evidenceReview(assessment, submission) {
       { label: submission.submitted_at ? 'Actividad entregada formalmente' : 'La actividad permanece en proceso', ok: Boolean(submission.submitted_at) },
     ] }
   }
+  if (answers.quiz?.version === 2) return { suggested: Math.min(60, answers.quiz.auto + (submission.file_path ? answers.quiz.teacherMax : 0)), checks: [
+    { label: `Revisión automática: ${answers.quiz.auto} de ${answers.quiz.autoMax} puntos`, ok: answers.quiz.auto >= answers.quiz.autoMax * 0.6 },
+    { label: submission.file_path ? 'Foto del cuaderno recibida (revísela: hasta 10 pts)' : 'Sin foto del cuaderno', ok: Boolean(submission.file_path) },
+    { label: submission.submitted_at ? 'Actividad entregada formalmente' : 'La actividad permanece en proceso', ok: Boolean(submission.submitted_at) },
+  ] }
   if (assessment.activityCode === 'MSII-RA-1.1') return { suggested: submission.submitted_at && submission.file_path ? 10 : 0, checks: [
     { label: submission.submitted_at ? 'Documento entregado formalmente' : 'La actividad permanece en proceso', ok: Boolean(submission.submitted_at) },
     { label: submission.file_path ? `Documento recibido: ${submission.original_filename || 'archivo DOCX'}` : 'No contiene documento DOCX', ok: Boolean(submission.file_path) },
