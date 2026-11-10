@@ -3,6 +3,8 @@ import { ArrowLeft, BookOpen, CheckCircle2, Network, Save, Send, ShieldCheck, Te
 import { supabase } from '../lib/supabase'
 import { uploadSubmissionFile } from '../lib/upload'
 import { assignmentFor, hash } from '../lib/mtcs-assignment'
+import MtcsQuizActivity from './MtcsQuizActivity'
+import { isQuiz } from '../lib/mtcs-quiz'
 import PracticeCheck, { PracticeCheckButton, hasPracticeChecks } from './PracticeCheck'
 
 export const mtcsContent = {
@@ -45,6 +47,9 @@ export const mtcsContent = {
       ['6. IPv6 y DHCP', 'IPv6 amplía el espacio de direcciones y mejora la escalabilidad. DHCP asigna automáticamente parámetros como dirección IP, máscara, puerta de enlace y DNS.'],
     ],
     example: 'Ejemplo: para 192.168.10.0/24, la dirección de red es 192.168.10.0, los hosts válidos van de 192.168.10.1 a 192.168.10.254 y el broadcast es 192.168.10.255. Al crear subredes, esos límites cambian según la nueva máscara.',
+    quizTitle: 'Divide tu red en 4 subredes',
+    quizIntro: 'Con tu red asignada calcula los datos de una subred y ubica una IP. Respuestas cortas: la plataforma las revisa sola. Al final sube la foto de tu cuaderno.',
+    quizExample: 'Red 192.168.10.0/24 dividida en 4 subredes. 256 ÷ 4 = 64 direcciones por subred. Para 4 subredes se toman 2 bits más: /24 + 2 = /26, máscara 255.255.255.192 (256 − 64 = 192). Las subredes empiezan cada 64: Subred 1 = .0, Subred 2 = .64, Subred 3 = .128, Subred 4 = .192. Subred 2: red 192.168.10.64, primer host .65, último host .126, broadcast .127 (la siguiente subred empieza en .128, así que el broadcast es uno antes). ¿La IP 192.168.10.150 en qué subred está? Entre .128 y .191 → Subred 3.',
     taskTitle: 'Actividad de evaluación: reporte de direccionamiento y enrutamiento',
     taskIntro: 'Prepara un reporte en PDF con los datos que te asignó la plataforma y explica tus procedimientos. Valor máximo: 60 puntos.',
     fields: [
@@ -70,6 +75,9 @@ export const mtcsContent = {
       ['5. Controles de seguridad', 'Los controles preventivos buscan evitar incidentes; los detectivos identifican lo ocurrido; los correctivos ayudan a recuperar la operación y reducir las consecuencias.'],
     ],
     example: 'Ejemplo: compartir una contraseña es una vulnerabilidad de operación; el acceso indebido es la amenaza y la exposición o modificación de datos representa el posible impacto. Cambiar contraseñas, limitar permisos y revisar registros son controles distintos.',
+    quizTitle: 'Analiza tu caso de seguridad',
+    quizIntro: 'Lee el caso que te tocó y contesta 5 preguntas de opción y una respuesta breve. La plataforma revisa las de opción. Al final sube la foto de tu cuaderno.',
+    quizExample: 'Caso de ejemplo: en una biblioteca el servidor de préstamos se apagó por una falla de luz y nadie pudo pedir libros todo el día. Principio afectado: disponibilidad (el servicio no estuvo cuando se necesitaba). Amenaza: externa y accidental (la falla eléctrica). Vulnerabilidad: no tener un no-break. Control preventivo: instalar un no-break. Control correctivo: encender el servidor y restaurar el respaldo del día.',
     taskTitle: 'Actividad de evaluación: presentación sobre fundamentos de ciberseguridad',
     taskIntro: 'Prepara una presentación electrónica basada en el caso asignado. Puedes entregarla como PPTX o PDF. Valor máximo: 60 puntos.',
     fields: [
@@ -168,7 +176,13 @@ const mtcsDeliverables = {
   'MTCS-RA-2.1': { label: 'Presentación electrónica', accept: '.pptx,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf', extensions: ['pptx', 'pdf'], help: 'Archivo PPTX o PDF · máximo 20 MB' },
 }
 
-export default function MtcsActivity({ assessment, session, onBack }) {
+export default function MtcsActivity(props) {
+  const { assessment } = props
+  if (isQuiz(assessment.activityCode)) return <MtcsQuizActivity definition={mtcsContent[assessment.activityCode]} {...props} />
+  return <MtcsClassicActivity {...props} />
+}
+
+function MtcsClassicActivity({ assessment, session, onBack }) {
   const definition = mtcsContent[assessment.activityCode]
   const assignment = useMemo(() => assignmentFor(session.id, assessment.id, assessment.activityCode), [session.id, assessment.id, assessment.activityCode])
   const [tab, setTab] = useState('material')

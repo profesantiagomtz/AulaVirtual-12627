@@ -19,7 +19,8 @@ export const assessments = [
   { id: 3, title: 'R.A. 1.1 Documentos digitales', group: '311', due: '26 sep', submissions: 22, total: 22, average: 88, status: 'Cerrada' },
   { id: 'demo-asin-21', title: 'R.A. 2.1 Instala y configura herramientas de seguridad', group: '310', due: dueLabel(3), dueAt: dueIn(3), submissions: 9, total: 30, status: 'Activa' },
   { id: 'demo-msii-12', title: 'R.A. 1.2 Gestión de recursos del sistema operativo', group: '310', due: dueLabel(-2), dueAt: dueIn(-2), overdue: true, submissions: 21, total: 30, status: 'Activa' },
-  { id: 'demo-mtcs-21', title: 'R.A. 2.1 Presentación sobre fundamentos de ciberseguridad', group: '511', due: dueLabel(-1), dueAt: dueIn(-1), overdue: true, submissions: 14, total: 20, status: 'Activa' },
+  { id: 'demo-mtcs-12', title: 'R.A. 1.2 Divide tu red en 4 subredes', activityCode: 'MTCS-RA-1.2', group: '511', due: dueLabel(4), dueAt: dueIn(4), submissions: 3, total: 20, status: 'Activa' },
+  { id: 'demo-mtcs-21', title: 'R.A. 2.1 Analiza tu caso de seguridad', activityCode: 'MTCS-RA-2.1', group: '511', due: dueLabel(-1), dueAt: dueIn(-1), overdue: true, submissions: 14, total: 20, status: 'Activa' },
   { id: 'demo-mtcs-22', title: 'R.A. 2.2 Reporte de principios y tecnologías de confidencialidad', activityCode: 'MTCS-RA-2.2', group: '511', due: dueLabel(13), dueAt: dueIn(13), submissions: 0, total: 20, status: 'Activa' },
 ]
 
