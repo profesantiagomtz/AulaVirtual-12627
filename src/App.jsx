@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Award, BookOpen, CalendarCheck, CalendarDays, ChartLine, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, FileText, GraduationCap, KeyRound,
-  LayoutDashboard, Lock, LogOut, Menu, Palette, Plus, Radio, Search, Settings, Trash2, TrendingUp, Unlock, Upload, Users, X
+  LayoutDashboard, Lock, LogOut, Menu, Palette, Plus, Radio, RotateCcw, Search, Settings, Trash2, TrendingUp, Unlock, Upload, Users, X
 } from 'lucide-react'
 import { courses } from './data/academic'
 import * as demo from './data/demo'
@@ -890,6 +890,7 @@ function AssessmentResults({ assessment, onBack, onRefresh }) {
   const [scores, setScores] = useState(() => Object.fromEntries(assessment.submissionDetails.map(item => [item.id, item.score ?? ''])))
   const [busy, setBusy] = useState('')
   const [message, setMessage] = useState('')
+  const [resetTarget, setResetTarget] = useState(null)
 
   async function saveScore(submission) {
     const score = Number(scores[submission.id])
@@ -932,13 +933,68 @@ function AssessmentResults({ assessment, onBack, onRefresh }) {
     <div className="results-head"><div><span className="eyebrow">Grupo {assessment.group}</span><h1>{assessment.title}</h1><p>{assessment.submissions} entregas y {assessment.drafts} avances guardados.</p></div><div className="result-total"><strong>{rows.length}</strong><span>{rows.length === 1 ? 'alumno con actividad' : 'alumnos con actividad'}</span></div></div>
     {message && <div className={message.includes('correctamente') ? 'submission-success' : 'form-error'}>{message}</div>}
     {rows.length ? <div className="submission-list">{rows.map(submission => <article className="submission-card" key={submission.id}>
-      <header><div className="student-cell"><div className="avatar small">{(submission.student?.name || 'A').split(' ').slice(0, 2).map(part => part[0]).join('')}</div><div><strong>{submission.student?.name || 'Alumno'}</strong><span>{submission.student?.enrollment || submission.student?.email || 'Sin matrícula'}</span></div></div><span className={`tag ${submission.submitted_at ? 'active' : ''}`}>{submission.submitted_at ? 'Entregada' : 'En proceso'}</span></header>
+      <header><div className="student-cell"><div className="avatar small">{(submission.student?.name || 'A').split(' ').slice(0, 2).map(part => part[0]).join('')}</div><div><strong>{submission.student?.name || 'Alumno'}</strong><span>{submission.student?.enrollment || submission.student?.email || 'Sin matrícula'}</span></div></div><div className="submission-status"><span className={`tag ${submission.submitted_at ? 'active' : ''}`}>{submission.submitted_at ? 'Entregada' : 'En proceso'}</span><button className="lock-btn danger-btn" onClick={() => setResetTarget(submission)} title="Borrar esta entrega para que el alumno la vuelva a subir"><RotateCcw size={15} />Limpiar entrega</button></div></header>
       <div className="submission-meta"><span>Inicio: {formatDateTime(submission.started_at)}</span>{submission.submitted_at && <span>Entrega: {formatDateTime(submission.submitted_at)}</span>}</div>
       {Object.values(submission.answers?.packet_tracer || {}).some(practice => duplicatedChecksums.has(practice.checksum)) && <div className="duplicate-warning">Revisión sugerida: uno o más archivos de Packet Tracer coinciden exactamente con la entrega de otro alumno.</div>}
       <div className="submission-actions">{submission.file_path && <button className="secondary" onClick={() => downloadSubmission(submission)}><Download size={16} /> {submission.original_filename || 'Descargar archivo'}</button>}{Object.values(submission.answers?.packet_tracer || {}).map(practice => <button className="secondary packet-download" key={practice.path} onClick={() => downloadPractice(practice)}><Download size={16} /> {practice.practice || practice.filename}</button>)}{submission.answers && Object.keys(submission.answers).length > 0 && <details><summary><Eye size={16} /> Ver respuestas capturadas</summary><AnswerPreview answers={submission.answers} /></details>}</div>
       {submission.submitted_at && <div className="score-box"><label>Calificación de la actividad (máximo 60 puntos)<input type="number" min="0" max="60" step="1" value={scores[submission.id]} onChange={e => setScores(current => ({ ...current, [submission.id]: e.target.value }))} /></label><button className="primary" disabled={busy === submission.id} onClick={() => saveScore(submission)}>{busy === submission.id ? 'Guardando…' : 'Guardar calificación'}</button></div>}
     </article>)}</div> : <EmptyState text="Ningún alumno ha iniciado esta actividad todavía." />}
+    {resetTarget && <ResetSubmissionModal submission={resetTarget} assessment={assessment} onClose={() => setResetTarget(null)} onDone={async () => {
+      setRows(current => current.filter(item => item.id !== resetTarget.id))
+      await onRefresh?.()
+    }} />}
   </section>
+}
+
+// Borra la entrega de un alumno para que vuelva a hacer y subir la actividad. No toca su avance del material.
+function ResetSubmissionModal({ submission, assessment, onClose, onDone }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [result, setResult] = useState(null)
+  const [sure, setSure] = useState(false)
+  const name = submission.student?.name || 'el alumno'
+  const files = (submission.file_path ? 1 : 0) + Object.keys(submission.answers?.packet_tracer || {}).length
+  async function confirmReset(e) {
+    e.preventDefault()
+    setError('')
+    if (!isSupabaseReady) { setError('Modo demostración: no se borran entregas.'); return }
+    setBusy(true)
+    try {
+      const { data: paths, error: resetError } = await supabase.rpc('reset_submission', { p_submission: submission.id })
+      if (resetError) throw resetError
+      let filesLeft = 0
+      for (let i = 0; i < (paths || []).length; i += 100) {
+        const chunk = paths.slice(i, i + 100)
+        const { error: removeError } = await supabase.storage.from('submissions').remove(chunk)
+        if (removeError) filesLeft += chunk.length
+      }
+      setResult({ files: (paths || []).length - filesLeft, filesLeft })
+      await onDone?.()
+    } catch (err) {
+      setError(/reset_submission/.test(err.message || '') ? 'Falta correr el archivo limpiar_entrega.sql en Supabase.' : (err.message || 'No se pudo limpiar la entrega'))
+    } finally { setBusy(false) }
+  }
+  if (result) return <Modal title="Entrega limpiada" onClose={onClose}><div className="delete-account">
+    <p>Listo: <b>{name}</b> ya puede volver a hacer y subir <b>{assessment.title}</b>.</p>
+    <p className="muted">Archivos borrados: {result.files}.{result.filesLeft ? ` ${result.filesLeft} no se pudieron borrar (no afectan al alumno).` : ''} Su avance del material y sus demás entregas siguen igual.</p>
+    <div className="modal-actions"><button type="button" className="primary" onClick={onClose}>Listo</button></div>
+  </div></Modal>
+  return <Modal title="Limpiar entrega" onClose={onClose}><form className="delete-account" onSubmit={confirmReset}>
+    <p>Vas a borrar la entrega de <b>{name}</b> en <b>{assessment.title}</b> (grupo {assessment.group}).</p>
+    <div className="delete-summary has-work">
+      <strong>Se borra:</strong>
+      <ul>
+        <li>{submission.submitted_at ? `Entrega del ${formatDateTime(submission.submitted_at)}` : 'Su avance guardado de la actividad'}</li>
+        {files > 0 && <li>{files === 1 ? '1 archivo subido' : `${files} archivos subidos`}</li>}
+        {submission.score !== null && submission.score !== undefined && <li>Calificación: {submission.score}/60</li>}
+      </ul>
+      <small>No se toca: su avance del material, sus otras entregas ni sus datos asignados.</small>
+    </div>
+    <p className="muted delete-help">Después, la actividad le aparece otra vez para hacerla y subirla.</p>
+    <label className="reset-check"><input type="checkbox" checked={sure} onChange={e => setSure(e.target.checked)} /> Entiendo que esto no se puede deshacer</label>
+    {error && <div className="form-error">{error}</div>}
+    <div className="modal-actions"><button type="button" className="secondary" onClick={onClose}>Cancelar</button><button className="primary danger" disabled={busy || !sure}><RotateCcw size={16} />{busy ? 'Limpiando…' : 'Limpiar entrega'}</button></div>
+  </form></Modal>
 }
 
 function formatDateTime(value) {
