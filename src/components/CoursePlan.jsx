@@ -68,7 +68,7 @@ export function ownSubmission(assessment, session) {
 
 export function assessmentState(assessment, session) {
   const submission = ownSubmission(assessment, session)
-  if (submission?.score !== null && submission?.score !== undefined) return { key: 'graded', label: `Calificada · ${Number(submission.score)}/60`, submission }
+  if (submission?.score !== null && submission?.score !== undefined) return { key: 'graded', label: `Calificada · ${Math.round(Number(submission.score) / 60 * 100)} %`, submission }
   if (submission?.submitted_at) return { key: 'sent', label: 'Entregada', submission }
   if (assessment.locked) return { key: 'locked', label: 'Bloqueada' }
   if (assessment.overdue) return { key: 'late', label: 'Vencida · aún abierta' }
@@ -190,7 +190,7 @@ export function StudentGrades({ courses, assessments, session }) {
       <div><span>Promedio en lo evaluado</span><strong>{evaluated ? (earned / evaluated * 10).toFixed(1) : '—'}<small> / 10</small></strong></div>
     </div>
     <div className="table-wrap grade-table"><table><thead><tr><th>R.A.</th><th>Vale</th><th>Calificación</th><th>Puntos</th></tr></thead><tbody>
-      {rows.map(row => <tr key={row.ra.code}><td data-label="R.A."><b>{row.ra.code}</b> {row.ra.title}</td><td data-label="Vale">{row.ra.weight}%</td><td data-label="Calificación">{row.score !== null ? `${row.score.toFixed(0)}/60` : row.sent ? <span className="ra-badge warn">Por calificar</span> : <span className="ra-badge muted">{raStatus(row.ra) === 'proximo' ? 'Próximo' : row.hasActivity ? 'Sin entregar' : 'Sin actividad'}</span>}</td><td data-label="Puntos">{row.points !== null ? `${row.points.toFixed(1)} / ${row.ra.weight}` : '—'}</td></tr>)}
+      {rows.map(row => <tr key={row.ra.code}><td data-label="R.A."><b>{row.ra.code}</b> {row.ra.title}</td><td data-label="Vale">{row.ra.weight}%</td><td data-label="Calificación">{row.score !== null ? `${Math.round(row.score / 60 * 100)} %` : row.sent ? <span className="ra-badge warn">Por calificar</span> : <span className="ra-badge muted">{raStatus(row.ra) === 'proximo' ? 'Próximo' : row.hasActivity ? 'Sin entregar' : 'Sin actividad'}</span>}</td><td data-label="Puntos">{row.points !== null ? `${row.points.toFixed(1)} / ${row.ra.weight}` : '—'}</td></tr>)}
     </tbody></table></div>
   </section>
 }
