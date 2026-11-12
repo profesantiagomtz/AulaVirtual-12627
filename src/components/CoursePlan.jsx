@@ -115,14 +115,14 @@ export function RaCourseMap({ course, sameGroupCourses, materials, assessments, 
   const materialRow = material => {
     number += 1
     const progress = progressOf(material)
-    const state = isTeacher ? (material.system ? 'Integrado' : material.published ? 'Publicado' : 'Oculto') : progress?.done ? 'Terminado' : progress?.steps ? 'En curso' : progress ? 'Sin iniciar' : 'Recurso'
-    return <li className={`ra-item material ${!material.published ? 'hidden-item' : ''} ${progress?.done ? 'done' : ''}`} key={`m-${material.id}`}>
+    const state = isTeacher ? (material.closed ? 'Cerrado al alumno' : material.system ? 'Integrado' : material.published ? 'Publicado' : 'Oculto') : progress?.done ? 'Terminado' : progress?.steps ? 'En curso' : progress ? 'Sin iniciar' : 'Recurso'
+    return <li className={`ra-item material ${!material.published || (isTeacher && material.closed) ? 'hidden-item' : ''} ${progress?.done ? 'done' : ''}`} key={`m-${material.id}`}>
       <span className="ra-num">{progress?.done ? <CheckCircle2 size={17} /> : number}</span>
       <div className="ra-item-icon"><BookOpen size={18} /></div>
       <div className="ra-item-main"><strong>{material.title}</strong><small>{material.description || material.type}{isTeacher && progress && groupStudents.length ? ` · ${progress.finished}/${groupStudents.length} lo terminaron` : ''}</small></div>
-      <span className={`ra-badge ${isTeacher ? (material.published ? 'ok' : 'muted') : progress?.done ? 'ok' : progress?.steps ? 'warn' : 'muted'}`}>{state}</span>
+      <span className={`ra-badge ${isTeacher ? (material.published && !material.closed ? 'ok' : 'muted') : progress?.done ? 'ok' : progress?.steps ? 'warn' : 'muted'}`}>{state}</span>
       <div className="ra-item-actions">
-        {isTeacher && !material.system && <button className="lock-btn" onClick={() => onToggleMaterial?.(material)}>{material.published ? <Lock size={14} /> : <Unlock size={14} />}{material.published ? 'Ocultar' : 'Publicar'}</button>}
+        {isTeacher && !material.system && !material.closed && <button className="lock-btn" onClick={() => onToggleMaterial?.(material)}>{material.published ? <Lock size={14} /> : <Unlock size={14} />}{material.published ? 'Ocultar' : 'Publicar'}</button>}
         <button className={!isTeacher && !progress?.done ? 'primary small' : 'secondary small'} onClick={() => onOpenMaterial?.(material)}>{isTeacher ? 'Abrir' : progress?.done ? 'Repasar' : progress?.steps ? 'Continuar' : 'Iniciar'}<ChevronRight size={15} /></button>
       </div>
     </li>
@@ -133,7 +133,7 @@ export function RaCourseMap({ course, sameGroupCourses, materials, assessments, 
     return <li className={`ra-item task ${state?.key || ''}`} key={`a-${assessment.id}`}>
       <span className="ra-num">{state?.key === 'graded' || state?.key === 'sent' ? <CheckCircle2 size={17} /> : number}</span>
       <div className="ra-item-icon task">{assessment.locked ? <Lock size={18} /> : <ClipboardCheck size={18} />}</div>
-      <div className="ra-item-main"><strong>{assessment.title}</strong><small>Actividad de evaluación · Entrega {assessment.due}{isTeacher ? ` · ${assessment.submissions}/${assessment.total} entregas` : assessment.locked ? ' · Termina primero el material' : ''}</small></div>
+      <div className="ra-item-main"><strong>{assessment.title}</strong><small>Actividad de evaluación · Entrega {assessment.due}{isTeacher ? ` · ${assessment.submissions}/${assessment.total} entregas` : assessment.locked ? (assessment.materialClosed ? ' · El material de este R.A. ya se cerró' : ' · Termina primero el material') : ''}</small></div>
       <span className={`ra-badge ${isTeacher ? (assessment.status === 'Activa' ? 'ok' : 'muted') : { graded: 'ok', sent: 'ok', locked: 'muted', late: 'bad', draft: 'warn', pending: 'warn' }[state.key]}`}>{isTeacher ? assessment.status : state.label}</span>
       <div className="ra-item-actions"><button className={!isTeacher && ['pending', 'late', 'draft'].includes(state?.key) ? 'primary small' : 'secondary small'} disabled={!isTeacher && assessment.locked} onClick={() => onOpenAssessment?.(assessment)}>{isTeacher ? 'Resultados' : state.key === 'locked' ? 'Bloqueada' : ['graded', 'sent'].includes(state.key) ? 'Ver' : 'Entregar'}<ChevronRight size={15} /></button></div>
     </li>
