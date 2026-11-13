@@ -2,10 +2,10 @@
 // El docente lo sigue viendo (marcado «Cerrado al alumno»); no se borra avance, entregas ni calificaciones.
 // Para volver a mostrar un material, borra su código de la lista.
 export const HIDDEN_MATERIALS = {
-  // 2026-11-12: Profe pidió dejar visible solo el R.A. 2.1 de ASIN y MSII.
-  '310': ['ASIN-RA-1.1', 'ASIN-RA-1.2', 'MSII-RA-1.1', 'MSII-RA-1.2'],
-  // 2026-11-12: Profe pidió dejar visible solo el R.A. 2.1 de EDOA.
-  '311': ['EDOA-RA-1.1', 'EDOA-RA-1.2', 'EDOA-RA-1.3'],
+  // 2026-11-12/13: Profe pidió dejar visible solo el R.A. 2.1 de ASIN y MSII.
+  '310': ['ASIN-RA-1.1', 'ASIN-RA-1.2', 'ASIN-RA-2.2', 'ASIN-RA-2.3', 'MSII-RA-1.1', 'MSII-RA-1.2', 'MSII-RA-2.2'],
+  // 2026-11-12/13: Profe pidió dejar visible solo el R.A. 2.1 de EDOA.
+  '311': ['EDOA-RA-1.1', 'EDOA-RA-1.2', 'EDOA-RA-1.3', 'EDOA-RA-2.2', 'EDOA-RA-3.1', 'EDOA-RA-3.2', 'EDOA-RA-3.3', 'EDOA-RA-3.4', 'EDOA-RA-4.1', 'EDOA-RA-4.2', 'EDOA-RA-4.3'],
   // 2026-11-12/13: Profe pidió dejar visible solo el R.A. 2.2 de MTCS (también se ocultan 3.1 y 3.2 por ahora).
   '511': ['MTCS-RA-1.1', 'MTCS-RA-1.2', 'MTCS-RA-2.1', 'MTCS-RA-3.1', 'MTCS-RA-3.2'],
 }
