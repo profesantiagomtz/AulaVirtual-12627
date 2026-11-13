@@ -10,7 +10,7 @@ reubique solo (ver MIGRA y mig22 en EXTRA_JS).
 """
 import re
 
-from cw import Course, sp, ex, ana, bk, warn, r3, px, body, j
+from cw import Course, Js, sp, ex, ana, bk, warn, r3, px, body, j
 
 CODE = 'MTCS-RA-2.2'
 CODE_PREFIX = 'MTCS22'
@@ -81,6 +81,93 @@ function dispInit(d){var x=d.querySelector(".dx"),o=d.querySelector(".dsteps");
  x.oninput=go;go()}
 '''
 
+ANIM_JS = r'''
+(function(){var s=document.createElement("style");s.textContent=[
+".an{position:relative;border:1.5px solid var(--line);border-radius:14px;background:var(--card);padding:12px 12px 10px;margin:12px 0;overflow:hidden;font-size:14px}",
+".an .anh{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--pri);margin-bottom:8px}",
+".an .anp{border:1px solid var(--line);background:var(--card);border-radius:8px;font:inherit;font-size:12px;padding:3px 9px;cursor:pointer;color:inherit}",
+".an.pz *{animation-play-state:paused!important}",
+".an .sw{display:grid}.an .sw>*{grid-area:1/1}",
+".an .pa{animation:anA 8s infinite}.an .pb{opacity:0;animation:anB 8s infinite}",
+".an .cap{margin-top:8px;font-weight:600;text-align:center;min-height:2.6em;display:grid;align-items:center}",
+".an .bx{border:1.5px solid var(--line);border-radius:10px;padding:6px 8px;background:color-mix(in srgb,var(--pri) 5%,transparent);text-align:center}",
+".an .mono{font-family:Consolas,monospace;word-break:break-all;font-size:12.5px}",
+".an .row{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center}",
+".an .ar{position:relative;width:46px;height:30px;display:grid;place-items:center;font-size:22px}",
+".an .spin{display:inline-block;animation:anSpin 2s linear infinite}",
+".an .dot{position:absolute;top:50%;width:9px;height:9px;margin-top:-4px;border-radius:50%;background:var(--pri);animation:anFlow 4s infinite}",
+".an mark{background:#ffe14d;color:#111;border-radius:3px;padding:0 1px}",
+".an .ok{color:#1d8a4a}.an .bad{color:#c8323a}",
+".an .chip{display:inline-block;background:#ffe14d;color:#111;border-radius:6px;padding:0 5px;font-family:Consolas,monospace;opacity:0;animation:anDrop 8s infinite}",
+".an .trk{position:relative;height:58px;margin:4px 0}",
+".an .trk .end{position:absolute;top:8px;font-size:26px;text-align:center;width:54px;line-height:1.1}.an .trk .end small{display:block;font-size:11px;font-weight:600}",
+".an .mv{position:absolute;top:12px;font-size:24px;opacity:0}",
+".an .mvA{animation:anMvA 8s infinite}.an .mvB{animation:anMvB 8s infinite}",
+".an .dv{position:absolute;left:46%;top:-2px;font-size:22px;opacity:0;animation:anDv 8s infinite}",
+".an .okA{opacity:0;animation:anOkA 8s infinite}.an .okB{opacity:0;animation:anOkB 8s infinite}",
+".an .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}",
+".an .col{border:1.5px dashed var(--line);border-radius:10px;padding:8px;text-align:center}",
+".an .disk{display:inline-block;margin:3px;padding:4px 7px;border-radius:8px;border:1.5px solid var(--line);background:var(--card)}",
+".an .d1{animation:anFail 8s infinite}",
+".an .svc{font-weight:700;margin-bottom:6px}",
+".an .ph{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}",
+".an .ph>div{border:1.5px solid var(--line);border-radius:9px;padding:6px 4px;text-align:center;font-size:12.5px;line-height:1.25;animation:anHl 8s infinite}",
+".an .ph>div:nth-child(2),.an .caps>span:nth-child(2){animation-delay:2s}.an .ph>div:nth-child(3),.an .caps>span:nth-child(3){animation-delay:4s}.an .ph>div:nth-child(4),.an .caps>span:nth-child(4){animation-delay:6s}",
+".an .caps>span{opacity:0;animation:anCap 8s infinite}.an .caps>span:first-child{opacity:1}",
+".an .tl{position:relative;height:92px;margin:4px 6px}",
+".an .tl .ln{position:absolute;left:0;right:0;top:40px;height:3px;background:var(--line)}",
+".an .tl .ic{position:absolute;top:22px;font-size:20px;transform:translateX(-50%)}",
+".an .tl .lb{position:absolute;font-size:11.5px;font-weight:700;transform:translateX(-50%);white-space:nowrap}",
+".an .tl .rpo{position:absolute;top:36px;height:11px;left:40%;width:30%;background:#c8323a;opacity:.75;transform-origin:right;transform:scaleX(0);animation:anRpo 10s infinite;border-radius:3px}",
+".an .tl .rto{position:absolute;top:36px;height:11px;left:70%;width:26%;background:#1d8a4a;opacity:.8;transform-origin:left;transform:scaleX(0);animation:anRto 10s infinite;border-radius:3px}",
+".an .tl .t1{opacity:0;animation:anT1 10s infinite}.an .tl .t2{opacity:0;animation:anT2 10s infinite}.an .tl .boom{opacity:0;animation:anBoom 10s infinite}",
+".an .lay{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding-top:30px}",
+".an .lay>div{border:1.5px solid var(--line);border-radius:9px;padding:6px 2px;text-align:center;font-size:11.5px;line-height:1.2;position:relative}",
+".an .lay .st{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:16px;opacity:0;color:#c8323a}",
+".an .lay .s1{animation:anS1 8s infinite}.an .lay .s2{animation:anS2 8s infinite}.an .lay .s3{animation:anS3 8s infinite}",
+".an .lay .l3{animation:anL3 8s infinite}",
+".an .atk{position:absolute;top:0;left:0;font-size:22px;animation:anAtk 8s infinite}",
+"@keyframes anA{0%,45%{opacity:1}50%,95%{opacity:0}100%{opacity:1}}",
+"@keyframes anB{0%,45%{opacity:0}50%,95%{opacity:1}100%{opacity:0}}",
+"@keyframes anSpin{to{transform:rotate(360deg)}}",
+"@keyframes anFlow{0%{left:0;opacity:0}8%{opacity:1}40%{left:calc(100% - 9px);opacity:1}48%,100%{left:calc(100% - 9px);opacity:0}}",
+"@keyframes anDrop{0%,45%{opacity:0;transform:translateY(-14px)}55%,95%{opacity:1;transform:none}100%{opacity:0}}",
+"@keyframes anMvA{0%{left:56px;opacity:1}38%{left:calc(100% - 92px);opacity:1}44%,100%{left:calc(100% - 92px);opacity:0}}",
+"@keyframes anMvB{0%,50%{left:56px;opacity:0}52%{left:56px;opacity:1}88%{left:calc(100% - 92px);opacity:1}94%,100%{left:calc(100% - 92px);opacity:0}}",
+"@keyframes anDv{0%,56%{opacity:0}60%,92%{opacity:1}96%,100%{opacity:0}}",
+"@keyframes anOkA{0%,37%{opacity:0}40%,47%{opacity:1}50%,100%{opacity:0}}",
+"@keyframes anOkB{0%,87%{opacity:0}90%,97%{opacity:1}100%{opacity:0}}",
+"@keyframes anFail{0%,45%{background:var(--card);opacity:1}55%,95%{background:#f6c9cc;opacity:.55}100%{background:var(--card);opacity:1}}",
+"@keyframes anHl{0%,24%{background:var(--pri);color:var(--on);border-color:var(--pri)}25%,100%{background:none;color:inherit}}",
+"@keyframes anCap{0%,24%{opacity:1}25%,100%{opacity:0}}",
+"@keyframes anRpo{0%,18%{transform:scaleX(0)}40%,92%{transform:scaleX(1)}100%{transform:scaleX(0)}}",
+"@keyframes anRto{0%,48%{transform:scaleX(0)}78%,92%{transform:scaleX(1)}100%{transform:scaleX(0)}}",
+"@keyframes anBoom{0%,12%{opacity:0;transform:translateX(-50%) scale(.4)}18%,92%{opacity:1;transform:translateX(-50%) scale(1)}100%{opacity:0}}",
+"@keyframes anT1{0%,30%{opacity:0}40%,92%{opacity:1}100%{opacity:0}}",
+"@keyframes anT2{0%,66%{opacity:0}78%,92%{opacity:1}100%{opacity:0}}",
+"@keyframes anAtk{0%{left:0;opacity:1}18%{left:2%}38%{left:22%}58%,92%{left:31%;opacity:1}100%{left:31%;opacity:0}}",
+"@keyframes anS1{0%,16%{opacity:0}20%,92%{opacity:1}100%{opacity:0}}",
+"@keyframes anS2{0%,36%{opacity:0}40%,92%{opacity:1}100%{opacity:0}}",
+"@keyframes anS3{0%,56%{opacity:0}60%,92%{opacity:1}100%{opacity:0}}",
+"@keyframes anL3{0%,56%{background:none}60%,92%{background:color-mix(in srgb,#1d8a4a 18%,transparent);border-color:#1d8a4a}100%{background:none}}",
+"@media (prefers-reduced-motion:reduce){.an *{animation:none!important}}",
+"@media print{.an{display:none}}"].join("");document.head.appendChild(s)})();
+function AN(k){var t={
+ hash:['Animación · el hash como huella','<div class="row"><div class="bx sw"><span class="pa">Ana López · alergia a la penicilin<b>a</b></span><span class="pb">Ana López · alergia a la penicilin<mark>A</mark></span></div><div class="ar"><span class="dot"></span><span class="spin">⚙️</span></div><div class="bx mono sw"><span class="pa">5c1e9a0f…7b2d</span><span class="pb bad">d83b72c4…19ae</span></div></div><div class="cap sw"><span class="pa">Mismo texto → <span class="ok">siempre la misma huella</span></span><span class="pb">Cambió UNA letra → <span class="bad">huella totalmente distinta</span></span></div>'],
+ sal:['Animación · qué hace la sal','<div style="display:grid;gap:8px"><div class="row"><div class="bx">👩 Recepción<br><b>123456</b> <span class="chip">a7f2</span></div><div class="ar"><span class="dot"></span><span class="spin">⚙️</span></div><div class="bx mono sw"><span class="pa bad">8d969e…c92</span><span class="pb ok">3c9e1b…a40</span></div></div><div class="row"><div class="bx">👨‍⚕️ Dentista<br><b>123456</b> <span class="chip">91bd</span></div><div class="ar"><span class="dot"></span><span class="spin">⚙️</span></div><div class="bx mono sw"><span class="pa bad">8d969e…c92</span><span class="pb ok">e04a77…5d1</span></div></div></div><div class="cap sw"><span class="pa">Sin sal: misma contraseña → <span class="bad">mismo hash</span> (el atacante lo reconoce)</span><span class="pb">Con sal (amarillo): <span class="ok">cada uno tiene un hash distinto</span></span></div>'],
+ hmac:['Animación · HMAC en el camino','<div class="trk"><div class="end" style="left:0">🧪<small>Laboratorio</small></div><div class="end" style="right:0">🏥<small>Clínica</small></div><span class="mv mvA">✉️🔏</span><span class="mv mvB">✉️✏️</span><span class="dv">😈</span><span class="mv okA" style="right:58px;top:8px">✅</span><span class="mv okB" style="right:58px;top:8px">❌</span></div><div class="cap sw"><span class="pa">Llega igual → el HMAC coincide → <span class="ok">se acepta</span></span><span class="pb">Alguien lo cambió en el camino → el HMAC ya no coincide → <span class="bad">se rechaza</span></span></div>'],
+ raid:['Animación · punto único de falla vs. redundancia','<div class="cols"><div class="col"><div class="svc sw"><span class="pa ok">🟢 Agenda funciona</span><span class="pb bad">🔴 Agenda caída</span></div>Un solo disco<br><span class="disk d1">💽 Disco</span></div><div class="col"><div class="svc ok">🟢 Agenda funciona</div>RAID 1 (espejo)<br><span class="disk d1">💽 Disco 1</span><span class="disk">💽 Disco 2</span></div></div><div class="cap sw"><span class="pa">Los dos funcionan… mientras no falle nada</span><span class="pb">Falla un disco: sin repuesto <span class="bad">todo se cae</span>; con RAID 1 <span class="ok">sigue funcionando</span></span></div>'],
+ inc:['Animación · las 4 fases, una tras otra','<div class="ph"><div>📋<br>Preparación</div><div>🔎<br>Detección y análisis</div><div>🧯<br>Contener y recuperar</div><div>📚<br>Lecciones aprendidas</div></div><div class="cap sw caps"><span>Antes: respaldos, plan y responsables listos</span><span>Se dan cuenta: archivos raros, ¿qué equipos están afectados?</span><span>Desconectan equipos, eliminan el virus y restauran respaldos</span><span>Revisan cómo entró y capacitan al personal</span></div>'],
+ rpo:['Animación · RPO y RTO en la línea del tiempo','<div class="tl"><div class="ln"></div><span class="ic" style="left:10%">💾</span><span class="lb" style="left:10%;top:2px">respaldo</span><span class="ic" style="left:40%">💾</span><span class="lb" style="left:40%;top:2px">último respaldo</span><span class="rpo"></span><span class="ic boom" style="left:70%">💥</span><span class="lb boom" style="left:70%;top:2px">desastre</span><span class="rto"></span><span class="ic t2" style="left:96%">✅</span><span class="lb t1 bad" style="left:55%;top:58px">RPO: datos perdidos</span><span class="lb t2 ok" style="left:83%;top:58px">RTO: tiempo para volver</span></div><div class="cap">Rojo: lo que se pierde (desde el último respaldo hacia atrás) · Verde: lo que tardas en volver a funcionar</div>'],
+ capas:['Animación · defensa en profundidad','<div class="lay"><span class="atk">🦹</span><div>👥<br>Capacitación<span class="st s1">✖</span></div><div>🧱<br>Firewall<span class="st s2">✖</span></div><div class="l3">🛡️<br>Antivirus<span class="st s3">🛑</span></div><div>🔐<br>Cifrado</div><div>🗄️<br>Datos</div></div><div class="cap">Un correo falso engaña al empleado (✖) y pasa el firewall (✖), pero el antivirus lo detiene (🛑). Si también fallara, los datos siguen cifrados.</div>']
+}[k];return '<div class="an exn"><div class="anh"><span>▶ '+t[0]+'</span><button class="anp" type="button" onclick="var a=this.closest(\'.an\');a.classList.toggle(\'pz\');this.textContent=a.classList.contains(\'pz\')?\'▶ Seguir\':\'⏸ Pausar\'">⏸ Pausar</button></div>'+t[1]+'</div>'}
+'''
+
+
+def an(k):
+    return Js(f'AN({j(k)})')
+
+
 ENGINE_PATCHES = [
     ('function initW(d){\n', 'function initW(d){\n if(d.querySelector(".hashlab"))hashInit(d);\n if(d.querySelector(".displab"))dispInit(d);\n'),
     ('catch(e){ST={}}\n', 'catch(e){ST={}}\nST=mig22(ST);\n'),
@@ -150,6 +237,7 @@ s0_end = c.mark() - 1
 a0 = c.mark()
 c.L('🧬', 'Hash: la huella digital de los datos', 'Bloque A · Controles de integridad', body(
     sp('En palabras sencillas', 'Un <b>hash</b> es una fórmula matemática que convierte cualquier dato (una palabra, un archivo, una película) en un <b>código corto de tamaño fijo</b>. A ese código le decimos su <b>huella</b>. Con SHA-256 la huella siempre mide 64 caracteres.'),
+    an('hash'),
     bk('Regla 1 · Siempre igual', 'El mismo dato <b>siempre</b> da la misma huella. <i>Por eso podemos comparar.</i>'),
     bk('Regla 2 · Cambia todo', 'Si cambia <b>una sola letra</b>, la huella cambia casi completa. <i>Por eso se nota cualquier cambio, por pequeño que sea.</i>'),
     bk('Regla 3 · Sin regreso', 'Con la huella <b>no</b> se puede reconstruir el dato original. <i>Por eso es distinto de cifrar: el cifrado sí tiene regreso con la clave.</i>'),
@@ -181,6 +269,7 @@ c.L('🔑', '¿Cómo se guardan las contraseñas?', 'Bloque A · Antes de ver la
     'Se guarda el hash de la contraseña, nunca la contraseña.')
 c.L('🧂', 'La técnica salting', 'Bloque A · Guardar contraseñas de forma segura', body(
     sp('En palabras sencillas', 'La <b>sal</b> es un valor al azar, <b>distinto para cada usuario</b>, que se pega a la contraseña <b>antes</b> de calcular el hash.'),
+    an('sal'),
     px('Ejemplo resuelto: dos personas con la misma contraseña', [
         paso('La recepcionista y el dentista eligen la contraseña «123456».', 'Pasa en la vida real: mucha gente usa contraseñas iguales sin saberlo.'),
         paso('El sistema le da a cada uno una sal distinta: «a7f2» a la recepcionista y «91bd» al dentista.', 'La sal se genera al azar para que nunca se repita entre usuarios.'),
@@ -201,6 +290,7 @@ c.O('🧂', 'Ordena: guardar una contraseña', 'Pon en orden lo que hace el sist
 c.L('🔏', 'HMAC: hash con clave secreta', 'Bloque A · Comprobar quién lo envió', body(
     sp('El problema', 'Un hash solo dice si algo cambió. Pero un tramposo podría cambiar el mensaje <b>y</b> calcular la huella nueva. ¿Cómo sabe la clínica que el mensaje sí viene del laboratorio?'),
     sp('La solución: HMAC', '<b>HMAC</b> es un hash que se calcula usando también una <b>clave secreta</b> que solo conocen el emisor y el receptor. Sin la clave, nadie puede fabricar un HMAC correcto.'),
+    an('hmac'),
     px('Ejemplo resuelto: el laboratorio manda resultados', [
         paso('El laboratorio y la clínica acuerdan una clave secreta, en persona.', 'La clave no debe viajar por internet; si alguien la roba, podría fabricar mensajes falsos.'),
         paso('El laboratorio calcula el HMAC del resultado usando la clave y lo envía junto con el resultado.', 'El HMAC funciona como un sello que solo puede hacer quien tiene la clave.'),
@@ -257,6 +347,7 @@ a_end = c.mark() - 1
 b0 = c.mark()
 c.L('🛞', 'Disponibilidad y alta disponibilidad', 'Bloque B · Que el servicio no se detenga', body(
     sp('En palabras sencillas', '<b>Disponibilidad</b> es que el servicio funcione cuando se necesita. <b>Alta disponibilidad</b> es prepararlo para que <b>siga funcionando aunque algo se descomponga</b>.'),
+    an('raid'),
     bk('Punto único de falla', 'Una pieza que, si falla, <b>detiene todo</b> porque no tiene repuesto: un solo disco, un solo servidor, un solo proveedor de internet. <i>Para encontrarlo pregúntate: «si esto se descompone, ¿se cae el servicio?». Si la respuesta es sí y solo hay uno, es un punto único de falla.</i>'),
     bk('Redundancia = tener repuesto', 'Poner dos (o más) de lo importante, para que si uno falla el otro siga.'),
     r3([['💽', 'RAID 1', 'Dos discos con la misma información (espejo). Si uno muere, el otro sigue.'],
@@ -287,11 +378,13 @@ c.T('🧮', 'Calcula el tiempo fuera de servicio', 'Escribe solo el número. Haz
 c.L('🏰', 'Defensa en profundidad', 'Bloque B · Varias capas de protección', body(
     sp('En palabras sencillas', 'Poner <b>varias capas de protección</b>, una detrás de otra, para que si una falla las demás sigan protegiendo. <i>¿Por qué? Porque ninguna protección es perfecta: el antivirus no detecta todo y la gente se equivoca.</i>'),
     bk('Las capas (de afuera hacia adentro)', 'Reglas y capacitación → seguridad física → red → equipo (host) → aplicación → datos.'),
+    an('capas'),
     ana('Piensa en un castillo', 'Foso, muralla, guardias, puerta y caja fuerte. Un ladrón tendría que vencerlas todas.'),
     ex('En la clínica', 'Un empleado abre un correo falso (falla la capacitación) → el antivirus lo bloquea (capa host) → y si no lo bloquea, los expedientes están cifrados y respaldados (capa datos).')),
     'Nunca confíes en una sola protección.')
 c.L('🚨', 'Respuesta a incidentes', 'Bloque B · Qué hacer cuando algo pasa', body(
     sp('En palabras sencillas', 'Un <b>incidente</b> es algo que daña la seguridad: un virus, un robo de datos, un servidor caído. Para no improvisar, la respuesta sigue <b>4 fases en orden</b>.'),
+    an('inc'),
     bk('1. Preparación (antes)', 'Tener un plan, saber quién hace qué, tener respaldos. <i>¿Por qué va primero? Porque en plena emergencia ya no da tiempo de hacer respaldos ni planes.</i>'),
     bk('2. Detección y análisis', 'Darse cuenta de que algo pasa y entender qué fue y qué tan grave es. <i>¿Por qué antes de actuar? Porque no puedes arreglar algo que no entiendes.</i>'),
     bk('3. Contención, erradicación y recuperación', 'Aislar el problema para que no se extienda, eliminar la causa y volver a funcionar. <i>¿Por qué en ese orden? Primero se detiene el daño (como cerrar la llave de agua en una fuga) y luego se repara.</i>'),
@@ -300,6 +393,7 @@ c.L('🚨', 'Respuesta a incidentes', 'Bloque B · Qué hacer cuando algo pasa',
     'Preparar → detectar → contener y recuperar → aprender.')
 c.L('🌪️', 'Recuperación tras un desastre: RPO y RTO', 'Bloque B · Volver a funcionar', body(
     sp('En palabras sencillas', 'Después de un desastre (incendio, inundación, un virus que cifra todo), hay dos preguntas. Cada una tiene su nombre:'),
+    an('rpo'),
     bk('RPO · ¿Cuánta información puedo perder?', 'Mira <b>hacia atrás</b>: todo lo que se hizo desde el último respaldo se pierde. Por eso el RPO depende de <b>cada cuánto respaldas</b>.'),
     bk('RTO · ¿En cuánto tiempo debo volver a funcionar?', 'Mira <b>hacia adelante</b>: es el tiempo máximo que el servicio puede estar caído antes de que sea un problema grave.'),
     px('Ejemplo resuelto: la clínica respalda todas las noches', [
@@ -522,7 +616,7 @@ NEW_TITLES = [_title(p) for p in c.pages]
 MIGRA = {old: NEW_TITLES.index(t) for old, t in enumerate(OLD_TITLES) if t in NEW_TITLES and NEW_TITLES.index(t) != old}
 assert len(set(NEW_TITLES)) == len(NEW_TITLES), 'Títulos repetidos'
 # El avance de la versión anterior se reubica una sola vez (marca ST.v22).
-EXTRA_JS = EXTRA_JS_BASE + (
+EXTRA_JS = EXTRA_JS_BASE + ANIM_JS + (
     'function mig22(S){if(!S||S.v22>=2)return S||{};var M=' + j({str(k): v for k, v in MIGRA.items()}) + ',N={};'
     'Object.keys(S).forEach(function(k){if(!/^\\d+$/.test(k))N[k]=S[k]});'
     'Object.keys(S).forEach(function(k){if(/^\\d+$/.test(k)){var n=M[k]!=null?M[k]:+k;N[n]=S[k]}});'
