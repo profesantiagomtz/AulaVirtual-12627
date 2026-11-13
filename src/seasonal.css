@@ -85,3 +85,14 @@ html[data-aula-theme="gracias"] .mtcs-stage,html[data-aula-theme="navidad"] .mtc
 
 /* Animaciones apagadas: las decoraciones del tema se quedan quietas */
 html[data-aula-calma="1"] .theme-atmosphere *,html[data-aula-calma="1"] .theme-atmosphere:before,html[data-aula-calma="1"] .theme-atmosphere:after{animation:none!important}
+
+/* Regalitos que Santa avienta del costal: avanzan (eje x, frenando) y caen (eje y, acelerando) girando */
+.santa-gifts{position:fixed;inset:0;z-index:90;overflow:hidden;pointer-events:none}
+.santa-gift{position:absolute;top:var(--gift-top);opacity:0;animation:gift-forward 3.4s cubic-bezier(.2,.7,.4,1) both}
+.santa-gift i{display:block;position:relative;border-radius:3px;background:linear-gradient(90deg,transparent 41%,var(--ribbon) 41% 59%,transparent 59%),linear-gradient(transparent 38%,var(--ribbon) 38% 56%,transparent 56%),var(--box);box-shadow:inset 0 -3px 0 rgba(0,0,0,.14),0 3px 5px rgba(20,40,30,.25);animation:gift-fall 3.4s cubic-bezier(.5,0,.9,.6) both}
+.santa-gift i:before,.santa-gift i:after{content:"";position:absolute;bottom:100%;width:32%;height:30%;margin-bottom:-2px;border:2.5px solid var(--ribbon);border-radius:60% 60% 0 60%}
+.santa-gift i:before{right:50%;transform:rotate(-12deg);transform-origin:100% 100%}
+.santa-gift i:after{left:50%;border-radius:60% 60% 60% 0;transform:rotate(12deg);transform-origin:0 100%}
+@keyframes gift-forward{0%{opacity:0;transform:translateX(0)}4%{opacity:1}82%{opacity:1}100%{opacity:0;transform:translateX(var(--dx))}}
+@keyframes gift-fall{from{transform:translateY(0) rotate(0)}to{transform:translateY(62vh) rotate(var(--spin))}}
+@media(prefers-reduced-motion:reduce){.santa-gifts{display:none}}

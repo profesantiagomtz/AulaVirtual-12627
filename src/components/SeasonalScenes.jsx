@@ -62,16 +62,31 @@ function SantaPass({ onDone }) {
       const at = seconds * (x - sleighX - from) / (to - from)
       return { x, at, drift: ((index * 53) % 30) - 15, big: index % 4 === 0 }
     })
-    return { rig, from, to, seconds, flakes, top: small ? 28 : 34 }
+    // Regalitos que salen del costal (a la izquierda del trineo) y caen girando.
+    const sackX = rig * 0.1
+    const giftCount = small ? 4 : 7
+    const colors = [['#c3262f', '#f2c14e'], ['#1f6b45', '#f8e7b0'], ['#f2c14e', '#c3262f'], ['#2c6fb7', '#fff'], ['#8a2a3a', '#f2c14e'], ['#fff', '#c3262f'], ['#3c9d7a', '#fff']]
+    const gifts = Array.from({ length: giftCount }, (_, index) => {
+      const x = width * (0.1 + 0.8 * (index + 0.5) / giftCount) + ((index * 41) % 30) - 15
+      const at = seconds * (x - sackX - from) / (to - from)
+      const [box, ribbon] = colors[index % colors.length]
+      return { x, at, box, ribbon, dx: 40 + ((index * 29) % 50), spin: index % 2 ? 300 : -260, size: (small ? 22 : 28) + (index % 3) * 4 }
+    })
+    return { rig, from, to, seconds, flakes, gifts, top: small ? 28 : 34 }
   }, [])
 
   useEffect(() => {
-    const timer = window.setTimeout(onDone, (geometry.seconds + 3) * 1000)
+    const timer = window.setTimeout(onDone, (geometry.seconds + 4) * 1000)
     return () => window.clearTimeout(timer)
   }, [geometry, onDone])
 
   const flight = { '--from': `${geometry.from}px`, '--to': `${geometry.to}px`, '--rig': `${geometry.rig}px`, top: geometry.top, animationDuration: `${geometry.seconds}s` }
-  return <div className="santa-layer" aria-hidden="true">
+  return <><div className="santa-gifts" aria-hidden="true" style={{ '--gift-top': `${geometry.top + geometry.rig * 0.12}px` }}>
+    {geometry.gifts.map((gift, index) => <span key={index} className="santa-gift" style={{ left: gift.x, animationDelay: `${gift.at.toFixed(2)}s`, '--dx': `${gift.dx}px` }}>
+      <i style={{ animationDelay: `${gift.at.toFixed(2)}s`, '--spin': `${gift.spin}deg`, '--box': gift.box, '--ribbon': gift.ribbon, width: gift.size, height: gift.size * 0.85 }} />
+    </span>)}
+  </div>
+  <div className="santa-layer" aria-hidden="true">
     <div className="santa-trail" style={{ top: geometry.top + geometry.rig * 0.28 }}>
       {geometry.flakes.map((flake, index) => <i key={index} className={flake.big ? 'big' : ''} style={{ left: flake.x, animationDelay: `${flake.at.toFixed(2)}s`, '--drift': `${flake.drift}px` }} />)}
     </div>
@@ -81,7 +96,7 @@ function SantaPass({ onDone }) {
         <SantaSleighArt />
       </div>
     </div>
-  </div>
+  </div></>
 }
 
 function Reindeer({ x, nose }) {
