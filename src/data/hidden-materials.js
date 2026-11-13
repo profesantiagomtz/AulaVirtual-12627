@@ -6,8 +6,8 @@ export const HIDDEN_MATERIALS = {
   '310': ['ASIN-RA-1.1', 'ASIN-RA-1.2', 'MSII-RA-1.1', 'MSII-RA-1.2'],
   // 2026-11-12: Profe pidió dejar visible solo el R.A. 2.1 de EDOA.
   '311': ['EDOA-RA-1.1', 'EDOA-RA-1.2', 'EDOA-RA-1.3'],
-  // 2026-11-12: Profe pidió dejar visible solo el R.A. 2.2 de MTCS.
-  '511': ['MTCS-RA-1.1', 'MTCS-RA-1.2', 'MTCS-RA-2.1'],
+  // 2026-11-12/13: Profe pidió dejar visible solo el R.A. 2.2 de MTCS (también se ocultan 3.1 y 3.2 por ahora).
+  '511': ['MTCS-RA-1.1', 'MTCS-RA-1.2', 'MTCS-RA-2.1', 'MTCS-RA-3.1', 'MTCS-RA-3.2'],
 }
 
 // Código «MATERIA-RA-x.y» de un material: por su enlace integrado o, si es un archivo, por su título y unidad.
