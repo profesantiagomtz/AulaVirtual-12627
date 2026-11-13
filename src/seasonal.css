@@ -72,3 +72,16 @@ html[data-aula-theme="gracias"] .mtcs-stage,html[data-aula-theme="navidad"] .mtc
 @media(prefers-reduced-motion:reduce){
   .seasonal-fall,.santa-layer{display:none}
 }
+
+/* Interruptor «Animaciones y mensajitos» en Mi tema */
+.calm-toggle{display:flex;flex-direction:row;align-items:center;gap:14px;margin:17px 0 0;font-weight:400;padding:13px 15px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer}
+.calm-copy{flex:1;min-width:0}.calm-copy strong,.calm-copy small{display:block}.calm-copy strong{font-size:.86rem;color:var(--ink)}.calm-copy small{margin-top:3px;font-weight:400;color:var(--muted);font-size:.74rem;line-height:1.35}
+.calm-toggle input{position:absolute;opacity:0;width:1px;height:1px}
+.calm-toggle i{position:relative;flex:0 0 auto;width:46px;height:26px;border-radius:99px;background:#c3cad3;transition:background .2s}
+.calm-toggle i:after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.calm-toggle input:checked+i{background:var(--navy-2)}
+.calm-toggle input:checked+i:after{transform:translateX(20px)}
+.calm-toggle input:focus-visible+i{outline:2px solid var(--navy-2);outline-offset:2px}
+
+/* Animaciones apagadas: las decoraciones del tema se quedan quietas */
+html[data-aula-calma="1"] .theme-atmosphere *,html[data-aula-calma="1"] .theme-atmosphere:before,html[data-aula-calma="1"] .theme-atmosphere:after{animation:none!important}

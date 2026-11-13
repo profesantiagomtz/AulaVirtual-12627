@@ -456,6 +456,9 @@ function Dashboard({ session, onLogout }) {
   const themeStorageKey = `aula-virtual-theme:${session.id || session.email}`
   const [studentTheme, setStudentTheme] = useState(() => localStorage.getItem(themeStorageKey) || 'clasico')
   const [themeSurprise, setThemeSurprise] = useState(null)
+  // «Modo tranquilo»: el alumno puede apagar animaciones y mensajitos sorpresa (se guarda en su navegador).
+  const calmStorageKey = `aula-virtual-calma:${session.id || session.email}`
+  const [calmMode, setCalmMode] = useState(() => { try { return localStorage.getItem(calmStorageKey) === '1' } catch { return false } })
   const [studentPreview, setStudentPreview] = useState(false)
   const [previewGroup, setPreviewGroup] = useState('511')
   const [loading, setLoading] = useState(true)
@@ -468,7 +471,20 @@ function Dashboard({ session, onLogout }) {
   }, [isTeacher, studentPreview, studentTheme])
 
   useEffect(() => {
-    if ((isTeacher && !studentPreview) || view === 'evaluaciones') return undefined
+    const root = document.documentElement
+    if (calmMode) root.dataset.aulaCalma = '1'; else delete root.dataset.aulaCalma
+    return () => { delete root.dataset.aulaCalma }
+  }, [calmMode])
+
+  function toggleCalmMode() {
+    const next = !calmMode
+    setCalmMode(next)
+    setThemeSurprise(null)
+    try { localStorage.setItem(calmStorageKey, next ? '1' : '0') } catch { /* sin almacenamiento: dura esta sesión */ }
+  }
+
+  useEffect(() => {
+    if ((isTeacher && !studentPreview) || view === 'evaluaciones' || calmMode) return undefined
     let nextTimer
     let hideTimer
     const schedule = () => {
@@ -480,14 +496,16 @@ function Dashboard({ session, onLogout }) {
     }
     schedule()
     return () => { window.clearTimeout(nextTimer); window.clearTimeout(hideTimer); setThemeSurprise(null) }
-  }, [isTeacher, studentPreview, studentTheme, view])
+  }, [isTeacher, studentPreview, studentTheme, view, calmMode])
 
   function chooseTheme(themeId) {
     setStudentTheme(themeId)
     localStorage.setItem(themeStorageKey, themeId)
     setModal(null)
-    window.setTimeout(() => setThemeSurprise(themeId), 900)
-    window.setTimeout(() => setThemeSurprise(null), 6100)
+    if (!calmMode) {
+      window.setTimeout(() => setThemeSurprise(themeId), 900)
+      window.setTimeout(() => setThemeSurprise(null), 6100)
+    }
     setToast(`Tema ${studentThemes.find(item => item.id === themeId)?.name || ''} aplicado`)
     setTimeout(() => setToast(''), 2600)
   }
@@ -583,8 +601,8 @@ function Dashboard({ session, onLogout }) {
 
   return <div className="app-shell">
     {(!isTeacher || studentPreview) && <ThemeAtmosphere theme={studentTheme} />}
-    {(!isTeacher || studentPreview) && <SeasonalFall theme={studentTheme} />}
-    {(!isTeacher || studentPreview) && studentTheme === 'navidad' && <SantaFlyby />}
+    {(!isTeacher || studentPreview) && !calmMode && <SeasonalFall theme={studentTheme} />}
+    {(!isTeacher || studentPreview) && !calmMode && studentTheme === 'navidad' && <SantaFlyby />}
     {themeSurprise && <ThemeSurprise theme={themeSurprise} />}
     <aside className={`sidebar ${mobileMenu ? 'open' : ''}`}>
       <div className="side-brand"><div className="side-brand-symbol"><GraduationCap size={25} /></div><span>Aula <b>Virtual</b><small>{isTeacher ? 'Gestión docente' : 'Espacio del alumno'}</small></span><button className="icon-btn close-menu" onClick={() => setMobileMenu(false)}><X /></button></div>
@@ -643,7 +661,7 @@ function Dashboard({ session, onLogout }) {
       if (error) throw error
       await loadData(); saved('Evaluación creada correctamente')
     }} />}
-    {modal === 'theme' && <ThemeModal selected={studentTheme} onSelect={chooseTheme} onClose={() => setModal(null)} />}
+    {modal === 'theme' && <ThemeModal selected={studentTheme} onSelect={chooseTheme} calm={calmMode} onToggleCalm={toggleCalmMode} onClose={() => setModal(null)} />}
     {toast && <div className="toast"><CheckCircle2 size={19} />{toast}</div>}
   </div>
 }
@@ -1274,8 +1292,8 @@ function AssessmentModal({ groups, onClose, onSave }) {
   return <Modal title="Nueva evaluación" onClose={onClose}><form onSubmit={submit}><label>Tipo de actividad<select required value={data.activityCode} onChange={e => setData({...data,activityCode:e.target.value})}><option value="ASIN-RA-1.1">ASIN · Actividad en plataforma</option><option value="MSII-RA-1.1">MSII · Documento DOCX</option><option value="ASIN-RA-1.2">ASIN 1.2 · Entrega de archivo</option><option value="MSII-RA-1.2">MSII 1.2 · Entrega de archivo</option><option value="ASIN-RA-2.1">ASIN 2.1 · Entrega de archivo</option><option value="MSII-RA-2.1">MSII 2.1 · Entrega de archivo</option><option value="ASIN-RA-2.2">ASIN 2.2 · Entrega de archivo</option><option value="ASIN-RA-2.3">ASIN 2.3 · Entrega de archivo</option><option value="MSII-RA-2.2">MSII 2.2 · Entrega de archivo</option></select></label><label>Título<input required value={data.title} onChange={e => setData({...data,title:e.target.value})} placeholder="Nombre de la evaluación" /></label><div className="form-row"><label>Grupo<select required value={data.groupId} onChange={e => setData({...data,groupId:e.target.value})}>{groups.map(group=><option key={group.id} value={group.id}>{group.code}</option>)}</select></label><label>Fecha límite<input type="datetime-local" required value={data.dueAt} onChange={e => setData({...data,dueAt:e.target.value})} /></label></div><label>Instrucciones<textarea value={data.instructions} onChange={e => setData({...data,instructions:e.target.value})} placeholder="Indicaciones para los alumnos" rows="4" /></label><div className="info-note compact">Solo se muestran tipos de actividad que ya cuentan con un espacio de trabajo funcional para el alumno.</div>{error && <div className="form-error">{error}</div>}<ModalActions onClose={onClose} label={busy ? 'Creando…' : 'Crear evaluación'} disabled={busy} /></form></Modal>
 }
 
-function ThemeModal({ selected, onSelect, onClose }) {
-  return <Modal title="Personaliza tu aula" onClose={onClose}><p className="theme-intro">Elige el estilo que más te guste. Solo cambiarán los colores de tu pantalla; tu avance y tus trabajos permanecerán iguales.</p><div className="theme-grid">{studentThemes.map(theme => <button type="button" key={theme.id} className={`theme-option ${selected === theme.id ? 'selected' : ''}`} onClick={() => onSelect(theme.id)}><span className="theme-emoji">{theme.emoji}</span><span className="theme-copy"><strong>{theme.name}</strong><small>{theme.description}</small></span><span className="theme-swatches" aria-hidden="true">{theme.colors.map(color => <i key={color} style={{ background: color }} />)}</span>{selected === theme.id && <CheckCircle2 size={19} />}</button>)}</div><div className="theme-note"><Palette size={17} /><span>Podrás cambiar de tema cuando quieras desde el botón <b>Mi tema</b>.</span></div></Modal>
+function ThemeModal({ selected, onSelect, calm, onToggleCalm, onClose }) {
+  return <Modal title="Personaliza tu aula" onClose={onClose}><p className="theme-intro">Elige el estilo que más te guste. Solo cambiarán los colores de tu pantalla; tu avance y tus trabajos permanecerán iguales.</p><div className="theme-grid">{studentThemes.map(theme => <button type="button" key={theme.id} className={`theme-option ${selected === theme.id ? 'selected' : ''}`} onClick={() => onSelect(theme.id)}><span className="theme-emoji">{theme.emoji}</span><span className="theme-copy"><strong>{theme.name}</strong><small>{theme.description}</small></span><span className="theme-swatches" aria-hidden="true">{theme.colors.map(color => <i key={color} style={{ background: color }} />)}</span>{selected === theme.id && <CheckCircle2 size={19} />}</button>)}</div><label className="calm-toggle"><span className="calm-copy"><strong>Animaciones y mensajitos</strong><small>{calm ? 'Apagados: tu pantalla se queda quieta, sin sorpresas.' : 'Encendidos: decoraciones que se mueven y mensajes que aparecen de repente.'}</small></span><input type="checkbox" role="switch" checked={!calm} onChange={onToggleCalm} aria-label="Animaciones y mensajitos" /><i aria-hidden="true" /></label><div className="theme-note"><Palette size={17} /><span>Podrás cambiar de tema cuando quieras desde el botón <b>Mi tema</b>.</span></div></Modal>
 }
 
 function ThemeSurprise({ theme }) {
