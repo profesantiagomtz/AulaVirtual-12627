@@ -271,3 +271,47 @@ function SantaSleighArt() {
     <path d="M4 84 h126 q16 0 18 -12 q1 -6 -5 -6" stroke="#d9a422" strokeWidth="4" strokeLinecap="round" fill="none" />
   </svg>
 }
+
+// Navidad: fondo con un pino adornado y regalos al pie, discreto y por debajo del contenido.
+// Las lucecitas parpadean despacio; se congelan con el interruptor de animaciones o reduced-motion.
+export function XmasBackdrop() {
+  const lights = [[200, 92, '#ffd166'], [176, 128, '#ff6b6b'], [226, 140, '#7fd1ff'], [158, 178, '#ffd166'], [244, 186, '#ff6b6b'], [196, 196, '#7fd1ff'],
+    [140, 236, '#ff6b6b'], [262, 240, '#ffd166'], [208, 254, '#ff6b6b'], [122, 292, '#7fd1ff'], [174, 300, '#ffd166'], [236, 304, '#7fd1ff'], [282, 296, '#ff6b6b']]
+  const ink = '#173d2a'
+  return <div className="xmas-backdrop" aria-hidden="true">
+    <svg viewBox="0 0 400 440" role="presentation" focusable="false">
+      {/* suelo nevado */}
+      <ellipse cx="200" cy="418" rx="196" ry="22" fill="#eef4f8" />
+      <ellipse cx="200" cy="414" rx="150" ry="13" fill="#fff" />
+      {/* tronco */}
+      <rect x="184" y="338" width="32" height="44" rx="4" fill="#7a4a2a" stroke={ink} strokeWidth="3" />
+      {/* tres pisos del pino, de abajo hacia arriba */}
+      <path d="M200 196 L330 344 Q200 362 70 344 Z" fill="#1f7a46" stroke={ink} strokeWidth="4" strokeLinejoin="round" />
+      <path d="M200 124 L296 254 Q200 270 104 254 Z" fill="#2a8f55" stroke={ink} strokeWidth="4" strokeLinejoin="round" />
+      <path d="M200 58 L262 166 Q200 180 138 166 Z" fill="#35a463" stroke={ink} strokeWidth="4" strokeLinejoin="round" />
+      {/* nieve en las puntas */}
+      <path d="M86 340 q18 -10 34 2 q16 -10 30 2M250 342 q16 -12 32 0 q14 -10 32 -2M118 252 q16 -10 30 1M252 252 q14 -10 30 0M148 165 q14 -9 26 1M226 166 q13 -9 26 -1" fill="none" stroke="#fff" strokeWidth="6" strokeLinecap="round" opacity=".9" />
+      {/* guirnaldas */}
+      <path d="M150 152 Q200 172 250 146M120 236 Q200 266 282 230M92 322 Q200 356 312 316" fill="none" stroke="#f2c94c" strokeWidth="4" strokeDasharray="2 9" strokeLinecap="round" />
+      {/* esferas y foquitos */}
+      {lights.map(([x, y, c], i) => <circle key={i} className="xmas-light" cx={x} cy={y} r={i % 3 ? 7 : 9} fill={c} stroke={ink} strokeWidth="2.5" style={{ animationDelay: `${(i * 0.37) % 2.4}s` }} />)}
+      {/* estrella */}
+      <g className="xmas-star"><path d="M200 18 l10 22 24 2 -18 16 6 24 -22 -13 -22 13 6 -24 -18 -16 24 -2z" fill="#ffd166" stroke={ink} strokeWidth="3.5" strokeLinejoin="round" /></g>
+      {/* regalos al pie */}
+      <g stroke={ink} strokeWidth="3.5" strokeLinejoin="round">
+        <rect x="74" y="360" width="78" height="56" rx="5" fill="#d93c3c" />
+        <rect x="70" y="350" width="86" height="16" rx="4" fill="#e85a5a" />
+        <path d="M113 350v66" stroke="#ffd166" strokeWidth="9" />
+        <path d="M113 350c-8-18-32-22-30-8 2 10 20 8 30 8zM113 350c8-18 32-22 30-8-2 10-20 8-30 8z" fill="#ffd166" />
+        <rect x="222" y="372" width="64" height="44" rx="5" fill="#3b6fd8" />
+        <rect x="218" y="364" width="72" height="13" rx="4" fill="#5a8ae8" />
+        <path d="M254 364v52" stroke="#fff" strokeWidth="8" />
+        <path d="M254 364c-6-14-24-16-22-6 2 8 15 6 22 6zM254 364c6-14 24-16 22-6-2 8-15 6-22 6z" fill="#fff" />
+        <rect x="160" y="384" width="56" height="32" rx="4" fill="#2f9e5b" />
+        <path d="M188 384v32M160 400h56" stroke="#ffd166" strokeWidth="6" />
+        <rect x="296" y="392" width="40" height="24" rx="4" fill="#c86bd6" />
+        <path d="M316 392v24" stroke="#ffd166" strokeWidth="5" />
+      </g>
+    </svg>
+  </div>
+}

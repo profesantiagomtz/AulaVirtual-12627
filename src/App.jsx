@@ -16,7 +16,7 @@ import { FRESH_LOGIN_KEY, PendingReminder, pendingItems, usePendingReminder } fr
 import { CourseChips, RaCourseMap, Schedule, StudentGrades, TeacherGrades, WeekPlan, assessmentState, itemBelongsToCourse, progressCodeFor } from './components/CoursePlan'
 
 import { assessmentForcedOpen } from './data/open-assessments'
-import { SantaFlyby, SeasonalFall, TurkeyRun } from './components/SeasonalScenes'
+import { SantaFlyby, SeasonalFall, TurkeyRun, XmasBackdrop } from './components/SeasonalScenes'
 import { activityMaterialClosed, applyClosedMaterials } from './data/hidden-materials'
 import { Ico } from './components/AulaIcon.jsx'
 
@@ -1324,7 +1324,7 @@ function ThemeAtmosphere({ theme }) {
   }
   const artworkUrl = artworkUrls[theme]
   const atmosphereStyle = artworkUrl ? { '--theme-art': `url(${artworkUrl})` } : undefined
-  return <div className={`theme-atmosphere atmosphere-${theme}`} style={atmosphereStyle} aria-hidden="true">{(decorations[theme] || []).map((item, index) => <span key={`${item}-${index}`} className={`atmosphere-item atmosphere-item-${index + 1}`}><Ico name={item} /></span>)}{theme === 'muertos' && <div className="muertos-altar"><span><Ico name="candle" /></span><div><Ico name="marigold" /><Ico name="sugarskull" /><Ico name="marigold" /></div><b>✦ RECUERDA CON ALEGRÍA ✦</b><div><Ico name="candle" /><Ico name="bread" /><Ico name="candle" /></div></div>}{theme === 'halloween' && <div className="halloween-moon"><span><Ico name="moon" /></span><i><Ico name="bat" /></i></div>}</div>
+  return <div className={`theme-atmosphere atmosphere-${theme}`} style={atmosphereStyle} aria-hidden="true">{(decorations[theme] || []).map((item, index) => <span key={`${item}-${index}`} className={`atmosphere-item atmosphere-item-${index + 1}`}><Ico name={item} /></span>)}{theme === 'muertos' && <div className="muertos-altar"><span><Ico name="candle" /></span><div><Ico name="marigold" /><Ico name="sugarskull" /><Ico name="marigold" /></div><b>✦ RECUERDA CON ALEGRÍA ✦</b><div><Ico name="candle" /><Ico name="bread" /><Ico name="candle" /></div></div>}{theme === 'navidad' && <XmasBackdrop />}{theme === 'halloween' && <div className="halloween-moon"><span><Ico name="moon" /></span><i><Ico name="bat" /></i></div>}</div>
 }
 
 function Modal({ title, onClose, children }) { return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><div className="modal"><header><div><span className="eyebrow">Aula Virtual</span><h2>{title}</h2></div><button className="icon-btn" onClick={onClose} aria-label="Cerrar ventana"><X /></button></header>{children}</div></div> }
