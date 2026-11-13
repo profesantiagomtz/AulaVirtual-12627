@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { BookOpen, CalendarDays, CheckCircle2, ChevronRight, ClipboardCheck, Clock3, FileText, Lock, Star, Unlock } from 'lucide-react'
 import { coursePlans } from '../data/plan'
+import { activityMaterialClosed } from '../data/hidden-materials'
 
 // Organización por resultado de aprendizaje (R.A.), como en el programa de estudios:
 // cada materia muestra sus R.A. con horas, ponderación y fechas, y dentro de cada uno su material y su evaluación.
@@ -110,7 +111,7 @@ export function RaCourseMap({ course, sameGroupCourses, materials, assessments, 
     const row = rows[0]
     return row ? { done: Boolean(row.completed_at), steps: (row.completed_steps || []).length } : { done: false, steps: 0 }
   }
-  const visibleSections = isTeacher ? sections : sections.filter(section => section.materials.length || section.assessments.length || raStatus(section.ra) !== 'proximo')
+  const visibleSections = isTeacher ? sections : sections.filter(section => !activityMaterialClosed(`${course.code}-RA-${section.ra.code}`, course.group) && (section.materials.length || section.assessments.length || raStatus(section.ra) !== 'proximo'))
   let number = 0
   const materialRow = material => {
     number += 1
