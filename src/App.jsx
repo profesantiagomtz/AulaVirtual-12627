@@ -16,6 +16,7 @@ import { FRESH_LOGIN_KEY, PendingReminder, pendingItems, usePendingReminder } fr
 import { CourseChips, RaCourseMap, Schedule, StudentGrades, TeacherGrades, WeekPlan, assessmentState, itemBelongsToCourse, progressCodeFor } from './components/CoursePlan'
 
 import { assessmentForcedOpen } from './data/open-assessments'
+import { SantaFlyby, SeasonalFall } from './components/SeasonalScenes'
 import { activityMaterialClosed, applyClosedMaterials } from './data/hidden-materials'
 
 // Los contenidos de cada materia se descargan solo cuando el alumno los abre.
@@ -62,6 +63,8 @@ const studentThemes = [
   { id: 'oscuro', name: 'Modo oscuro', description: 'Cómodo para trabajar de noche', emoji: '🌙', colors: ['#131a2a', '#5ad7ff', '#0c111d'] },
   { id: 'halloween', name: 'Halloween', description: 'Morado, negro y naranja', emoji: '🎃', colors: ['#2a143e', '#ff9b2f', '#fff7ee'] },
   { id: 'muertos', name: 'Día de Muertos', description: 'Cempasúchil, morado y turquesa', emoji: '🏵️', colors: ['#48206b', '#f39b28', '#fff8ef'] },
+  { id: 'gracias', name: 'Acción de Gracias', description: 'Calabaza, nogal y hojas de otoño', emoji: '🦃', colors: ['#5a2e17', '#e8a531', '#fdf6ec'] },
+  { id: 'navidad', name: 'Navidad', description: 'Pino, rojo y nieve… ¡y pasa Santa!', emoji: '🎅', colors: ['#14472f', '#c3262f', '#f8faf6'] },
 ]
 
 const themeSurprises = {
@@ -71,6 +74,8 @@ const themeSurprises = {
   oscuro: { character: '🚀', message: '¡Misión en progreso!' },
   halloween: { character: '👻', message: '¡BOO!… ahora sigue estudiando 😄' },
   muertos: { character: '💀', message: '¡Esta calaverita vino a bailar!' },
+  gracias: { character: '🦃', message: '¡Gracias por tu esfuerzo de hoy!' },
+  navidad: { character: '🎅', message: '¡Ho ho ho! Vas muy bien.' },
 }
 
 const lowercaseNameWords = new Set(['de', 'del', 'la', 'las', 'los', 'y'])
@@ -578,6 +583,8 @@ function Dashboard({ session, onLogout }) {
 
   return <div className="app-shell">
     {(!isTeacher || studentPreview) && <ThemeAtmosphere theme={studentTheme} />}
+    {(!isTeacher || studentPreview) && <SeasonalFall theme={studentTheme} />}
+    {(!isTeacher || studentPreview) && studentTheme === 'navidad' && <SantaFlyby />}
     {themeSurprise && <ThemeSurprise theme={themeSurprise} />}
     <aside className={`sidebar ${mobileMenu ? 'open' : ''}`}>
       <div className="side-brand"><div className="side-brand-symbol"><GraduationCap size={25} /></div><span>Aula <b>Virtual</b><small>{isTeacher ? 'Gestión docente' : 'Espacio del alumno'}</small></span><button className="icon-btn close-menu" onClick={() => setMobileMenu(false)}><X /></button></div>
@@ -1284,6 +1291,8 @@ function ThemeAtmosphere({ theme }) {
     oscuro: ['✦', '🪐', '⭐', '🚀', '✧', '🌙', '⭐', '✦'],
     halloween: ['🦇', '👻', '🎃', '🕸️', '🦇', '🍬', '👻', '🎃'],
     muertos: ['🏵️', '🦋', '💀', '🕯️', '🏵️', '🦋', '🏵️', '💀'],
+    gracias: ['🦃', '🍂', '🌽', '🥧', '🍁', '🌻', '🍂', '🍎'],
+    navidad: ['🎄', '⭐', '🎁', '⛄', '🔔', '🦌', '🎄', '🍪'],
   }
   const artworkUrls = {
     clasico: new URL('theme-assets/aula-clasica-fiesta.png', document.baseURI).href,

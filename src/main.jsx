@@ -7,6 +7,7 @@ import './styles.css'
 import './identity.css'
 import './tracking.css'
 import './student-help.css'
+import './seasonal.css'
 
 // El enlace de "olvidé mi contraseña" llega con los datos de acceso en el hash (#access_token=…&type=recovery).
 // Se procesan antes de montar el router, que usa el hash para navegar.
