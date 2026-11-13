@@ -27,6 +27,15 @@ const FIRST_PASS_MS = 2500
 const PASS_EVERY_MS = 45000
 
 export function SantaFlyby() {
+  return <Flyby Pass={SantaPass} />
+}
+
+// Acción de Gracias: un pavito cruza corriendo sobre la barra de arriba, dice «¡Glu glu!» y suelta hojas de otoño.
+export function TurkeyRun() {
+  return <Flyby Pass={TurkeyPass} />
+}
+
+function Flyby({ Pass }) {
   const [pass, setPass] = useState(0)
   const [flying, setFlying] = useState(false)
 
@@ -43,7 +52,105 @@ export function SantaFlyby() {
 
   const done = useCallback(() => setFlying(false), [])
   if (!flying) return null
-  return <SantaPass key={pass} onDone={done} />
+  return <Pass key={pass} onDone={done} />
+}
+
+function TurkeyPass({ onDone }) {
+  const geometry = useMemo(() => {
+    const width = window.innerWidth
+    const small = width < 760
+    // Alto del dibujo; la familia mide 1.8 veces eso de ancho y el pavito 1 vez.
+    const h = small ? 50 : 64
+    const rig = h * 2.95
+    const from = -rig - 20
+    const to = width + 30
+    const seconds = Math.min(12, Math.max(6.5, width / 120))
+    const count = Math.min(16, Math.round(width / 80))
+    const glyphs = ['🍂', '🍁', '🍂', '🌾']
+    const leaves = Array.from({ length: count }, (_, index) => {
+      const x = (index + 0.5) * (width / count) + ((index * 37) % 21) - 10
+      const at = seconds * (x - h * 2.1 - from) / (to - from)
+      return { x, at, glyph: glyphs[index % glyphs.length], drift: ((index * 53) % 40) - 20, spin: index % 2 ? 220 : -200 }
+    })
+    // Que las patas pisen la raya de la barra superior (78 px en PC, 68 px en celular).
+    const top = (small ? 68 : 78) - h * 0.8
+    return { h, rig, from, to, seconds, leaves, top }
+  }, [])
+
+  useEffect(() => {
+    const timer = window.setTimeout(onDone, (geometry.seconds + 3.5) * 1000)
+    return () => window.clearTimeout(timer)
+  }, [geometry, onDone])
+
+  const run = { '--from': `${geometry.from}px`, '--to': `${geometry.to}px`, '--rig': `${geometry.rig}px`, top: geometry.top, animationDuration: `${geometry.seconds}s` }
+  return <div className="santa-layer turkey-layer" aria-hidden="true">
+    <div className="turkey-leaves" style={{ top: geometry.top + geometry.h * 0.7 }}>
+      {geometry.leaves.map((leaf, index) => <i key={index} style={{ left: leaf.x, animationDelay: `${leaf.at.toFixed(2)}s`, '--drift': `${leaf.drift}px`, '--spin': `${leaf.spin}deg` }}>{leaf.glyph}</i>)}
+    </div>
+    <div className="santa-flight" style={run}>
+      <div className="turkey-rig" style={{ height: geometry.h }}>
+        <div className="family-chase"><span className="santa-bubble family-bubble">¡Ven acá, pavito!</span><FamilyArt /></div>
+        <div className="turkey-runner"><span className="santa-bubble turkey-bubble">¡Glu glu glu!</span><TurkeyArt /></div>
+      </div>
+    </div>
+  </div>
+}
+
+// Una persona corriendo hacia la derecha con los brazos estirados. x = posición; s = tamaño.
+function Runner({ x, s = 1, shirt, pants, hair, skin = '#e8b48c', hat, braid, delay = 0 }) {
+  return <g transform={`translate(${x} ${96 - 92 * s}) scale(${s})`}>
+    <g className="runner-bob" style={{ animationDelay: `${delay}s` }}>
+      <g stroke={pants} strokeWidth="7" strokeLinecap="round" fill="none">
+        <path className="runner-leg a" d="M22 60 l-6 16 l-6 12" style={{ animationDelay: `${delay}s` }} />
+        <path className="runner-leg b" d="M26 60 l6 15 l-2 14" style={{ animationDelay: `${delay}s` }} />
+      </g>
+      <path className="runner-arm b" d="M22 38 l-10 10 l-6 -2" stroke={shirt} strokeWidth="6" strokeLinecap="round" fill="none" />
+      <rect x="12" y="30" width="22" height="34" rx="9" fill={shirt} transform="rotate(12 23 47)" />
+      <path className="runner-arm a" d="M30 38 l14 4 l8 -4" stroke={shirt} strokeWidth="6" strokeLinecap="round" fill="none" />
+      <circle cx="52" cy="38" r="3.4" fill={skin} />
+      <circle cx="30" cy="18" r="11" fill={skin} />
+      <path d="M19 16 q2 -12 13 -10 q9 1 9 8 q-8 -4 -14 0 q-4 3 -8 2z" fill={hair} />
+      {braid && <path d="M20 18 q-8 6 -6 16" stroke={hair} strokeWidth="5" strokeLinecap="round" fill="none" />}
+      {hat && <><rect x="20" y="-6" width="20" height="14" fill="#2b2420" transform="rotate(8 30 2)" /><rect x="15" y="6" width="31" height="4" rx="2" fill="#2b2420" transform="rotate(8 30 8)" /><rect x="26" y="1" width="7" height="5" fill="none" stroke="#e8a531" strokeWidth="1.6" transform="rotate(8 30 4)" /></>}
+      <circle cx="35" cy="17" r="1.6" fill="#24160d" />
+      <path d="M34 23 q3 2 5 0" stroke="#7a2a1c" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+    </g>
+  </g>
+}
+
+function FamilyArt() {
+  return <svg className="santa-art family-art" viewBox="0 0 180 100" role="presentation" focusable="false">
+    <Runner x={2} s={0.98} shirt="#5f7f3a" pants="#3a2618" hair="#3b2416" hat delay={-0.1} />
+    <Runner x={62} s={0.92} shirt="#b23a2b" pants="#5a2e17" hair="#6b3519" braid delay={-0.2} />
+    <Runner x={120} s={0.66} shirt="#e8a531" pants="#2c4a6b" hair="#24160d" delay={0} />
+  </svg>
+}
+
+function TurkeyArt() {
+  const feathers = ['#b23a2b', '#e8a531', '#8a4a22', '#c9772f', '#5f7f3a', '#e8a531', '#b23a2b']
+  return <svg className="santa-art turkey-art" viewBox="0 0 100 100" role="presentation" focusable="false">
+    {/* cola en abanico */}
+    <g className="turkey-tail">
+      {feathers.map((color, index) => <ellipse key={index} cx="34" cy="22" rx="9" ry="24" fill={color} transform={`rotate(${-75 + index * 25} 38 56)`} />)}
+      {feathers.map((_, index) => <circle key={`o${index}`} cx="34" cy="6" r="3" fill="#fff4dc" opacity=".75" transform={`rotate(${-75 + index * 25} 38 56)`} />)}
+    </g>
+    {/* patas */}
+    <g stroke="#d9862b" strokeWidth="3.4" strokeLinecap="round" fill="none">
+      <path className="turkey-leg a" d="M42 74 l-3 16 l-5 2 M39 90 l3 3" />
+      <path className="turkey-leg b" d="M54 74 l3 16 l5 2 M57 90 l-2 3" />
+    </g>
+    {/* cuerpo */}
+    <ellipse cx="48" cy="60" rx="21" ry="18" fill="#7a4524" />
+    <path d="M34 56 q10 12 26 6 q-6 12 -18 10 q-10 -3 -8 -16z" fill="#5c3018" />
+    <ellipse cx="45" cy="58" rx="9" ry="7" fill="#9a5a30" />
+    {/* cuello y cabeza */}
+    <path d="M62 54 q8 -10 6 -24" stroke="#8a4f2a" strokeWidth="9" strokeLinecap="round" fill="none" />
+    <circle cx="69" cy="28" r="9" fill="#c98b5b" />
+    <circle cx="71" cy="25" r="2" fill="#24160d" /><circle cx="71.6" cy="24.4" r=".7" fill="#fff" />
+    <path d="M77 27 l8 3 l-8 3z" fill="#f2b233" />
+    <path className="turkey-wattle" d="M76 32 q4 8 -1 12 q-4 -4 -2 -11z" fill="#d9302b" />
+    <path d="M66 20 q2 -6 6 -4" stroke="#d9302b" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+  </svg>
 }
 
 function SantaPass({ onDone }) {

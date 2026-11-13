@@ -16,7 +16,7 @@ import { FRESH_LOGIN_KEY, PendingReminder, pendingItems, usePendingReminder } fr
 import { CourseChips, RaCourseMap, Schedule, StudentGrades, TeacherGrades, WeekPlan, assessmentState, itemBelongsToCourse, progressCodeFor } from './components/CoursePlan'
 
 import { assessmentForcedOpen } from './data/open-assessments'
-import { SantaFlyby, SeasonalFall } from './components/SeasonalScenes'
+import { SantaFlyby, SeasonalFall, TurkeyRun } from './components/SeasonalScenes'
 import { activityMaterialClosed, applyClosedMaterials } from './data/hidden-materials'
 
 // Los contenidos de cada materia se descargan solo cuando el alumno los abre.
@@ -63,7 +63,7 @@ const studentThemes = [
   { id: 'oscuro', name: 'Modo oscuro', description: 'Cómodo para trabajar de noche', emoji: '🌙', colors: ['#131a2a', '#5ad7ff', '#0c111d'] },
   { id: 'halloween', name: 'Halloween', description: 'Morado, negro y naranja', emoji: '🎃', colors: ['#2a143e', '#ff9b2f', '#fff7ee'] },
   { id: 'muertos', name: 'Día de Muertos', description: 'Cempasúchil, morado y turquesa', emoji: '🏵️', colors: ['#48206b', '#f39b28', '#fff8ef'] },
-  { id: 'gracias', name: 'Acción de Gracias', description: 'Calabaza, nogal y hojas de otoño', emoji: '🦃', colors: ['#5a2e17', '#e8a531', '#fdf6ec'] },
+  { id: 'gracias', name: 'Acción de Gracias', description: 'Calabaza, nogal y hojas… ¡y corre el pavito!', emoji: '🦃', colors: ['#5a2e17', '#e8a531', '#fdf6ec'] },
   { id: 'navidad', name: 'Navidad', description: 'Pino, rojo y nieve… ¡y pasa Santa!', emoji: '🎅', colors: ['#14472f', '#c3262f', '#f8faf6'] },
 ]
 
@@ -603,6 +603,7 @@ function Dashboard({ session, onLogout }) {
     {(!isTeacher || studentPreview) && <ThemeAtmosphere theme={studentTheme} />}
     {(!isTeacher || studentPreview) && !calmMode && <SeasonalFall theme={studentTheme} />}
     {(!isTeacher || studentPreview) && !calmMode && studentTheme === 'navidad' && <SantaFlyby />}
+    {(!isTeacher || studentPreview) && !calmMode && studentTheme === 'gracias' && <TurkeyRun />}
     {themeSurprise && <ThemeSurprise theme={themeSurprise} />}
     <aside className={`sidebar ${mobileMenu ? 'open' : ''}`}>
       <div className="side-brand"><div className="side-brand-symbol"><GraduationCap size={25} /></div><span>Aula <b>Virtual</b><small>{isTeacher ? 'Gestión docente' : 'Espacio del alumno'}</small></span><button className="icon-btn close-menu" onClick={() => setMobileMenu(false)}><X /></button></div>
