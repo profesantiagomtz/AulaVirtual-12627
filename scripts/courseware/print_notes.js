@@ -67,7 +67,7 @@ function build(){var B=brand(),A=alumno(),h='',idx='';
   '<div class="idx"><span>Contenido</span>'+idx+'</div>'+
   '<div class="flow">'+h+'</div><div class="foot"><span>'+txt(B.mod+' · '+B.ra+' · '+B.raName)+'</span><span><em>Ing. Santiago Martínez González</em><b>AulaVirtual</b></span></div></div></body></html>'}
 
-function open(){var html=build(),w=null;try{w=window.open("","_blank")}catch(e){}
+function open(){var html=build(),w=null;if(window.aulaIconsHtml)html=window.aulaIconsHtml(html);try{w=window.open("","_blank")}catch(e){}
  if(w){w.document.open();w.document.write(html);w.document.close();return}
  location.href=URL.createObjectURL(new Blob([html],{type:"text/html"}))}
 window.apuntes=open;

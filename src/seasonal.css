@@ -13,16 +13,16 @@ html[data-aula-theme="gracias"] .sidebar{background:linear-gradient(180deg,#4a25
 html[data-aula-theme="navidad"] .sidebar{background:linear-gradient(180deg,#0f3a26,#1a5a3a)}
 html[data-aula-theme="gracias"] .student-journey-hero{background:radial-gradient(circle at 84% 8%,rgba(232,165,49,.35),transparent 15rem),linear-gradient(135deg,#5a2e17,#a2562a)}
 html[data-aula-theme="navidad"] .student-journey-hero{background:radial-gradient(circle at 84% 8%,rgba(242,193,78,.3),transparent 15rem),linear-gradient(135deg,#14472f,#8f1d27)}
-html[data-aula-theme="gracias"] .student-journey-hero:before{content:"🍂  ✦  🦃  ✦  🍁";position:absolute;right:24px;top:17px;font-size:1rem;letter-spacing:.25rem}
-html[data-aula-theme="navidad"] .student-journey-hero:before{content:"⭐  ✦  🎄  ✦  🎁";position:absolute;right:24px;top:17px;font-size:1rem;letter-spacing:.25rem}
+html[data-aula-theme="gracias"] .student-journey-hero:before{content:"";position:absolute;right:24px;top:17px;font-size:1rem;letter-spacing:.25rem}
+html[data-aula-theme="navidad"] .student-journey-hero:before{content:"";position:absolute;right:24px;top:17px;font-size:1rem;letter-spacing:.25rem}
 html[data-aula-theme="gracias"] .module-code{background:linear-gradient(135deg,#6b3519,#c9772f)}
 html[data-aula-theme="navidad"] .module-code{background:linear-gradient(135deg,#14472f,#c3262f)}
 html[data-aula-theme="gracias"] .topbar{border-bottom:3px solid transparent;border-image:linear-gradient(90deg,#b23a2b,#e8a531,#c9772f,#5f7f3a) 1}
 html[data-aula-theme="navidad"] .topbar{border-bottom:3px solid transparent;border-image:repeating-linear-gradient(90deg,#c3262f 0 18px,#fff 18px 30px,#1f6b45 30px 48px,#fff 48px 60px) 1}
 html[data-aula-theme="gracias"] .panel,html[data-aula-theme="gracias"] .material-card,html[data-aula-theme="gracias"] .unit-material-section{border-color:#ead6bd;box-shadow:0 9px 25px rgba(90,46,23,.08)}
 html[data-aula-theme="navidad"] .panel,html[data-aula-theme="navidad"] .material-card,html[data-aula-theme="navidad"] .unit-material-section{border-color:#d5e3d6;box-shadow:0 9px 25px rgba(20,71,47,.08)}
-html[data-aula-theme="gracias"] .panel-title h3:after,html[data-aula-theme="gracias"] .list-toolbar h1:after{content:"  🍂";font-size:.8em}
-html[data-aula-theme="navidad"] .panel-title h3:after,html[data-aula-theme="navidad"] .list-toolbar h1:after{content:"  🎄";font-size:.8em}
+html[data-aula-theme="gracias"] .panel-title h3:after,html[data-aula-theme="gracias"] .list-toolbar h1:after{content:"";font-size:.8em}
+html[data-aula-theme="navidad"] .panel-title h3:after,html[data-aula-theme="navidad"] .list-toolbar h1:after{content:"";font-size:.8em}
 html[data-aula-theme="gracias"] .student-mobile-nav{border-top:3px solid #c9772f;background:rgba(255,252,247,.97)}
 html[data-aula-theme="navidad"] .student-mobile-nav{border-top:3px solid #c3262f;background:rgba(255,254,251,.97)}
 html[data-aula-theme="gracias"] .student-mobile-nav a.active{color:#8a4a22}

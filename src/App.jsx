@@ -18,6 +18,7 @@ import { CourseChips, RaCourseMap, Schedule, StudentGrades, TeacherGrades, WeekP
 import { assessmentForcedOpen } from './data/open-assessments'
 import { SantaFlyby, SeasonalFall, TurkeyRun } from './components/SeasonalScenes'
 import { activityMaterialClosed, applyClosedMaterials } from './data/hidden-materials'
+import { Ico } from './components/AulaIcon.jsx'
 
 // Los contenidos de cada materia se descargan solo cuando el alumno los abre.
 const AsinActivity = lazy(() => import('./components/AsinActivity'))
@@ -57,25 +58,25 @@ const studentNavItems = [
 ]
 
 const studentThemes = [
-  { id: 'clasico', name: 'Cuaderno', description: 'Cuadrícula, tinta azul y marcatextos', emoji: '📓', colors: ['#172a63', '#ffe14d', '#f7f9fc'] },
-  { id: 'rosa', name: 'Rosa pastel', description: 'Rosa suave, crema y ciruela', emoji: '🌸', colors: ['#7f315e', '#f5b8cf', '#fff5f8'] },
-  { id: 'lila', name: 'Lila', description: 'Lavanda y violeta tranquilo', emoji: '✨', colors: ['#543a78', '#dcbcf2', '#f8f4ff'] },
-  { id: 'oscuro', name: 'Modo oscuro', description: 'Cómodo para trabajar de noche', emoji: '🌙', colors: ['#131a2a', '#5ad7ff', '#0c111d'] },
-  { id: 'halloween', name: 'Halloween', description: 'Morado, negro y naranja', emoji: '🎃', colors: ['#2a143e', '#ff9b2f', '#fff7ee'] },
-  { id: 'muertos', name: 'Día de Muertos', description: 'Cempasúchil, morado y turquesa', emoji: '🏵️', colors: ['#48206b', '#f39b28', '#fff8ef'] },
-  { id: 'gracias', name: 'Acción de Gracias', description: 'Calabaza, nogal y hojas… ¡y corre el pavito!', emoji: '🦃', colors: ['#5a2e17', '#e8a531', '#fdf6ec'] },
-  { id: 'navidad', name: 'Navidad', description: 'Pino, rojo y nieve… ¡y pasa Santa!', emoji: '🎅', colors: ['#14472f', '#c3262f', '#f8faf6'] },
+  { id: 'clasico', name: 'Cuaderno', description: 'Cuadrícula, tinta azul y marcatextos', icon: 'notebook', colors: ['#172a63', '#ffe14d', '#f7f9fc'] },
+  { id: 'rosa', name: 'Rosa pastel', description: 'Rosa suave, crema y ciruela', icon: 'blossom', colors: ['#7f315e', '#f5b8cf', '#fff5f8'] },
+  { id: 'lila', name: 'Lila', description: 'Lavanda y violeta tranquilo', icon: 'sparkle-soft', colors: ['#543a78', '#dcbcf2', '#f8f4ff'] },
+  { id: 'oscuro', name: 'Modo oscuro', description: 'Cómodo para trabajar de noche', icon: 'moon', colors: ['#131a2a', '#5ad7ff', '#0c111d'] },
+  { id: 'halloween', name: 'Halloween', description: 'Morado, negro y naranja', icon: 'pumpkin', colors: ['#2a143e', '#ff9b2f', '#fff7ee'] },
+  { id: 'muertos', name: 'Día de Muertos', description: 'Cempasúchil, morado y turquesa', icon: 'marigold', colors: ['#48206b', '#f39b28', '#fff8ef'] },
+  { id: 'gracias', name: 'Acción de Gracias', description: 'Calabaza, nogal y hojas… ¡y corre el pavito!', icon: 'turkey', colors: ['#5a2e17', '#e8a531', '#fdf6ec'] },
+  { id: 'navidad', name: 'Navidad', description: 'Pino, rojo y nieve… ¡y pasa Santa!', icon: 'santa', colors: ['#14472f', '#c3262f', '#f8faf6'] },
 ]
 
 const themeSurprises = {
-  clasico: { character: '✏️', message: '¡Vas muy bien! Sigue avanzando.' },
-  rosa: { character: '🦋', message: '¡Un poquito de brillo para tu estudio!' },
-  lila: { character: '✨', message: '¡Tu esfuerzo también brilla!' },
-  oscuro: { character: '🚀', message: '¡Misión en progreso!' },
-  halloween: { character: '👻', message: '¡BOO!… ahora sigue estudiando 😄' },
-  muertos: { character: '💀', message: '¡Esta calaverita vino a bailar!' },
-  gracias: { character: '🦃', message: '¡Gracias por tu esfuerzo de hoy!' },
-  navidad: { character: '🎅', message: '¡Ho ho ho! Vas muy bien.' },
+  clasico: { character: 'pencil-art', message: '¡Vas muy bien! Sigue avanzando.' },
+  rosa: { character: 'butterfly-pink', message: '¡Un poquito de brillo para tu estudio!' },
+  lila: { character: 'sparkle-soft', message: '¡Tu esfuerzo también brilla!' },
+  oscuro: { character: 'rocket', message: '¡Misión en progreso!' },
+  halloween: { character: 'ghost', message: '¡BOO!… ahora sigue estudiando.' },
+  muertos: { character: 'sugarskull', message: '¡Esta calaverita vino a bailar!' },
+  gracias: { character: 'turkey', message: '¡Gracias por tu esfuerzo de hoy!' },
+  navidad: { character: 'santa', message: '¡Ho ho ho! Vas muy bien.' },
 }
 
 const lowercaseNameWords = new Set(['de', 'del', 'la', 'las', 'los', 'y'])
@@ -1294,24 +1295,24 @@ function AssessmentModal({ groups, onClose, onSave }) {
 }
 
 function ThemeModal({ selected, onSelect, calm, onToggleCalm, onClose }) {
-  return <Modal title="Personaliza tu aula" onClose={onClose}><p className="theme-intro">Elige el estilo que más te guste. Solo cambiarán los colores de tu pantalla; tu avance y tus trabajos permanecerán iguales.</p><div className="theme-grid">{studentThemes.map(theme => <button type="button" key={theme.id} className={`theme-option ${selected === theme.id ? 'selected' : ''}`} onClick={() => onSelect(theme.id)}><span className="theme-emoji">{theme.emoji}</span><span className="theme-copy"><strong>{theme.name}</strong><small>{theme.description}</small></span><span className="theme-swatches" aria-hidden="true">{theme.colors.map(color => <i key={color} style={{ background: color }} />)}</span>{selected === theme.id && <CheckCircle2 size={19} />}</button>)}</div><label className="calm-toggle"><span className="calm-copy"><strong>Animaciones y mensajitos</strong><small>{calm ? 'Apagados: tu pantalla se queda quieta, sin sorpresas.' : 'Encendidos: decoraciones que se mueven y mensajes que aparecen de repente.'}</small></span><input type="checkbox" role="switch" checked={!calm} onChange={onToggleCalm} aria-label="Animaciones y mensajitos" /><i aria-hidden="true" /></label><div className="theme-note"><Palette size={17} /><span>Podrás cambiar de tema cuando quieras desde el botón <b>Mi tema</b>.</span></div></Modal>
+  return <Modal title="Personaliza tu aula" onClose={onClose}><p className="theme-intro">Elige el estilo que más te guste. Solo cambiarán los colores de tu pantalla; tu avance y tus trabajos permanecerán iguales.</p><div className="theme-grid">{studentThemes.map(theme => <button type="button" key={theme.id} className={`theme-option ${selected === theme.id ? 'selected' : ''}`} onClick={() => onSelect(theme.id)}><span className="theme-emoji"><Ico name={theme.icon} /></span><span className="theme-copy"><strong>{theme.name}</strong><small>{theme.description}</small></span><span className="theme-swatches" aria-hidden="true">{theme.colors.map(color => <i key={color} style={{ background: color }} />)}</span>{selected === theme.id && <CheckCircle2 size={19} />}</button>)}</div><label className="calm-toggle"><span className="calm-copy"><strong>Animaciones y mensajitos</strong><small>{calm ? 'Apagados: tu pantalla se queda quieta, sin sorpresas.' : 'Encendidos: decoraciones que se mueven y mensajes que aparecen de repente.'}</small></span><input type="checkbox" role="switch" checked={!calm} onChange={onToggleCalm} aria-label="Animaciones y mensajitos" /><i aria-hidden="true" /></label><div className="theme-note"><Palette size={17} /><span>Podrás cambiar de tema cuando quieras desde el botón <b>Mi tema</b>.</span></div></Modal>
 }
 
 function ThemeSurprise({ theme }) {
   const surprise = themeSurprises[theme] || themeSurprises.clasico
-  return <div className={`theme-surprise theme-surprise-${theme}`} role="status" aria-live="polite"><span className="surprise-spark spark-one">✦</span><span className="surprise-spark spark-two">✦</span><div className="surprise-character" aria-hidden="true">{surprise.character}</div><div><strong>{surprise.message}</strong><small>Aula Virtual</small></div></div>
+  return <div className={`theme-surprise theme-surprise-${theme}`} role="status" aria-live="polite"><span className="surprise-spark spark-one"><Ico name="sparkle" /></span><span className="surprise-spark spark-two"><Ico name="sparkle" /></span><div className="surprise-character" aria-hidden="true"><Ico name={surprise.character} /></div><div><strong>{surprise.message}</strong><small>Aula Virtual</small></div></div>
 }
 
 function ThemeAtmosphere({ theme }) {
   const decorations = {
-    clasico: ['📘', '✦', '🎓', '⭐', '✏️', '📖', '✦', '⭐'],
-    rosa: ['🌸', '🦋', '♡', '🌷', '✦', '🌸', '🦋', '♡'],
-    lila: ['✦', '☾', '✨', '💜', '✧', '☁️', '✨', '✦'],
-    oscuro: ['✦', '🪐', '⭐', '🚀', '✧', '🌙', '⭐', '✦'],
-    halloween: ['🦇', '👻', '🎃', '🕸️', '🦇', '🍬', '👻', '🎃'],
-    muertos: ['🏵️', '🦋', '💀', '🕯️', '🏵️', '🦋', '🏵️', '💀'],
-    gracias: ['🦃', '🍂', '🌽', '🥧', '🍁', '🌻', '🍂', '🍎'],
-    navidad: ['🎄', '⭐', '🎁', '⛄', '🔔', '🦌', '🎄', '🍪'],
+    clasico: ['bookblue', 'sparkle', 'gradcap-art', 'star-gold', 'pencil-art', 'openbook', 'sparkle', 'star-gold'],
+    rosa: ['blossom', 'butterfly-pink', 'heart-pink', 'tulip', 'sparkle', 'blossom', 'butterfly-pink', 'heart-pink'],
+    lila: ['sparkle', 'crescent', 'sparkle-soft', 'heart-violet', 'sparkle', 'cloud-soft', 'sparkle-soft', 'sparkle'],
+    oscuro: ['sparkle', 'planet', 'star-gold', 'rocket', 'sparkle', 'moon', 'star-gold', 'sparkle'],
+    halloween: ['bat', 'ghost', 'pumpkin', 'web', 'bat', 'candy', 'ghost', 'pumpkin'],
+    muertos: ['marigold', 'butterfly', 'sugarskull', 'candle', 'marigold', 'butterfly', 'marigold', 'sugarskull'],
+    gracias: ['turkey', 'leaf', 'corn', 'pie', 'maple', 'sunflower', 'leaf', 'apple'],
+    navidad: ['xmastree', 'star-gold', 'gift', 'snowman', 'bellgold', 'reindeer', 'xmastree', 'cookie'],
   }
   const artworkUrls = {
     clasico: new URL('theme-assets/aula-clasica-fiesta.png', document.baseURI).href,
@@ -1323,7 +1324,7 @@ function ThemeAtmosphere({ theme }) {
   }
   const artworkUrl = artworkUrls[theme]
   const atmosphereStyle = artworkUrl ? { '--theme-art': `url(${artworkUrl})` } : undefined
-  return <div className={`theme-atmosphere atmosphere-${theme}`} style={atmosphereStyle} aria-hidden="true">{(decorations[theme] || []).map((item, index) => <span key={`${item}-${index}`} className={`atmosphere-item atmosphere-item-${index + 1}`}>{item}</span>)}{theme === 'muertos' && <div className="muertos-altar"><span>🕯️</span><div>🏵️　💀　🏵️</div><b>✦ RECUERDA CON ALEGRÍA ✦</b><div>🕯️　🍞　🕯️</div></div>}{theme === 'halloween' && <div className="halloween-moon"><span>🌙</span><i>🦇</i></div>}</div>
+  return <div className={`theme-atmosphere atmosphere-${theme}`} style={atmosphereStyle} aria-hidden="true">{(decorations[theme] || []).map((item, index) => <span key={`${item}-${index}`} className={`atmosphere-item atmosphere-item-${index + 1}`}><Ico name={item} /></span>)}{theme === 'muertos' && <div className="muertos-altar"><span><Ico name="candle" /></span><div><Ico name="marigold" /><Ico name="sugarskull" /><Ico name="marigold" /></div><b>✦ RECUERDA CON ALEGRÍA ✦</b><div><Ico name="candle" /><Ico name="bread" /><Ico name="candle" /></div></div>}{theme === 'halloween' && <div className="halloween-moon"><span><Ico name="moon" /></span><i><Ico name="bat" /></i></div>}</div>
 }
 
 function Modal({ title, onClose, children }) { return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><div className="modal"><header><div><span className="eyebrow">Aula Virtual</span><h2>{title}</h2></div><button className="icon-btn" onClick={onClose} aria-label="Cerrar ventana"><X /></button></header>{children}</div></div> }
