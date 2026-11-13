@@ -96,3 +96,27 @@ html[data-aula-calma="1"] .theme-atmosphere *,html[data-aula-calma="1"] .theme-a
 @keyframes gift-forward{0%{opacity:0;transform:translateX(0)}4%{opacity:1}82%{opacity:1}100%{opacity:0;transform:translateX(var(--dx))}}
 @keyframes gift-fall{from{transform:translateY(0) rotate(0)}to{transform:translateY(62vh) rotate(var(--spin))}}
 @media(prefers-reduced-motion:reduce){.santa-gifts{display:none}}
+
+/* Pavito de Acción de Gracias: corre sobre la barra de arriba y suelta hojas */
+.turkey-rig{position:relative;animation:turkey-hop .26s ease-in-out infinite alternate}
+.turkey-tail{transform-box:view-box;transform-origin:38px 56px;animation:turkey-tail .52s ease-in-out infinite alternate}
+.turkey-leg{transform-box:fill-box;transform-origin:50% 0;animation:reindeer-run .26s ease-in-out infinite alternate}
+.turkey-leg.b{animation-direction:alternate-reverse}
+.turkey-wattle{transform-box:fill-box;transform-origin:50% 0;animation:santa-wave .26s ease-in-out infinite alternate}
+.turkey-bubble{left:92%;top:2px;translate:0 0;border-radius:14px 14px 14px 3px;border-color:#5a2e17;color:#b23a2b;box-shadow:0 3px 0 rgba(90,46,23,.25)}
+.turkey-leaves{position:absolute;left:0;right:0;height:240px}
+.turkey-leaves i{position:absolute;top:0;font-style:normal;font-size:1.1rem;line-height:1;opacity:0;animation:leaf-fall 3.2s ease-in both}
+@keyframes turkey-hop{from{transform:translateY(0)}to{transform:translateY(-6px)}}
+@keyframes turkey-tail{from{transform:rotate(-4deg) scale(.97)}to{transform:rotate(4deg) scale(1.03)}}
+@keyframes leaf-fall{0%{opacity:0;transform:translate3d(0,0,0) rotate(0)}8%{opacity:.9}100%{opacity:0;transform:translate3d(var(--drift),210px,0) rotate(var(--spin))}}
+@media(max-width:760px){.turkey-leaves i{font-size:.9rem}}
+.turkey-rig{display:flex;align-items:flex-end}
+.family-chase,.turkey-runner{position:relative;height:100%}
+.family-chase .santa-art{height:100%;width:auto}
+.turkey-runner .santa-art{height:100%;width:auto}
+.family-bubble{left:6%;top:-4px;border-color:#5a2e17;color:#5a2e17;font-size:.8rem;box-shadow:0 3px 0 rgba(90,46,23,.25)}
+.runner-bob{animation:turkey-hop .22s ease-in-out infinite alternate}
+.runner-leg,.runner-arm{transform-box:fill-box;transform-origin:50% 0;animation:runner-swing .22s ease-in-out infinite alternate}
+.runner-leg.b,.runner-arm.b{animation-direction:alternate-reverse}
+@keyframes runner-swing{from{transform:rotate(-22deg)}to{transform:rotate(22deg)}}
+@media(max-width:760px){.family-bubble{font-size:.66rem}}
