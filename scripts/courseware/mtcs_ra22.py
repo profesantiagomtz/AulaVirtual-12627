@@ -384,6 +384,7 @@ c.L('🏰', 'Defensa en profundidad', 'Bloque B · Varias capas de protección',
     'Nunca confíes en una sola protección.')
 c.L('🚨', 'Respuesta a incidentes', 'Bloque B · Qué hacer cuando algo pasa', body(
     sp('En palabras sencillas', 'Un <b>incidente</b> es algo que daña la seguridad: un virus, un robo de datos, un servidor caído. Para no improvisar, la respuesta sigue <b>4 fases en orden</b>.'),
+    bk('Dos palabras que vas a ver', '<b>Malware</b>: cualquier programa dañino (virus, gusano, troyano…). <b>Ransomware</b>: un malware que <b>cifra tus archivos</b> para que no puedas abrirlos y te <b>pide dinero (rescate)</b> para devolverlos. <i>Por eso los respaldos son tan importantes: con ellos no necesitas pagar.</i>'),
     an('inc'),
     bk('1. Preparación (antes)', 'Tener un plan, saber quién hace qué, tener respaldos. <i>¿Por qué va primero? Porque en plena emergencia ya no da tiempo de hacer respaldos ni planes.</i>'),
     bk('2. Detección y análisis', 'Darse cuenta de que algo pasa y entender qué fue y qué tan grave es. <i>¿Por qué antes de actuar? Porque no puedes arreglar algo que no entiendes.</i>'),
@@ -440,7 +441,7 @@ c.L('🧭', '¿Host, servidor, red o física? Cómo distinguirlos', 'Bloque C ·
     'Un equipo → host · El que atiende a todos → servidor · La conexión → red · Lo que se toca → física.')
 c.L('💻', 'Protección del host', 'Bloque C · Cada computadora', body(
     sp('En palabras sencillas', 'Un <b>host</b> es cualquier equipo que usa una persona. Cada uno debe poder protegerse solo.'),
-    bk('Actualizaciones al día', '<i>¿Por qué?</i> Las actualizaciones tapan fallas que los atacantes ya conocen.'),
+    bk('Actualizaciones al día', 'A las actualizaciones de seguridad también se les llama <b>parches</b>. <i>¿Por qué?</i> Tapan fallas que los atacantes ya conocen. <i>Regla práctica: si el último parche tiene más de 3 meses, el equipo está atrasado.</i>'),
     bk('Antivirus activo', '<i>¿Por qué?</i> Detecta y bloquea programas dañinos antes de que actúen.'),
     bk('Firewall del equipo', '<i>¿Por qué?</i> Bloquea conexiones que nadie pidió.'),
     bk('Cuenta estándar (sin permisos de administrador) para trabajar', '<i>¿Por qué?</i> Si entra un virus, no tiene permiso de instalar ni de cambiar todo el equipo.'),
@@ -449,6 +450,7 @@ c.L('💻', 'Protección del host', 'Bloque C · Cada computadora', body(
     'Cada equipo: actualizado, con antivirus, firewall, cuenta estándar, bloqueo y disco cifrado.')
 c.L('🗄️', 'Protección del servidor', 'Bloque C · El equipo que da servicio a todos', body(
     bk('Menos es más', 'Apagar los servicios y cerrar los puertos que no se usan. <i>¿Por qué? Cada servicio encendido es una puerta por la que podrían entrar.</i>'),
+    bk('Escritorio remoto: solo por VPN', 'El <b>escritorio remoto</b> permite manejar el servidor desde otra computadora, como si estuvieras sentado frente a él. Es útil, pero <b>no se deja abierto a todo internet</b>: se entra primero por una <b>VPN</b> (la verás en «Protección de la red»). <i>¿Por qué? Si queda abierto, cualquier persona del mundo puede intentar adivinar la contraseña.</i>'),
     bk('Mínimo privilegio', 'Solo quien lo necesita tiene cuenta de administrador, con contraseña fuerte y doble factor. <i>¿Por qué? Menos llaves maestras = menos riesgo de que una se pierda.</i>'),
     bk('Bitácoras y monitoreo', 'Registrar quién entra y qué cambia, y revisarlo. <i>¿Por qué? Así se detecta a tiempo algo raro.</i>'),
     bk('Respaldos y parches', 'Respaldar diario y aplicar actualizaciones en un horario planeado. <i>¿Por qué planeado? Para no apagar el servicio cuando más se usa.</i>'),
@@ -512,6 +514,8 @@ c.L('🐞', 'Vulnerabilidades: CVE y CVSS', 'Bloque D · Dominio de vulnerabilid
     bk('CVSS · qué tan grave es', 'Una calificación de 0 a 10: <b>Baja</b> 0.1–3.9 · <b>Media</b> 4.0–6.9 · <b>Alta</b> 7.0–8.9 · <b>Crítica</b> 9.0–10. Entre más alto, más urgente arreglarla.'),
     bk('Dónde se consultan', '<b>nvd.nist.gov</b> (base de datos del gobierno de EUA, en inglés) y <b>cve.org</b>.'),
     ana('Piensa en…', 'Los «llamados a revisión» de los coches: el fabricante publica la falla, su número y qué tan peligrosa es, para que la arregles.'),
+    bk('¿En cuánto tiempo se corrige?', 'Una guía sencilla que usan muchas empresas: <b>Crítica</b> → hoy mismo (máximo 2 días) · <b>Alta</b> → esta semana · <b>Media</b> → este mes · <b>Baja</b> → en el siguiente mantenimiento programado. <i>¿Por qué? Entre más grave, más fácil y dañino es que la aprovechen.</i>'),
+    bk('¿Cómo se corrige?', 'Casi siempre <b>actualizando</b> el programa. En la descripción de la falla (en inglés) busca «<b>before</b> 24.07» o «<b>prior to</b> 24.07»: significa que la falla está en las versiones <b>anteriores</b> a la 24.07, así que la solución es actualizar a esa versión o a una más nueva.'),
     ex('En la clínica', 'El sistema de citas tiene una CVE con CVSS 9.8: es crítica y se actualiza hoy mismo. Una de 3.1 (baja) se programa para el siguiente mantenimiento.')),
     'CVE = el nombre de la falla · CVSS = qué tan grave es · Primero se corrigen las críticas y altas.')
 c.A('🐞', 'Clasifica la gravedad', 'Según su calificación CVSS, ¿qué tan grave es cada vulnerabilidad? Busca en qué rango cae el número.', [
@@ -527,7 +531,7 @@ c.L('🧭', 'Ética y principios rectores', 'Bloque D · Saber mucho exige respo
     bk('2. Cuidar la privacidad', 'Los datos personales que veas mientras trabajas no se comentan ni se publican.'),
     bk('3. No causar daño', 'Probar sin apagar servicios ni borrar información.'),
     bk('4. Avisar de forma responsable', 'Si encuentras una falla, se la reportas al dueño y le das tiempo de corregirla antes de contarla.'),
-    ex('Hacker ético', 'Una empresa contrata a una especialista para atacar su propia red y encontrar fallas antes que los delincuentes. Firma un contrato que dice qué puede y qué no puede hacer.')),
+    ex('Hacker ético y prueba de penetración', 'Una empresa contrata a una especialista para atacar su propia red y encontrar fallas antes que los delincuentes. A ese ataque autorizado se le llama <b>prueba de penetración</b> (o «pentest»). Antes firma un contrato que dice qué puede y qué no puede hacer.')),
     'Mismo conocimiento, distinta intención: el permiso lo cambia todo.')
 c.A('🧭', '¿Es ético?', 'Decide si cada acción es ética o no. Usa las 3 preguntas: ¿tengo permiso?, ¿cuido la privacidad?, ¿causo daño?', [
     ['Escanear la red de la escuela por curiosidad, sin pedir permiso', 'No es ético', 'Falla la pregunta 1: no hay permiso por escrito, aunque sea «por curiosidad».'],
@@ -580,13 +584,15 @@ c.L('📖', 'Glosario (2 de 2)', 'Apoyo · Palabras que vas a usar', body(
     bk('RTO', 'En cuánto tiempo debe volver el servicio.'),
     bk('CVE', 'Número de identificación de una vulnerabilidad pública.'),
     bk('CVSS', 'Calificación de gravedad de 0 a 10.'),
+    bk('Ransomware', 'Malware que cifra tus archivos y pide un rescate para devolverlos.'),
+    bk('Parche', 'Actualización que tapa una falla de seguridad.'),
     bk('VLAN', 'Red separada dentro de la misma red física.')))
 g_end = c.mark() - 1
 doc0 = c.mark()
 c.L('👩‍🏫', 'Guía para el docente', 'Sesiones sugeridas con tu cronograma y tus horas de laboratorio', body(
     bk('Antes de empezar', 'Laboratorio del grupo 511: <b>lunes 17:20-18:10</b> y <b>viernes 18:10-19:50</b>. Cada práctica tiene versión para celular.', 'sp'),
     bk('Versión «anti dudas»', 'Empieza aquí incluye 4 repasos (pilares, equipos y redes, cifrado y claves, porcentajes) para quien aún batalla con R.A. anteriores. Los temas difíciles tienen ejemplo resuelto con el porqué de cada paso, todas las actividades tienen pista y las prácticas explican qué hacer, por qué y qué hacer si algo no sale. En Diagnostica hay una calculadora de disponibilidad que muestra los 4 pasos.', 'sp'),
-    bk('Bloque A · 23 y 26-oct', 'Viernes 23: repasos, hash y laboratorio de hash en clase. <b>Lunes 26 (primera hora, laboratorio): Práctica 1</b>; después contraseñas y salting, HMAC, firmas e integridad en bases de datos.'),
+    bk('Bloque A · 23 y 26-oct', 'Viernes 23: repasos, hash, laboratorio de hash, contraseñas y salting en clase. <b>Lunes 26 (primera hora, laboratorio): Práctica 1</b> (la versión de celular usa la sal, por eso salting va antes); después HMAC, firmas e integridad en bases de datos.'),
     bk('Bloque B · 26-oct y 2-nov', 'Lunes 26 (últimas horas): disponibilidad y los nueves (resolver juntos el ejemplo en el pizarrón). Viernes 30 es CTEC. Lunes 2-nov: defensa en profundidad, incidentes y RPO/RTO; <b>Práctica 2</b> como tarea o en celular.'),
     bk('Bloque C · 2 y 6-nov', '<b>Viernes 6 (laboratorio): Práctica 3</b> y lecciones de defensa de sistemas.'),
     bk('Bloque D y evaluación · lunes 9-nov', 'Vulnerabilidades, ética y herramientas; los alumnos terminan y entregan el reporte en la actividad de la plataforma (organización asignada a cada uno). La actividad se desbloquea al completar este material.'),
@@ -645,7 +651,7 @@ d:{k:"Bloque D",l:"D",ic:"🧭",t:"Dominio de la ciberseguridad",d:"Vulnerabilid
 
 ILL = r'''
 ILL["Hash: la huella digital de los datos"]=function(){return flow([["📄","Expediente"],["⚙️","SHA-256"],["🧬","9f86d0…|(64 car.)"]],"Un dato entra y sale su huella")};
-ILL["La técnica salting"]=function(){return SV(340,130,R_(10,8,320,50,"s")+T_(20,28,"123456 + sal «a7f2» → hash 3c9e…","t","start")+T_(20,46,"123456 + sal «91bd» → hash e04a…","t","start")+R_(10,70,320,50,"b")+T_(170,92,"Misma contraseña, hashes distintos","tw")+T_(170,108,"Las tablas precalculadas no sirven","tw"),"Salting")};
+ILL["La técnica salting"]=function(){return SV(340,130,R_(10,8,320,50,"s")+T_(20,28,"123456 + sal «a7f2» → hash 3c9e…","t","start")+T_(20,46,"123456 + sal «91bd» → hash e04a…","t","start")+R_(10,70,320,50,"b")+T_(170,92,"Misma contraseña, hashes distintos","tw")+T_(170,108,"Las listas de hashes comunes no sirven","tw"),"Salting")};
 ILL["HMAC: hash con clave secreta"]=function(){return flow([["🧪","Laboratorio"],["🔑","Mensaje +|clave secreta"],["🔏","HMAC"],["🏥","Clínica|verifica"]],"HMAC entre el laboratorio y la clínica")};
 ILL["Firmas digitales y certificados"]=function(){return SV(340,130,R_(10,10,150,110,"b")+E_(85,50,"🔐",28)+T_(85,80,"Clave privada","tw")+T_(85,98,"firma","tw")+R_(180,10,150,110,"s")+E_(255,50,"🔓",28)+T_(255,80,"Clave pública")+T_(255,98,"verifica","tm"),"Clave privada firma, pública verifica")};
 ILL["Disponibilidad y alta disponibilidad"]=function(){return SV(340,130,T_(85,16,"Sin redundancia","t")+R_(30,26,110,40,"r")+T_(85,50,"1 disco","tw")+E_(85,98,"💥",24)+T_(255,16,"Con redundancia","t")+R_(200,26,110,40,"g")+T_(255,50,"Disco 1","tw")+R_(200,74,110,40,"g")+T_(255,98,"Disco 2 (espejo)","tw"),"Punto único de falla y redundancia")};
@@ -673,7 +679,7 @@ EXH.cve=function(){return exw(mw('nvd.nist.gov (ejemplo)','<div style="line-heig
 EXH.cel_checklist=function(){return exw(mp('Ajustes › Seguridad','<div class="mbox">🔒 Bloqueo de pantalla: PIN ✅</div><div class="mbox" style="margin-top:6px">🛡️ Play Protect: sin apps dañinas ✅</div><div class="mbox" style="margin-top:6px">🔄 Parche de seguridad: 1 sep 2026 ⚠️</div>'),['Haz la lista de medidas de tu celular como host.'])};
 EXH.ps_abrir=function(){return exw(cw_('Windows PowerShell','PS C:\\Users\\Alumno&gt; cd Documents\nPS C:\\Users\\Alumno\\Documents&gt;',true),['Tecla Windows → escribe PowerShell → Enter.','Fíjate que la ruta ya termina en \\Documents: ahí quedará tu archivo.'])};
 EXH.calc_pasos=function(){return exw('<div class="mbox" style="line-height:1.8"><b>Mi servicio: agenda en línea · 99.9 %</b><br>Paso 1: 365 × 24 = 8,760 h<br>Paso 2: 100 − 99.9 = 0.1 %<br>Paso 3: 0.1 ÷ 100 = 0.001<br>Paso 4: 8,760 × 0.001 = <b>8.76 h al año</b> '+mk(1)+'</div>',['Escribe los 4 pasos, no solo el resultado: así se ve que entendiste.'])};
-EXH.nvd_buscar=function(){return exw(mw('nvd.nist.gov › Search','<div style="line-height:1.8">Search Type: <b>Basic</b> · Results Type: <b>Overview</b><br>Keyword Search: <span style="border:1px solid #999;padding:1px 8px">7-Zip</span> '+mk(1)+' <b>[Search]</b><br>CVE-2024-11477 · ... <b>V3.1: 7.8 HIGH</b> '+mk(2)+'</div>'),['Escribe el nombre del programa y presiona Search.','Abre un resultado: ahí vienen su CVE y su calificación (HIGH = alta).'])};
+EXH.nvd_buscar=function(){return exw(mw('nvd.nist.gov/vuln/search','<div style="line-height:1.8">Search Type: <b>Basic</b> · Results Type: <b>Overview</b><br>Keyword Search: <span style="border:1px solid #999;padding:1px 8px">7-Zip</span> '+mk(1)+' <b>[Search]</b><br>CVE-2024-11477 · ... <b>V3.1: 7.8 HIGH</b> '+mk(2)+'</div>'),['Escribe el nombre del programa en Keyword Search y presiona Search.','Abre un resultado: ahí vienen su CVE, su calificación (HIGH = alta) y en la descripción «before X» (la solución: actualizar a la versión X).'])};
 '''
 
 
@@ -691,7 +697,8 @@ def st(hacer, porque, falla=None, exh=None):
 
 
 P1_FINAL = st('Escribe 4 renglones para tu organización completando estas frases: <b>1)</b> «El archivo más importante que protegería es…» <b>2)</b> «Calcularía su huella original cuando…» <b>3)</b> «Guardaría esa huella en…» <b>4)</b> «Si la huella ya no coincide, haría…»',
-              'Es exactamente lo que vas a necesitar en la sección «Integridad» de tu reporte. Las frases te guían para que no se te olvide ninguna parte.')
+              'Es exactamente lo que vas a necesitar en la sección «Integridad» de tu reporte. Las frases te guían para que no se te olvide ninguna parte. Si no sabes qué escribir, regresa al «Ejemplo resuelto: descubrir si alguien cambió un expediente»: tiene las 4 partes.',
+              'Tu organización está en la actividad de evaluación R.A. 2.2 de la plataforma, en el recuadro «Datos asignados».')
 P2_STEPS = [
     st('Escribe en tu documento <b>3 servicios</b> de tu organización asignada (por ejemplo: cobro, página web, archivos de clientes).',
        'Primero hay que saber QUÉ se quiere mantener funcionando; sin eso no se puede proteger nada.',
@@ -700,7 +707,8 @@ P2_STEPS = [
        'Un punto único de falla es justamente eso: algo sin repuesto que detiene todo. La pregunta te ayuda a encontrarlo sin adivinar.',
        'Piensa en: el disco, la luz, el internet, el servidor o una sola persona que sabe usar el sistema.', 'tabla_disp'),
     st('En la misma tabla escribe el <b>repuesto (redundancia)</b> de cada punto de falla: RAID, UPS, segundo proveedor, otro servidor…',
-       'Eliminar un punto único de falla = ponerle repuesto. Usa la actividad «¿Qué mecanismo usarías?» como guía.'),
+       'Eliminar un punto único de falla = ponerle repuesto. Usa la actividad «¿Qué mecanismo usarías?» como guía.',
+       'Si tu punto de falla es una persona (solo ella sabe usar el sistema), su repuesto es capacitar a otra persona.'),
     st('Calcula cuántas horas al año podría estar caído su servicio principal con <b>99 %</b> y con <b>99.9 %</b>. Escribe los <b>4 pasos</b>, no solo el resultado.',
        'Escribir los pasos demuestra que entiendes de dónde sale el número; además, si te equivocas, tu profe puede ver en qué paso fue.',
        'Si te sale un número enorme (como 8,672), multiplicaste por 99 en lugar de por lo que NO funciona. Revisa con la calculadora de disponibilidad en Diagnostica: 99 % → 87.6 h y 99.9 % → 8.76 h.', 'calc_pasos'),
@@ -736,7 +744,7 @@ PR = [
                        'Necesitamos un archivo para sacarle su huella. Lo escribimos sin acentos para que todos los programas lean exactamente las mismas letras.'),
                     st(f'Calcula su huella con {cmd("Get-FileHash expediente.txt")}. Toma captura y copia en tu tabla los <b>primeros 8 caracteres</b> del hash.',
                        'Esta es la huella «original». Get-FileHash usa SHA-256 sin que se lo pidas. Con 8 caracteres basta para comparar, porque si algo cambia, cambia casi todo.',
-                       'Si sale «no se encuentra el archivo», revisa que estés en Documents (paso 1) y que el nombre esté bien escrito.', 'hash_ps'),
+                       'Si sale «no se encuentra el archivo», revisa que estés en Documents (paso 1) y que el nombre esté bien escrito. Si el hash sale cortado con «…», usa ' + cmd('Get-FileHash expediente.txt | Format-List') + ': lo muestra completo en un renglón.', 'hash_ps'),
                     st(f'Abre el <b>Símbolo del sistema</b> (tecla Windows → escribe cmd → Enter), escribe {cmd("cd Documents")} y luego {cmd("certutil -hashfile expediente.txt SHA256")}. Compara con el hash del paso 3.',
                        'Son dos programas distintos, pero SHA-256 es un estándar: el mismo archivo debe dar la misma huella sin importar qué programa la calcule (regla 1).',
                        'certutil la muestra en minúsculas y PowerShell en MAYÚSCULAS: son la misma huella. Si no pusiste SHA256 al final, certutil usa otro algoritmo y sale distinta.', 'certutil'),
@@ -787,22 +795,22 @@ PR = [
                     st('Haz una tabla con <b>6 medidas del host</b> y cómo comprobaste cada una: <b>1)</b> Actualizaciones: Configuración → Windows Update. <b>2)</b> Antivirus y <b>3)</b> Firewall: Seguridad de Windows. <b>4)</b> Tipo de cuenta: Configuración → Cuentas → Tu información (dice «Administrador» o «Estándar»). <b>5)</b> Bloqueo automático: Configuración → Personalización → Pantalla de bloqueo. <b>6)</b> Cifrado: busca «BitLocker».',
                        'Cada medida tapa una forma distinta de atacar al equipo (lección «Protección del host»). La evidencia demuestra que sí la revisaste y no la inventaste.',
                        'En Windows Home no existe BitLocker: anota «No disponible en esta versión». Que algo NO se cumpla también es un resultado válido: escribe ❌ y qué propones.', 'checklist_host'),
-                    st('Entra a <b>nvd.nist.gov</b> → <b>Search</b> → escribe el nombre de un programa que uses (7-Zip, Chrome, Zoom…) → abre un resultado. Anota su <b>CVE</b>, su calificación <b>CVSS</b> (Base Score) y la <b>solución</b>.',
+                    st('Entra a <b>nvd.nist.gov/vuln/search</b> → en <b>Keyword Search</b> escribe el nombre de un programa que uses (7-Zip, Chrome, Zoom…) → <b>Search</b> → abre un resultado. Anota su <b>CVE</b>, su calificación <b>CVSS</b> (Base Score) y la <b>solución</b> (busca «before» o «prior to» en la descripción, como viste en la lección «Vulnerabilidades: CVE y CVSS»).',
                        'Así practicas lo que hace un especialista: encontrar fallas públicas de los programas que usa su organización y decidir cuáles corregir primero según su gravedad.',
-                       'La página está en inglés: da clic derecho → «Traducir al español». HIGH = alta, CRITICAL = crítica, MEDIUM = media. La solución casi siempre es «actualizar a la versión X».', 'nvd_buscar'),
+                       'La página está en inglés: da clic derecho → «Traducir al español». HIGH = alta, CRITICAL = crítica, MEDIUM = media, LOW = baja. Si aparecen dos calificaciones, anota la primera y di de qué versión es (por ejemplo «CVSS 3.1»). Si dice «N/A» o «not yet provided», abre otro resultado.', 'nvd_buscar'),
                     st('Escribe la gravedad de tu CVE con la escala (Baja · Media · Alta · Crítica) y explica <b>en cuánto tiempo</b> la corregirías.',
-                       'La calificación sirve para decidir qué se arregla primero: las críticas y altas no pueden esperar.', None, 'cve'),
+                       'La calificación sirve para decidir qué se arregla primero. Usa la guía de la lección: Crítica → hoy (máximo 2 días) · Alta → esta semana · Media → este mes · Baja → siguiente mantenimiento.', None, 'cve'),
                     ] + P3_FINAL},
          'cel': {'mat': ['Celular', 'Navegador', 'Documento o notas para tu reporte'],
                  'steps': [
-                     st('Abre <b>Ajustes</b> en tu celular y revisa: bloqueo de pantalla, protección contra apps dañinas (Play Protect o equivalente) y fecha del parche de seguridad (Ajustes → Acerca del teléfono). Haz tu lista con ✅ o ❌.',
+                     st('Abre <b>Ajustes</b> en tu celular y revisa: bloqueo de pantalla, protección contra apps dañinas (Play Protect o equivalente) y fecha del parche de seguridad (Ajustes → Acerca del teléfono). Haz tu lista con ✅ o ❌: el parche lleva ✅ si tiene <b>3 meses o menos</b> (regla de la lección «Protección del host»).',
                         'Tu celular también es un host. Revisarlo te enseña las mismas medidas que se revisan en una computadora.',
                         'Cada marca de celular acomoda distinto los menús: usa la lupa de Ajustes y busca «bloqueo», «Play Protect» o «parche».', 'cel_checklist'),
-                     st('Entra a <b>nvd.nist.gov</b> → <b>Search</b> → escribe «Android» o el nombre de una app que uses → abre un resultado. Anota su <b>CVE</b>, su <b>CVSS</b> (Base Score) y la <b>solución</b>.',
+                     st('Entra a <b>nvd.nist.gov/vuln/search</b> → en <b>Keyword Search</b> escribe «Android» o el nombre de una app que uses → <b>Search</b> → abre un resultado. Anota su <b>CVE</b>, su <b>CVSS</b> (Base Score) y la <b>solución</b> (busca «before» o «prior to» en la descripción, como viste en la lección «Vulnerabilidades: CVE y CVSS»).',
                         'Así practicas lo que hace un especialista: encontrar fallas públicas y decidir cuáles corregir primero según su gravedad.',
-                        'La página está en inglés: usa la opción «Traducir» de tu navegador. HIGH = alta, CRITICAL = crítica, MEDIUM = media.', 'nvd_buscar'),
+                        'La página está en inglés: usa la opción «Traducir» de tu navegador. HIGH = alta, CRITICAL = crítica, MEDIUM = media, LOW = baja. Si dice «N/A» o «not yet provided», abre otro resultado.', 'nvd_buscar'),
                      st('Escribe la gravedad de tu CVE con la escala (Baja · Media · Alta · Crítica) y explica <b>en cuánto tiempo</b> la corregirías.',
-                        'La calificación sirve para decidir qué se arregla primero: las críticas y altas no pueden esperar.', None, 'cve'),
+                        'La calificación sirve para decidir qué se arregla primero. Usa la guía de la lección: Crítica → hoy (máximo 2 días) · Alta → esta semana · Media → este mes · Baja → siguiente mantenimiento.', None, 'cve'),
                      ] + P3_FINAL}},
      'entrega': ['Capturas, lista de cotejo y ficha del CVE dentro de tu reporte.', 'Revisa tu CVE con el botón «¿Voy bien?» (arriba del material) antes de entregar.'],
      'rub': [['Revisión del host con evidencia', 30], ['CVE con CVSS y solución', 25], ['Medidas de servidor, red y física', 25], ['Principios éticos', 20]]},
