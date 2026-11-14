@@ -39,7 +39,7 @@ export const practiceChecks = {
     {
       id: 'pr1', title: 'Práctica 1 · Comprueba la integridad con hash',
       checks: [
-        { id: 'hash', type: 'hash', label: 'Escribe el texto de tu archivo (o del laboratorio) y pega el hash SHA-256 que obtuviste.' },
+        { id: 'hash', type: 'hash', label: 'Escribe el texto de tu archivo (o del laboratorio, con la sal apagada) y pega completo el hash SHA-256 que obtuviste.' },
         { id: 'avalancha', type: 'choice', label: 'Cambiaste una sola letra y volviste a calcular. ¿Qué pasó con el hash?', options: ['Cambió casi por completo', 'Cambió solo un carácter', 'Quedó igual'], answer: 0, hint: 'Con una sola letra distinta el hash cambia casi entero. Si quedó igual, seguramente no guardaste el archivo antes de calcular.' },
         { id: 'regreso', type: 'choice', label: 'Regresaste el texto original y calculaste otra vez. ¿Cómo quedó el hash?', options: ['Igual al primero', 'Distinto al primero'], answer: 0, hint: 'Debe volver a ser idéntico. Si no, el texto no es exactamente el mismo: mayúsculas, espacios y acentos cuentan.' },
         { id: 'certutil', type: 'choice', label: 'Solo en computadora: ¿Get-FileHash y certutil dieron el mismo hash?', options: ['Sí, solo cambian mayúsculas y minúsculas', 'No, son diferentes'], answer: 0, hint: 'Los dos calculan SHA-256 del mismo archivo, así que deben coincidir. Revisa que en certutil pusiste SHA256 al final y el mismo nombre de archivo.' },
@@ -50,7 +50,7 @@ export const practiceChecks = {
       checks: [
         { id: 'h99', type: 'number', label: 'Horas al año que podría estar caído el servicio con 99 % de disponibilidad', unit: 'h', accept: n => Math.abs(n - 87.6) <= 0.05, hint: () => 'Un año tiene 365 × 24 = 8,760 horas. Con 99 % funciona y el 1 % no: multiplica 8,760 × 0.01.' },
         { id: 'h999', type: 'number', label: 'Horas al año con 99.9 % de disponibilidad', unit: 'h', accept: n => Math.abs(n - 8.76) <= 0.01, hint: () => 'Ahora solo falta el 0.1 %: multiplica 8,760 × 0.001.' },
-        { id: 'rpo', type: 'number', label: 'Si tu organización respalda una vez cada noche, ¿cuál es su RPO?', unit: 'h', accept: n => n === 24, hint: () => 'El RPO es la información que podrías perder: todo lo que se hizo desde el último respaldo. ¿Cada cuántas horas respaldas?' },
+        { id: 'rpo', type: 'number', label: 'Ejemplo para comprobar que entendiste: si una organización respalda una vez cada noche, ¿cuál es su RPO?', unit: 'h', accept: n => n === 24, hint: () => 'El RPO es la información que podrías perder: todo lo que se hizo desde el último respaldo. ¿Cada cuántas horas respaldas?' },
         { id: 'rto', type: 'number', label: v => `Tu organización acepta máximo ${v.maxHours} h sin servicio. ¿Qué RTO propusiste?`, unit: 'h', accept: (n, v) => n > 0 && n <= v.maxHours, hint: v => `El RTO es el tiempo para que el servicio vuelva. No puede pasar de lo que acepta tu organización (${v.maxHours} h).` },
         { id: 'fase1', type: 'choice', label: '¿Cuál es la primera fase de la respuesta a incidentes?', options: phases, answer: 0, hint: 'Antes de que pase algo ya debe existir un plan, respaldos y responsables.' },
         { id: 'fase3', type: 'choice', label: '¿Qué fase sigue después de «Detección y análisis»?', options: phases, answer: 2, hint: 'Una vez que sabes qué pasó, primero detienes el daño y luego recuperas el servicio.' },
