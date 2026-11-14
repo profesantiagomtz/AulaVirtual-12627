@@ -44,3 +44,14 @@ La interfaz y el modelo de seguridad ya cubren perfiles, grupos, materiales, eva
 ## Seguimiento en vivo, avance y asistencia
 
 Las secciones **En vivo**, **Avance** y **Asistencia** del panel docente necesitan correr una sola vez `supabase/seguimiento_asistencia.sql` en el SQL Editor. Desde ese momento la plataforma registra cada minuto quién está conectado y qué está viendo, el avance en cada material y las entregas. El pase de lista se llena solo con los alumnos que se conectaron durante el horario de la clase (sin horario, cuenta cualquier conexión del día) y el docente puede ajustar cada alumno: asistió, retardo, faltó o justificó.
+
+## Íconos e ilustraciones (sin emojis)
+
+En AulaVirtual **no se usan emojis como imágenes**. Todos los dibujos son SVG propios definidos en
+`scripts/icons/aula_icons.py` (íconos de línea + ilustraciones de temporada). Al correrlo se generan
+`src/lib/aula-icons.json` y `src/theme-art.css`.
+
+- En React: `<Ico name="pumpkin" />` (`src/components/AulaIcon.jsx`).
+- En el material de cada R.A.: `embed_patch.py` inserta `icons.js`, que cambia cualquier emoji del material
+  por su dibujo (también en los apuntes para imprimir). Si aparece un emoji sin dibujo, `embed_patch.py`
+  avisa; agrégalo en `aula_icons.py` y vuelve a correr ambos scripts.

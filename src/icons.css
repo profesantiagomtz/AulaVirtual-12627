@@ -1,0 +1,7 @@
+/* Dibujos propios (src/components/AulaIcon.jsx). Miden lo mismo que el texto que los rodea. */
+.aico-wrap{display:inline-flex;align-items:center;justify-content:center;line-height:0;vertical-align:-.18em}
+.aico{width:1.15em;height:1.15em;flex:none;overflow:visible}
+.aico.aart{width:1.3em;height:1.3em}
+.atmosphere-item .aico.aart,.surprise-character .aico.aart,.theme-emoji .aico.aart{width:1.45em;height:1.45em}
+.muertos-altar .aico-wrap{margin:0 .25em}
+.seasonal-fall .aico.aart,.turkey-leaves .aico.aart{width:1.2em;height:1.2em}

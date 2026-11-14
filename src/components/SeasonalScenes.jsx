@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Ico } from './AulaIcon.jsx'
 
 // Escenas de temporada para los temas «Acción de Gracias» y «Navidad».
 // Todo es decorativo: aria-hidden, pointer-events:none (en seasonal.css) y se apaga con prefers-reduced-motion.
@@ -8,7 +9,7 @@ const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.
 // Hojas o copos que caen despacio por la pantalla, detrás de la barra superior.
 export function SeasonalFall({ theme }) {
   const items = useMemo(() => {
-    const glyphs = theme === 'navidad' ? ['❄', '❅', '❆', '✦'] : ['🍂', '🍁', '🍂', '🌾']
+    const glyphs = theme === 'navidad' ? ['snowflake', 'snowflake2', 'snowflake3', 'snowflake2'] : ['leaf', 'maple', 'leaf', 'wheat']
     return Array.from({ length: 14 }, (_, index) => ({
       glyph: glyphs[index % glyphs.length],
       left: `${(index * 7.3 + (index % 3) * 2.1) % 100}%`,
@@ -18,7 +19,7 @@ export function SeasonalFall({ theme }) {
     }))
   }, [theme])
   if (theme !== 'navidad' && theme !== 'gracias') return null
-  return <div className={`seasonal-fall seasonal-fall-${theme}`} aria-hidden="true">{items.map((item, index) => <span key={index} style={{ left: item.left, animationDelay: item.delay, animationDuration: item.duration, fontSize: item.size }}>{item.glyph}</span>)}</div>
+  return <div className={`seasonal-fall seasonal-fall-${theme}`} aria-hidden="true">{items.map((item, index) => <span key={index} style={{ left: item.left, animationDelay: item.delay, animationDuration: item.duration, fontSize: item.size }}><Ico name={item.glyph} /></span>)}</div>
 }
 
 // Santa en su trineo cruza la parte de arriba de izquierda a derecha, saluda y dice «¡Ho ho ho!».
@@ -66,7 +67,7 @@ function TurkeyPass({ onDone }) {
     const to = width + 30
     const seconds = Math.min(12, Math.max(6.5, width / 120))
     const count = Math.min(16, Math.round(width / 80))
-    const glyphs = ['🍂', '🍁', '🍂', '🌾']
+    const glyphs = ['leaf', 'maple', 'leaf', 'wheat']
     const leaves = Array.from({ length: count }, (_, index) => {
       const x = (index + 0.5) * (width / count) + ((index * 37) % 21) - 10
       const at = seconds * (x - h * 2.1 - from) / (to - from)
@@ -85,7 +86,7 @@ function TurkeyPass({ onDone }) {
   const run = { '--from': `${geometry.from}px`, '--to': `${geometry.to}px`, '--rig': `${geometry.rig}px`, top: geometry.top, animationDuration: `${geometry.seconds}s` }
   return <div className="santa-layer turkey-layer" aria-hidden="true">
     <div className="turkey-leaves" style={{ top: geometry.top + geometry.h * 0.7 }}>
-      {geometry.leaves.map((leaf, index) => <i key={index} style={{ left: leaf.x, animationDelay: `${leaf.at.toFixed(2)}s`, '--drift': `${leaf.drift}px`, '--spin': `${leaf.spin}deg` }}>{leaf.glyph}</i>)}
+      {geometry.leaves.map((leaf, index) => <i key={index} style={{ left: leaf.x, animationDelay: `${leaf.at.toFixed(2)}s`, '--drift': `${leaf.drift}px`, '--spin': `${leaf.spin}deg` }}><Ico name={leaf.glyph} /></i>)}
     </div>
     <div className="santa-flight" style={run}>
       <div className="turkey-rig" style={{ height: geometry.h }}>
@@ -270,3 +271,4 @@ function SantaSleighArt() {
     <path d="M4 84 h126 q16 0 18 -12 q1 -6 -5 -6" stroke="#d9a422" strokeWidth="4" strokeLinecap="round" fill="none" />
   </svg>
 }
+
