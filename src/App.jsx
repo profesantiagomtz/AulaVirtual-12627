@@ -1322,6 +1322,7 @@ function ThemeAtmosphere({ theme }) {
     halloween: new URL('theme-assets/halloween-fiesta.png', document.baseURI).href,
     muertos: new URL('theme-assets/dia-muertos-fiesta.png', document.baseURI).href,
     navidad: new URL('theme-assets/navidad-fiesta.png', document.baseURI).href,
+    gracias: new URL('theme-assets/gracias-fiesta.png', document.baseURI).href,
   }
   const artworkUrl = artworkUrls[theme]
   const atmosphereStyle = artworkUrl ? { '--theme-art': `url(${artworkUrl})` } : undefined

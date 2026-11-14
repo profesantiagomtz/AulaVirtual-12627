@@ -121,9 +121,10 @@ html[data-aula-calma="1"] .theme-atmosphere *,html[data-aula-calma="1"] .theme-a
 @keyframes runner-swing{from{transform:rotate(-22deg)}to{transform:rotate(22deg)}}
 @media(max-width:760px){.family-bubble{font-size:.66rem}}
 
-/* Navidad: escena ilustrada de fondo (pino con regalos, guirnalda y nieve), igual que Halloween y Día de Muertos.
-   Dibujo propio: scripts/theme-art/navidad_fiesta.py → public/theme-assets/navidad-fiesta.png */
-.atmosphere-navidad:before{content:"";position:absolute;inset:0;background-image:var(--theme-art);background-position:center;background-repeat:no-repeat;background-size:cover;opacity:.2;animation:xmas-glow 5s ease-in-out infinite alternate}
+/* Navidad y Acción de Gracias: escenas ilustradas de fondo (pino con regalos, guirnalda y nieve), igual que Halloween y Día de Muertos.
+   Dibujos propios: scripts/theme-art/navidad_fiesta.py y gracias_fiesta.py → public/theme-assets/*-fiesta.png */
+.atmosphere-navidad:before,.atmosphere-gracias:before{content:"";position:absolute;inset:0;background-image:var(--theme-art);background-position:center;background-repeat:no-repeat;background-size:cover;opacity:.2;animation:xmas-glow 5s ease-in-out infinite alternate}
 @keyframes xmas-glow{from{opacity:.2;filter:saturate(.96) brightness(.98)}to{opacity:.3;filter:saturate(1.12) brightness(1.05)}}
 html[data-aula-theme="navidad"] .content{background:linear-gradient(rgba(248,251,248,.74),rgba(244,249,246,.9));border-radius:24px 0 0 0}
-@media(prefers-reduced-motion:reduce){.atmosphere-navidad:before{animation:none}}
+html[data-aula-theme="gracias"] .content{background:linear-gradient(rgba(253,248,240,.74),rgba(252,245,234,.9));border-radius:24px 0 0 0}
+@media(prefers-reduced-motion:reduce){.atmosphere-navidad:before,.atmosphere-gracias:before{animation:none}}
