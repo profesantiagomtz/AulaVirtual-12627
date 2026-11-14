@@ -121,12 +121,9 @@ html[data-aula-calma="1"] .theme-atmosphere *,html[data-aula-calma="1"] .theme-a
 @keyframes runner-swing{from{transform:rotate(-22deg)}to{transform:rotate(22deg)}}
 @media(max-width:760px){.family-bubble{font-size:.66rem}}
 
-/* Navidad: pino con regalos de fondo, por debajo del contenido (como los fondos ilustrados de los otros temas). */
-.xmas-backdrop{position:absolute;right:2vw;bottom:0;width:min(34vw,430px);opacity:.22}
-.xmas-backdrop svg{display:block;width:100%;height:auto}
-.xmas-light{animation:xmas-twinkle 2.4s ease-in-out infinite alternate}
-.xmas-star{transform-origin:200px 52px;animation:xmas-star 3.2s ease-in-out infinite alternate}
-@keyframes xmas-twinkle{from{opacity:1}to{opacity:.35}}
-@keyframes xmas-star{from{transform:scale(1)}to{transform:scale(1.08)}}
-@media(max-width:760px){.xmas-backdrop{right:-6vw;bottom:64px;width:62vw;opacity:.17}}
-@media(prefers-reduced-motion:reduce){.xmas-light,.xmas-star{animation:none}}
+/* Navidad: escena ilustrada de fondo (pino con regalos, guirnalda y nieve), igual que Halloween y Día de Muertos.
+   Dibujo propio: scripts/theme-art/navidad_fiesta.py → public/theme-assets/navidad-fiesta.png */
+.atmosphere-navidad:before{content:"";position:absolute;inset:0;background-image:var(--theme-art);background-position:center;background-repeat:no-repeat;background-size:cover;opacity:.2;animation:xmas-glow 5s ease-in-out infinite alternate}
+@keyframes xmas-glow{from{opacity:.2;filter:saturate(.96) brightness(.98)}to{opacity:.3;filter:saturate(1.12) brightness(1.05)}}
+html[data-aula-theme="navidad"] .content{background:linear-gradient(rgba(248,251,248,.74),rgba(244,249,246,.9));border-radius:24px 0 0 0}
+@media(prefers-reduced-motion:reduce){.atmosphere-navidad:before{animation:none}}
